@@ -249,6 +249,15 @@ export interface ProjectRole {
   }>
 }
 
+export interface ProjectList {
+  items: Project[]
+  metadata?: {
+    continue?: string
+    remainingItemCount?: number
+    resourceVersion?: string
+  }
+}
+
 // User / Account
 export interface Account {
   name: string
