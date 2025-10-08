@@ -1,0 +1,51 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { ThemeProvider } from './lib/theme'
+import { QueryProvider } from './lib/query-client'
+import { AuthProvider, ProtectedRoute } from './lib/auth'
+import { Layout } from './components/layout/layout'
+import { LoginPage } from './pages/login'
+import { ApplicationsPage } from './pages/applications'
+import { ApplicationDetailPage } from './pages/application-detail'
+import { SettingsPage } from './pages/settings'
+import { RepositoriesPage } from './pages/repositories'
+import { ClustersPage } from './pages/clusters'
+import { UserInfoPage } from './pages/user-info'
+import { HelpPage } from './pages/help'
+
+function App() {
+  return (
+    <QueryProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              {/* Public route */}
+              <Route path="/login" element={<LoginPage />} />
+
+              {/* Protected routes */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Layout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="/applications" replace />} />
+                <Route path="applications" element={<ApplicationsPage />} />
+                <Route path="applications/:name" element={<ApplicationDetailPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+                <Route path="repositories" element={<RepositoriesPage />} />
+                <Route path="clusters" element={<ClustersPage />} />
+                <Route path="user-info" element={<UserInfoPage />} />
+                <Route path="help" element={<HelpPage />} />
+              </Route>
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </QueryProvider>
+  )
+}
+
+export default App
