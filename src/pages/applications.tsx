@@ -64,13 +64,13 @@ export function ApplicationsPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
+              <h1 className="text-lg font-semibold text-black dark:text-white">
                 Applications
               </h1>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
                 Manage and monitor your deployments across all clusters
               </p>
             </div>
@@ -125,7 +125,7 @@ export function ApplicationsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-8">
+        <div className="p-4">
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center min-h-[400px]">
@@ -168,17 +168,17 @@ export function ApplicationsPage() {
 
           {/* Empty State */}
           {!isLoading && !error && filteredApps.length === 0 && (
-            <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
+            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
               <div className="max-w-md mx-auto">
-                <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
-                  <IconGrid size={32} className="text-neutral-400" />
+                <div className="h-12 w-12 rounded bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-3">
+                  <IconGrid size={24} className="text-neutral-400" />
                 </div>
-                <h3 className="font-medium text-black dark:text-white mb-2">
+                <h3 className="text-sm font-medium text-black dark:text-white mb-1">
                   {searchQuery
                     ? "No applications found"
                     : "No applications yet"}
                 </h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-4">
                   {searchQuery
                     ? "Try adjusting your search or filters"
                     : "Create your first application to get started with GitOps deployments"}
@@ -198,7 +198,7 @@ export function ApplicationsPage() {
 
           {/* Applications Grid */}
           {!isLoading && !error && filteredApps.length > 0 && (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
               {filteredApps.map((app) => (
                 <ApplicationCard
                   key={app.metadata.name}
@@ -211,16 +211,16 @@ export function ApplicationsPage() {
 
               {/* Add New Card */}
               <div
-                className="rounded-lg border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-5 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
+                className="rounded border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-3 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
                 onClick={() => setShowCreatePanel(true)}
               >
-                <div className="h-12 w-12 rounded-full bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-3 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
-                  <IconAdd size={20} className="text-neutral-600 dark:text-neutral-400" />
+                <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
+                  <IconAdd size={16} className="text-neutral-600 dark:text-neutral-400" />
                 </div>
-                <h3 className="font-medium text-black dark:text-white mb-1">
+                <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
                   Create Application
                 </h3>
-                <p className="text-xs text-neutral-600 dark:text-neutral-500">
+                <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
                   Deploy a new application to your cluster
                 </p>
               </div>
@@ -261,19 +261,19 @@ function ApplicationCard({
 
   return (
     <div
-      className="group rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-5 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
+      className="group rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
       onClick={onClick}
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
+      <div className="flex items-start justify-between mb-2">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-black dark:text-white truncate">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <h3 className="text-sm font-medium text-black dark:text-white truncate">
               {app.metadata.name}
             </h3>
-            <IconArrowRightUp size={14} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <IconArrowRightUp size={12} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
-          <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-600">
+          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-600">
             <span className="truncate">
               {app.spec.destination.namespace || "default"}
             </span>
@@ -288,7 +288,7 @@ function ApplicationCard({
       </div>
 
       {/* Status Badges */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-1.5 mb-2">
         <Badge
           variant={
             healthStatus === "Healthy"
@@ -314,14 +314,14 @@ function ApplicationCard({
       </div>
 
       {/* Repository */}
-      <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400 mb-3">
-        <IconCodeBranch size={14} className="text-neutral-600" />
+      <div className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400 mb-2">
+        <IconCodeBranch size={12} className="text-neutral-600" />
         <span className="truncate">{app.spec.source.repoURL}</span>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-neutral-200 dark:border-neutral-800">
-        <span className="text-xs text-neutral-500 dark:text-neutral-600">
+      <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
+        <span className="text-[10px] text-neutral-500 dark:text-neutral-600">
           {app.status?.reconciledAt
             ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
             : "Never synced"}

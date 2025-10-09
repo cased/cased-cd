@@ -38,11 +38,11 @@ export function SettingsPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-8 py-6">
-          <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
+        <div className="px-6 py-3">
+          <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">
             Settings
           </h1>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+          <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
             Configure repositories, clusters, projects, and access control
           </p>
         </div>
@@ -50,8 +50,8 @@ export function SettingsPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-8">
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+        <div className="p-4">
+          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {settingsCards.map((card) => {
               const Icon = card.icon;
 
@@ -59,28 +59,28 @@ export function SettingsPage() {
                 <div
                   key={card.title}
                   onClick={() => card.path && navigate(card.path)}
-                  className="group rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
+                  className="group rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
                 >
                   {/* Icon */}
-                  <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-white dark:bg-black mb-4">
-                    <Icon size={20} className="text-black dark:text-white" />
+                  <div className="inline-flex h-8 w-8 items-center justify-center rounded bg-white dark:bg-black mb-2">
+                    <Icon size={16} className="text-black dark:text-white" />
                   </div>
 
                   {/* Content */}
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-medium text-black dark:text-white">
+                  <div className="mb-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-medium text-sm text-black dark:text-white">
                         {card.title}
                       </h3>
-                      <IconArrowRight size={16} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconArrowRight size={14} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                    <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       {card.description}
                     </p>
                   </div>
 
                   {/* Count Badge */}
-                  <div className="inline-flex items-center rounded-md bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2.5 py-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                  <div className="inline-flex items-center rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:text-neutral-400">
                     {card.count} {card.count === 1 ? "item" : "items"}
                   </div>
                 </div>
@@ -89,16 +89,16 @@ export function SettingsPage() {
           </div>
 
           {/* Additional Settings Section */}
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold text-black dark:text-white mb-4">
+          <div className="mt-4">
+            <h2 className="text-sm font-semibold text-black dark:text-white mb-2">
               General
             </h2>
-            <div className="flex flex-col gap-3">
-              <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
-                <h3 className="font-medium text-black dark:text-white mb-2">
+            <div className="flex flex-col gap-2">
+              <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3">
+                <h3 className="font-medium text-sm text-black dark:text-white mb-1">
                   Appearance
                 </h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
                   Customize the look and feel of your dashboard
                 </p>
                 <div className="flex gap-2">
@@ -135,15 +135,15 @@ export function SettingsPage() {
                 </div>
               </div>
 
-              <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
-                <h3 className="font-medium text-black dark:text-white mb-2">
+              <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3">
+                <h3 className="font-medium text-sm text-black dark:text-white mb-1">
                   Notifications
                 </h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
                   Configure how you receive alerts and updates
                 </p>
-                <div className="flex flex-col gap-2.5">
-                  <label className="flex items-center gap-2.5 text-sm cursor-pointer">
+                <div className="flex flex-col gap-1.5">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <input
                       type="checkbox"
                       className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
@@ -153,7 +153,7 @@ export function SettingsPage() {
                       Email notifications
                     </span>
                   </label>
-                  <label className="flex items-center gap-2.5 text-sm cursor-pointer">
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
                     <input
                       type="checkbox"
                       className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"

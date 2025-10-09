@@ -54,7 +54,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "13rem" } as React.CSSProperties}
+      style={{ "--sidebar-width": "11rem" } as React.CSSProperties}
     >
       <Sidebar collapsible="icon">
         <SidebarHeader>

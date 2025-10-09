@@ -116,9 +116,9 @@ export function ApplicationDetailPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-8 py-6">
+        <div className="px-6 py-3">
           {/* Controls row */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-3">
             <Button
               variant="ghost"
               size="sm"
@@ -163,11 +163,11 @@ export function ApplicationDetailPage() {
           </div>
 
           {/* Title and info */}
-          <div className="mb-6">
-            <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
+          <div className="mb-3">
+            <h1 className="text-lg font-semibold text-black dark:text-white">
               {app.metadata.name}
             </h1>
-            <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+            <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">
               <span>{app.spec.destination.namespace || 'default'}</span>
               <span>·</span>
               <span>{app.spec.destination.server || app.spec.destination.name || 'unknown'}</span>
@@ -175,8 +175,8 @@ export function ApplicationDetailPage() {
           </div>
 
           {/* Status badges and info */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
               <Badge
                 variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
                 className="gap-1.5"
@@ -189,20 +189,20 @@ export function ApplicationDetailPage() {
               </Badge>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <IconCodeBranch size={16} />
+            <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
+              <IconCodeBranch size={14} />
               <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
             </div>
 
             {app.spec.source.targetRevision && (
-              <div className="text-sm text-neutral-600 dark:text-neutral-400">
+              <div className="text-xs text-neutral-600 dark:text-neutral-400">
                 <span className="text-neutral-600">Revision:</span> {app.spec.source.targetRevision}
               </div>
             )}
           </div>
 
           {/* View switcher */}
-          <div className="flex items-center gap-2 mt-6">
+          <div className="flex items-center gap-1.5 mt-3">
             <Button
               variant={view === 'tree' ? 'default' : 'outline'}
               size="sm"
@@ -236,7 +236,7 @@ export function ApplicationDetailPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-8">
+        <div className="p-4">
           {view === 'tree' && <TreeView app={app} onResourceClick={setSelectedResource} />}
           {view === 'list' && <ListView app={app} onResourceClick={setSelectedResource} />}
           {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} onResourceClick={setSelectedResource} />}
@@ -260,19 +260,19 @@ function TreeView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
   if (resources.length === 0) {
     return (
-      <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
-        <IconCircle size={64} className="text-neutral-600 mx-auto mb-4" />
-        <h3 className="font-medium text-black dark:text-white mb-2">No Resources</h3>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">This application has no resources yet.</p>
+      <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+        <IconCircle size={48} className="text-neutral-600 mx-auto mb-3" />
+        <h3 className="text-sm font-medium text-black dark:text-white mb-1">No Resources</h3>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">This application has no resources yet.</p>
       </div>
     )
   }
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-lg font-medium text-black dark:text-white">Resource Tree ({resources.length} resources)</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+      <div className="mb-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({resources.length} resources)</h2>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
       </div>
 
       <ResourceTree
@@ -288,18 +288,18 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-lg font-medium text-black dark:text-white">Resources ({resources.length})</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
+      <div className="mb-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">Resources ({resources.length})</h2>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
       </div>
 
       {resources.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <IconUnorderedList size={48} className="text-neutral-600 mx-auto mb-3" />
-          <p className="text-neutral-600 dark:text-neutral-400">No resources found</p>
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+          <IconUnorderedList size={36} className="text-neutral-600 mx-auto mb-2" />
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">No resources found</p>
         </div>
       ) : (
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden">
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="bg-neutral-100 dark:bg-neutral-900">
@@ -364,36 +364,36 @@ function PodsView({ app, resourceTree, onResourceClick }: { app: any; resourceTr
 
   return (
     <div>
-      <div className="mb-4">
-        <h2 className="text-lg font-medium text-black dark:text-white">Pods ({pods.length})</h2>
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">All pods in this application</p>
+      <div className="mb-3">
+        <h2 className="text-sm font-medium text-black dark:text-white">Pods ({pods.length})</h2>
+        <p className="text-xs text-neutral-600 dark:text-neutral-400">All pods in this application</p>
       </div>
 
       {pods.length === 0 ? (
-        <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <IconBox size={48} className="text-neutral-600 mx-auto mb-3" />
-          <p className="text-neutral-600 dark:text-neutral-400">No pods found</p>
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+          <IconBox size={36} className="text-neutral-600 mx-auto mb-2" />
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">No pods found</p>
         </div>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
           {pods.map((pod: any, i: number) => (
             <div
               key={i}
-              className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+              className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
               onClick={() => onResourceClick(pod)}
             >
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="font-medium text-black dark:text-white text-sm truncate flex-1">{pod.name}</h3>
+              <div className="flex items-start justify-between mb-2">
+                <h3 className="text-sm font-medium text-black dark:text-white truncate flex-1">{pod.name}</h3>
                 {pod.health?.status && (
                   <Badge
                     variant={pod.health.status === 'Healthy' ? 'default' : 'destructive'}
-                    className="text-xs ml-2"
+                    className="text-[10px] ml-2"
                   >
                     {pod.health.status}
                   </Badge>
                 )}
               </div>
-              <div className="space-y-1 text-xs text-neutral-600 dark:text-neutral-400">
+              <div className="space-y-0.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                 <div className="flex justify-between">
                   <span className="text-neutral-600">Namespace:</span>
                   <span>{pod.namespace || '-'}</span>

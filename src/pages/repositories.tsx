@@ -26,11 +26,11 @@ export function RepositoriesPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-8 py-6">
-          <div className="flex items-center justify-between mb-6">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between mb-3">
             <div>
-              <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">Repositories</h1>
-              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Repositories</h1>
+              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
                 Connect and manage Git, Helm, and OCI repositories
               </p>
             </div>
@@ -55,25 +55,25 @@ export function RepositoriesPage() {
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-8">
+        <div className="p-4">
           {/* Loading State */}
           {isLoading && (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
-                <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-400">Loading repositories...</p>
+                <IconCircleForward size={24} className="animate-spin text-neutral-400 mx-auto mb-2" />
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">Loading repositories...</p>
               </div>
             </div>
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <div className="flex items-start gap-3">
-                <IconCircleClose size={20} className="text-red-400 mt-0.5" />
+            <div className="rounded border border-red-500/20 bg-red-500/10 p-3">
+              <div className="flex items-start gap-2">
+                <IconCircleClose size={16} className="text-red-400 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-red-400 mb-1">Failed to load repositories</h3>
-                  <p className="text-sm text-red-400/80 mb-3">
+                  <h3 className="font-medium text-sm text-red-400 mb-0.5">Failed to load repositories</h3>
+                  <p className="text-xs text-red-400/80 mb-2">
                     {error instanceof Error ? error.message : 'Unable to connect to ArgoCD API'}
                   </p>
                   <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -86,22 +86,22 @@ export function RepositoriesPage() {
 
           {/* Repositories List */}
           {!isLoading && !error && data?.items && data.items.length > 0 && (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {data.items.map((repo) => (
                 <div
                   key={repo.repo}
-                  className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700"
+                  className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       {/* Header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="h-10 w-10 rounded-md bg-white dark:bg-black flex items-center justify-center">
-                          <IconFolder size={20} className="text-black dark:text-white" />
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-8 w-8 rounded bg-white dark:bg-black flex items-center justify-center">
+                          <IconFolder size={16} className="text-black dark:text-white" />
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-medium text-black dark:text-white">{repo.name || repo.repo}</h3>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <h3 className="font-medium text-sm text-black dark:text-white">{repo.name || repo.repo}</h3>
                             <Badge variant={repo.type === 'git' ? 'secondary' : repo.type === 'helm' ? 'default' : 'destructive'}>
                               {repo.type || 'git'}
                             </Badge>
@@ -116,7 +116,7 @@ export function RepositoriesPage() {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-neutral-600 dark:text-neutral-400 font-mono truncate max-w-2xl">
+                          <p className="text-xs text-neutral-600 dark:text-neutral-400 font-mono truncate max-w-2xl">
                             {repo.repo}
                           </p>
                         </div>
@@ -124,7 +124,7 @@ export function RepositoriesPage() {
 
                       {/* Connection Details */}
                       {repo.connectionState?.message && (
-                        <div className="pl-13 text-sm text-neutral-600 dark:text-neutral-400">
+                        <div className="pl-10 text-xs text-neutral-600 dark:text-neutral-400">
                           {repo.connectionState.message}
                         </div>
                       )}
@@ -148,13 +148,13 @@ export function RepositoriesPage() {
 
           {/* Empty State */}
           {!isLoading && !error && (!data?.items || data.items.length === 0) && (
-            <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
+            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
               <div className="max-w-md mx-auto">
-                <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
-                  <IconFolder size={32} className="text-neutral-400" />
+                <div className="h-9 w-9 rounded bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-2">
+                  <IconFolder size={24} className="text-neutral-400" />
                 </div>
-                <h3 className="font-medium text-black dark:text-white mb-2">No repositories yet</h3>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
+                <h3 className="font-medium text-sm text-black dark:text-white mb-1">No repositories yet</h3>
+                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-3">
                   Connect your first Git, Helm, or OCI repository to get started
                 </p>
                 <Button variant="default" onClick={() => setShowCreatePanel(true)}>
