@@ -2,6 +2,7 @@ import { FolderGit2, Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from 'luci
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
+import { CreateRepositoryPanel } from '@/components/create-repository-panel'
 import { useState } from 'react'
 
 export function RepositoriesPage() {
@@ -160,6 +161,13 @@ export function RepositoriesPage() {
           )}
         </div>
       </div>
+
+      {/* Create Repository Panel */}
+      <CreateRepositoryPanel
+        isOpen={showCreatePanel}
+        onClose={() => setShowCreatePanel(false)}
+        onSuccess={() => refetch()}
+      />
     </div>
   )
 }

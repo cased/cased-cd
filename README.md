@@ -55,7 +55,7 @@ Visit `http://localhost:5173` and login with any credentials.
 # - Create a local Kubernetes cluster 'cased-cd'
 # - Install ArgoCD
 # - Configure ArgoCD for local development (insecure mode, CORS)
-# - Setup nginx CORS proxy on port 9000
+# - Setup nginx CORS proxy on port 8090
 # - Start kubectl port-forward to ArgoCD on port 9001
 # - Display admin credentials
 # - Save credentials to .argocd-credentials file
@@ -77,7 +77,7 @@ Password: <generated-password>
 Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login with these credentials.
 
 **Note:** The setup uses:
-- Port 9000: nginx CORS proxy (frontend connects here)
+- Port 8090: nginx CORS proxy (frontend connects here)
 - Port 9001: kubectl port-forward to ArgoCD
 - Vite will pick an available port between 5173-5178
 

@@ -2,6 +2,7 @@ import { Server, Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from 'lucide-r
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
+import { CreateClusterPanel } from '@/components/create-cluster-panel'
 import { useState } from 'react'
 
 export function ClustersPage() {
@@ -178,6 +179,13 @@ export function ClustersPage() {
           )}
         </div>
       </div>
+
+      {/* Create Cluster Panel */}
+      <CreateClusterPanel
+        isOpen={showCreatePanel}
+        onClose={() => setShowCreatePanel(false)}
+        onSuccess={() => refetch()}
+      />
     </div>
   )
 }
