@@ -9,7 +9,7 @@ import {
 } from '@xyflow/react'
 import type { Node, Edge, NodeTypes } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { CheckCircle2, AlertCircle, Clock, Activity } from 'lucide-react'
+import { IconCircleCheck as CheckCircle2, IconCircleWarning as AlertCircle, IconClock3 as Clock, IconCircleInfo as Activity } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 
 interface Resource {

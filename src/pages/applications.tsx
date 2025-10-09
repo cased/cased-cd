@@ -1,4 +1,15 @@
-import { Search, Plus, GitBranch, Activity, AlertCircle, CheckCircle2, Clock, ArrowUpRight, RefreshCw, LayoutGrid } from 'lucide-react'
+import {
+  IconSearch as Search,
+  IconAdd as Plus,
+  IconCodeBranch as GitBranch,
+  IconCircleInfo as Activity,
+  IconCircleWarning as AlertCircle,
+  IconCircleCheck as CheckCircle2,
+  IconClock3 as Clock,
+  IconArrowRightUp as ArrowUpRight,
+  IconRotate as RefreshCw,
+  IconGrid as LayoutGrid
+} from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'

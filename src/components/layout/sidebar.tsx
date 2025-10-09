@@ -3,18 +3,18 @@ import { cn } from '@/lib/utils'
 import { useAppearance } from '@/lib/theme'
 import { useAuth } from '@/lib/auth'
 import {
-  LayoutGrid,
-  Settings,
-  User,
-  BookOpen,
-  ChevronLeft,
-  ChevronRight,
-  Sun,
-  Moon,
-  LogOut,
-  FolderGit2,
-  Server,
-} from 'lucide-react'
+  IconGrid as LayoutGrid,
+  IconSettings as Settings,
+  IconUser as User,
+  IconBookOpen as BookOpen,
+  IconChevronLeft as ChevronLeft,
+  IconChevronRight as ChevronRight,
+  IconSun as Sun,
+  IconMoon as Moon,
+  IconLogOut as LogOut,
+  IconFolder as FolderGit2,
+  IconServer as Server,
+} from 'obra-icons-react'
 import { useState } from 'react'
 
 const navItems = [

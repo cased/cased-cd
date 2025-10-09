@@ -1,4 +1,4 @@
-import { Database, Server, FolderGit2, Users, ShieldCheck, Key, ArrowRight } from 'lucide-react'
+import { IconDatabase as Database, IconServer as Server, IconFolder as FolderGit2, IconUsers as Users, IconShieldCheck as ShieldCheck, IconKey as Key, IconArrowRight as ArrowRight } from 'obra-icons-react'
 import { useRepositories } from '@/services/repositories'
 import { useClusters } from '@/services/clusters'
 import { useNavigate } from 'react-router-dom'

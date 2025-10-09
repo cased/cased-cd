@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Loader2, FileCode, FormInput } from 'lucide-react'
+import { IconClose as X, IconSpinnerBall as Loader2, IconDocumentCode as FileCode, IconText as FormInput } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCreateApplication } from '@/services/applications'

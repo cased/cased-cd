@@ -1,4 +1,4 @@
-import { BookOpen, Github, ExternalLink, MessageCircle, FileText, Rocket, Sparkles } from 'lucide-react'
+import { IconBookOpen as BookOpen, IconBrandGithubFill as Github, IconExternalLink as ExternalLink, IconMessageCircle as MessageCircle, IconDocument as FileText, IconRocketShip as Rocket, IconSparkles as Sparkles } from 'obra-icons-react'
 
 const resources = [
   {

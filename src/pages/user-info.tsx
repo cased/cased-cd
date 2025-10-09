@@ -1,4 +1,4 @@
-import { User, Mail, Shield, Clock, Key } from 'lucide-react'
+import { IconUser as User, IconEmail as Mail, IconShield as Shield, IconClock3 as Clock, IconKey as Key } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 
 export function UserInfoPage() {

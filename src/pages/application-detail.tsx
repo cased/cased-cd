@@ -1,9 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
-  ArrowLeft, RefreshCw, Trash2, GitBranch, Activity,
-  AlertCircle, CheckCircle2, Clock, Network, List, Box
-} from 'lucide-react'
+  IconArrowLeft as ArrowLeft,
+  IconRotate as RefreshCw,
+  IconDelete as Trash2,
+  IconCodeBranch as GitBranch,
+  IconCircleInfo as Activity,
+  IconCircleWarning as AlertCircle,
+  IconCircleCheck as CheckCircle2,
+  IconClock3 as Clock,
+  IconCircle as Network,
+  IconUnorderedList as List,
+  IconBox as Box
+} from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication } from '@/services/applications'

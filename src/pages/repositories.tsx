@@ -1,4 +1,4 @@
-import { FolderGit2, Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { IconFolder as FolderGit2, IconAdd as Plus, IconDelete as Trash2, IconCircleCheck as CheckCircle2, IconCircleClose as XCircle, IconRotate as RefreshCw } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'

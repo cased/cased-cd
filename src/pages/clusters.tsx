@@ -1,4 +1,4 @@
-import { Server, Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { IconServer as Server, IconAdd as Plus, IconDelete as Trash2, IconCircleCheck as CheckCircle2, IconCircleClose as XCircle, IconRotate as RefreshCw } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'

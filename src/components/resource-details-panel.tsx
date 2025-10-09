@@ -1,4 +1,4 @@
-import { X, Copy, Download, FileCode } from 'lucide-react'
+import { IconClose as X, IconCopy as Copy, IconDownload as Download, IconDocumentCode as FileCode } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
