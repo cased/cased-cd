@@ -1,35 +1,10 @@
-import { IconDatabase, IconServer, IconFolder, IconUsers, IconShieldCheck, IconKey, IconArrowRight } from 'obra-icons-react'
-import { useRepositories } from '@/services/repositories'
-import { useClusters } from '@/services/clusters'
+import { IconUsers, IconShieldCheck, IconKey, IconArrowRight } from 'obra-icons-react'
 import { useNavigate } from 'react-router-dom'
 
 export function SettingsPage() {
   const navigate = useNavigate()
-  const { data: reposData } = useRepositories()
-  const { data: clustersData } = useClusters()
 
   const settingsCards = [
-    {
-      title: 'Repositories',
-      description: 'Connect and manage Git repositories',
-      icon: IconFolder,
-      count: reposData?.items?.length || 0,
-      path: '/repositories',
-    },
-    {
-      title: 'Clusters',
-      description: 'Configure Kubernetes clusters',
-      icon: IconServer,
-      count: clustersData?.items?.length || 0,
-      path: '/clusters',
-    },
-    {
-      title: 'Projects',
-      description: 'Organize applications into projects',
-      icon: IconDatabase,
-      count: 8,
-      path: undefined,
-    },
     {
       title: 'Accounts',
       description: 'Manage user accounts and permissions',

@@ -4,7 +4,6 @@ import { useAuth } from "@/lib/auth";
 import {
   IconGrid,
   IconSettings,
-  IconUser,
   IconBookOpen,
   IconSun,
   IconMoon,
@@ -48,16 +47,6 @@ const navItems = [
     title: "Settings",
     href: "/settings",
     icon: IconSettings,
-  },
-  {
-    title: "User Info",
-    href: "/user-info",
-    icon: IconUser,
-  },
-  {
-    title: "Documentation",
-    href: "/help",
-    icon: IconBookOpen,
   },
 ];
 
@@ -129,6 +118,18 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton
+                asChild
+                isActive={location.pathname.startsWith("/help")}
+                tooltip="Documentation"
+              >
+                <Link to="/help">
+                  <IconBookOpen />
+                  <span>Documentation</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
                 onClick={toggleTheme}
                 tooltip={
                   appearance === "dark"
@@ -159,10 +160,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <a href="#">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                    <span className="text-xs font-semibold">AD</span>
-                  </div>
+                <a href="/user-info">
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="text-xs font-medium">Admin User</span>
                     <span className="text-[10px] text-sidebar-foreground/70">
