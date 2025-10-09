@@ -12,6 +12,8 @@ import {
   Sun,
   Moon,
   LogOut,
+  FolderGit2,
+  Server,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -20,6 +22,16 @@ const navItems = [
     title: 'Applications',
     href: '/applications',
     icon: LayoutGrid,
+  },
+  {
+    title: 'Repositories',
+    href: '/repositories',
+    icon: FolderGit2,
+  },
+  {
+    title: 'Clusters',
+    href: '/clusters',
+    icon: Server,
   },
   {
     title: 'Settings',

@@ -80,7 +80,7 @@ export function ClustersPage() {
           )}
 
           {/* Clusters Grid */}
-          {!isLoading && !error && data?.items && (
+          {!isLoading && !error && data?.items && data.items.length > 0 && (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {data.items.map((cluster) => (
                 <div
@@ -160,7 +160,7 @@ export function ClustersPage() {
           )}
 
           {/* Empty State */}
-          {!isLoading && !error && data?.items?.length === 0 && (
+          {!isLoading && !error && (!data?.items || data.items.length === 0) && (
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
