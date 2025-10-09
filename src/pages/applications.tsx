@@ -1,49 +1,53 @@
 import {
-  IconSearch as Search,
-  IconAdd as Plus,
-  IconCodeBranch as GitBranch,
-  IconCircleInfo as Activity,
-  IconCircleWarning as AlertCircle,
-  IconCircleCheck as CheckCircle2,
-  IconClock3 as Clock,
-  IconArrowRightUp as ArrowUpRight,
-  IconRotate as RefreshCw,
-  IconGrid as LayoutGrid
-} from 'obra-icons-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { useApplications, useRefreshApplication } from '@/services/applications'
-import { CreateApplicationPanel } from '@/components/create-application-panel'
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import type { Application } from '@/types/api'
+  IconSearch,
+  IconAdd,
+  IconCodeBranch,
+  IconCircleInfo,
+  IconCircleWarning,
+  IconCircleCheck,
+  IconClock3,
+  IconArrowRightUp,
+  IconCircleForward,
+  IconGrid,
+} from "obra-icons-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import {
+  useApplications,
+  useRefreshApplication,
+} from "@/services/applications";
+import { CreateApplicationPanel } from "@/components/create-application-panel";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import type { Application } from "@/types/api";
 
 const healthIcons = {
-  Healthy: { icon: CheckCircle2, color: 'text-emerald-400' },
-  Progressing: { icon: Clock, color: 'text-blue-400' },
-  Degraded: { icon: AlertCircle, color: 'text-amber-400' },
-  Suspended: { icon: AlertCircle, color: 'text-neutral-400' },
-  Missing: { icon: AlertCircle, color: 'text-red-400' },
-  Unknown: { icon: Activity, color: 'text-neutral-500' },
-}
+  Healthy: { icon: IconCircleCheck, color: "text-emerald-400" },
+  Progressing: { icon: IconClock3, color: "text-blue-400" },
+  Degraded: { icon: IconCircleWarning, color: "text-amber-400" },
+  Suspended: { icon: IconCircleWarning, color: "text-neutral-400" },
+  Missing: { icon: IconCircleWarning, color: "text-red-400" },
+  Unknown: { icon: IconCircleInfo, color: "text-neutral-500" },
+};
 
 export function ApplicationsPage() {
-  const navigate = useNavigate()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showCreatePanel, setShowCreatePanel] = useState(false)
-  const { data, isLoading, error, refetch } = useApplications()
-  const refreshMutation = useRefreshApplication()
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showCreatePanel, setShowCreatePanel] = useState(false);
+  const { data, isLoading, error, refetch } = useApplications();
+  const refreshMutation = useRefreshApplication();
 
   // Filter applications based on search
-  const filteredApps = data?.items?.filter(app =>
-    app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  const filteredApps =
+    data?.items?.filter((app) =>
+      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
 
   const handleRefresh = async (name: string) => {
-    await refreshMutation.mutateAsync(name)
-    refetch()
-  }
+    await refreshMutation.mutateAsync(name);
+    refetch();
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -52,7 +56,9 @@ export function ApplicationsPage() {
         <div className="px-8 py-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">Applications</h1>
+              <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
+                Applications
+              </h1>
               <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
                 Manage and monitor your deployments across all clusters
               </p>
@@ -60,15 +66,21 @@ export function ApplicationsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
+                size="lg"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                <IconCircleForward
+                  className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
-              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
-                <Plus className="h-4 w-4" />
+              <Button
+                variant="default"
+                className="gap-2"
+                onClick={() => setShowCreatePanel(true)}
+              >
+                <IconAdd className="h-4 w-4" />
                 New Application
               </Button>
             </div>
@@ -77,7 +89,7 @@ export function ApplicationsPage() {
           {/* Search and Filters */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
+              <IconSearch className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-500" />
               <Input
                 placeholder="Search applications..."
                 className="pl-9"
@@ -105,8 +117,10 @@ export function ApplicationsPage() {
           {isLoading && (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
-                <RefreshCw className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-400">Loading applications...</p>
+                <IconCircleForward className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
+                <p className="text-neutral-600 dark:text-neutral-400">
+                  Loading applications...
+                </p>
               </div>
             </div>
           )}
@@ -115,14 +129,22 @@ export function ApplicationsPage() {
           {error && (
             <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                <IconCircleWarning className="h-5 w-5 text-red-400 mt-0.5" />
                 <div>
-                  <h3 className="font-medium text-red-400 mb-1">Failed to load applications</h3>
+                  <h3 className="font-medium text-red-400 mb-1">
+                    Failed to load applications
+                  </h3>
                   <p className="text-sm text-red-400/80 mb-3">
-                    {error instanceof Error ? error.message : 'Unable to connect to ArgoCD API'}
+                    {error instanceof Error
+                      ? error.message
+                      : "Unable to connect to ArgoCD API"}
                   </p>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => refetch()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => refetch()}
+                    >
                       Try Again
                     </Button>
                   </div>
@@ -136,20 +158,24 @@ export function ApplicationsPage() {
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
-                  <LayoutGrid className="h-8 w-8 text-neutral-400" />
+                  <IconGrid className="h-8 w-8 text-neutral-400" />
                 </div>
                 <h3 className="font-medium text-black dark:text-white mb-2">
-                  {searchQuery ? 'No applications found' : 'No applications yet'}
+                  {searchQuery
+                    ? "No applications found"
+                    : "No applications yet"}
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   {searchQuery
-                    ? 'Try adjusting your search or filters'
-                    : 'Create your first application to get started with GitOps deployments'
-                  }
+                    ? "Try adjusting your search or filters"
+                    : "Create your first application to get started with GitOps deployments"}
                 </p>
                 {!searchQuery && (
-                  <Button variant="default" onClick={() => setShowCreatePanel(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button
+                    variant="default"
+                    onClick={() => setShowCreatePanel(true)}
+                  >
+                    <IconAdd className="h-4 w-4 mr-2" />
                     Create Application
                   </Button>
                 )}
@@ -175,9 +201,11 @@ export function ApplicationsPage() {
                 onClick={() => setShowCreatePanel(true)}
               >
                 <div className="h-12 w-12 rounded-full bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-3 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
-                  <Plus className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
+                  <IconAdd className="h-5 w-5 text-neutral-600 dark:text-neutral-400" />
                 </div>
-                <h3 className="font-medium text-black dark:text-white mb-1">Create Application</h3>
+                <h3 className="font-medium text-black dark:text-white mb-1">
+                  Create Application
+                </h3>
                 <p className="text-xs text-neutral-600 dark:text-neutral-500">
                   Deploy a new application to your cluster
                 </p>
@@ -195,15 +223,23 @@ export function ApplicationsPage() {
         />
       )}
     </div>
-  )
+  );
 }
 
 // Application Card Component
-function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefresh: (name: string) => void; onClick: () => void }) {
-  const healthStatus = app.status?.health?.status || 'Unknown'
-  const syncStatus = app.status?.sync?.status || 'Unknown'
-  const HealthIcon = healthIcons[healthStatus]?.icon || Activity
-  const healthColor = healthIcons[healthStatus]?.color || 'text-neutral-500'
+function ApplicationCard({
+  app,
+  onRefresh,
+  onClick,
+}: {
+  app: Application;
+  onRefresh: (name: string) => void;
+  onClick: () => void;
+}) {
+  const healthStatus = app.status?.health?.status || "Unknown";
+  const syncStatus = app.status?.sync?.status || "Unknown";
+  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo;
+  const healthColor = healthIcons[healthStatus]?.color || "text-neutral-500";
 
   return (
     <div
@@ -217,12 +253,18 @@ function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefr
             <h3 className="font-medium text-black dark:text-white truncate">
               {app.metadata.name}
             </h3>
-            <ArrowUpRight className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <IconArrowRightUp className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
           <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-600">
-            <span className="truncate">{app.spec.destination.namespace || 'default'}</span>
+            <span className="truncate">
+              {app.spec.destination.namespace || "default"}
+            </span>
             <span>·</span>
-            <span className="truncate">{app.spec.destination.server || app.spec.destination.name || 'unknown'}</span>
+            <span className="truncate">
+              {app.spec.destination.server ||
+                app.spec.destination.name ||
+                "unknown"}
+            </span>
           </div>
         </div>
       </div>
@@ -230,38 +272,46 @@ function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefr
       {/* Status Badges */}
       <div className="flex items-center gap-2 mb-4">
         <Badge
-          variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
+          variant={
+            healthStatus === "Healthy"
+              ? "default"
+              : healthStatus === "Degraded"
+              ? "destructive"
+              : "secondary"
+          }
           className="gap-1.5"
         >
           <HealthIcon className={`h-3 w-3 ${healthColor}`} />
           {healthStatus}
         </Badge>
-        <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
+        <Badge variant={syncStatus === "Synced" ? "default" : "destructive"}>
           {syncStatus}
         </Badge>
       </div>
 
       {/* Repository */}
       <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400 mb-3">
-        <GitBranch className="h-3.5 w-3.5 text-neutral-600" />
+        <IconCodeBranch className="h-3.5 w-3.5 text-neutral-600" />
         <span className="truncate">{app.spec.source.repoURL}</span>
       </div>
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-3 border-t border-neutral-200 dark:border-neutral-800">
         <span className="text-xs text-neutral-500 dark:text-neutral-600">
-          {app.status?.reconciledAt ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}` : 'Never synced'}
+          {app.status?.reconciledAt
+            ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
+            : "Never synced"}
         </span>
         <button
           onClick={(e) => {
-            e.stopPropagation()
-            onRefresh(app.metadata.name)
+            e.stopPropagation();
+            onRefresh(app.metadata.name);
           }}
           className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
         >
-          <Activity className="h-3.5 w-3.5" />
+          <IconCircleInfo className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>
-  )
+  );
 }

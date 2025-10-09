@@ -1,4 +1,4 @@
-import { IconUser as User, IconEmail as Mail, IconShield as Shield, IconClock3 as Clock, IconKey as Key } from 'obra-icons-react'
+import { IconUser, IconEmail, IconShield, IconClock3, IconKey } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 
 export function UserInfoPage() {
@@ -32,16 +32,16 @@ export function UserInfoPage() {
                   <Badge variant="default">Active</Badge>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-4">
-                  <Mail className="h-4 w-4" />
+                  <IconEmail className="h-4 w-4" />
                   <span className="text-sm">admin@cased.cd</span>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="outline" className="gap-1.5">
-                    <Shield className="h-3 w-3" />
+                    <IconShield className="h-3 w-3" />
                     Administrator
                   </Badge>
                   <Badge variant="outline" className="gap-1.5">
-                    <Clock className="h-3 w-3" />
+                    <IconClock3 className="h-3 w-3" />
                     Member since Jan 2024
                   </Badge>
                 </div>
@@ -54,7 +54,7 @@ export function UserInfoPage() {
             {/* Account Details */}
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
               <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <IconUser className="h-4 w-4" />
                 Account Details
               </h3>
               <dl className="space-y-3">
@@ -76,7 +76,7 @@ export function UserInfoPage() {
             {/* Groups & Permissions */}
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
               <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <IconShield className="h-4 w-4" />
                 Groups & Permissions
               </h3>
               <dl className="space-y-3">
@@ -113,7 +113,7 @@ export function UserInfoPage() {
           {/* API Tokens */}
           <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
             <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-              <Key className="h-4 w-4" />
+              <IconKey className="h-4 w-4" />
               API Tokens
             </h3>
             <div className="space-y-3">

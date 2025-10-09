@@ -12,7 +12,10 @@
       "Bash(bun run:*)",
       "Bash(find:*)",
       "Bash(yes n)",
-      "Bash(git pull:*)"
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(npm info:*)"
     ],
     "deny": [],
     "ask": []

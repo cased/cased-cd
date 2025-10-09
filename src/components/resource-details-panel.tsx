@@ -1,4 +1,4 @@
-import { IconClose as X, IconCopy as Copy, IconDownload as Download, IconDocumentCode as FileCode } from 'obra-icons-react'
+import { IconClose, IconCopy, IconDownload, IconDocumentCode } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
@@ -53,7 +53,7 @@ status:
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <FileCode className="h-5 w-5 text-neutral-400" />
+              <IconDocumentCode className="h-5 w-5 text-neutral-400" />
               <h2 className="text-lg font-semibold text-white truncate">{resource.name}</h2>
             </div>
             <div className="flex items-center gap-2 text-sm text-neutral-400">
@@ -65,7 +65,7 @@ status:
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+            <IconClose className="h-4 w-4" />
           </Button>
         </div>
 
@@ -90,11 +90,11 @@ status:
       {/* Actions */}
       <div className="border-b border-neutral-800 p-4 flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
-          <Copy className="h-3.5 w-3.5" />
+          <IconCopy className="h-3.5 w-3.5" />
           Copy
         </Button>
         <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-          <Download className="h-3.5 w-3.5" />
+          <IconDownload className="h-3.5 w-3.5" />
           Download
         </Button>
       </div>

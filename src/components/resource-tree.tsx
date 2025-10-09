@@ -9,7 +9,7 @@ import {
 } from '@xyflow/react'
 import type { Node, Edge, NodeTypes } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { IconCircleCheck as CheckCircle2, IconCircleWarning as AlertCircle, IconClock3 as Clock, IconCircleInfo as Activity } from 'obra-icons-react'
+import { IconCircleCheck, IconCircleWarning, IconClock3, IconCircleInfo } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 
 interface Resource {
@@ -30,12 +30,12 @@ interface ResourceTreeProps {
 }
 
 const healthIcons = {
-  Healthy: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
-  Progressing: { icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
-  Degraded: { icon: AlertCircle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
-  Suspended: { icon: AlertCircle, color: 'text-neutral-400', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
-  Missing: { icon: AlertCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-  Unknown: { icon: Activity, color: 'text-neutral-500', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
+  Healthy: { icon: IconCircleCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  Progressing: { icon: IconClock3, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
+  Degraded: { icon: IconCircleWarning, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
+  Suspended: { icon: IconCircleWarning, color: 'text-neutral-400', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
+  Missing: { icon: IconCircleWarning, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
+  Unknown: { icon: IconCircleInfo, color: 'text-neutral-500', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
 }
 
 // Custom node component

@@ -4,7 +4,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Cased CD is a modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and Radix UI. It provides a completely custom frontend that works with the standard ArgoCD API without requiring backend modifications.
+Cased CD is a modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and shadcn/ui. It provides a completely custom frontend that works with the standard ArgoCD API without requiring backend modifications.
+
+## UI Component Guidelines
+
+**IMPORTANT**: Follow these strict guidelines when working with UI components:
+
+- **Use shadcn/ui components** - All UI components should come from `@/components/ui/*` (shadcn/ui)
+- **NEVER use Radix UI directly** - While shadcn/ui is built on Radix primitives, always use the shadcn wrapper components
+- **NEVER use lucide-react** - All icons MUST come from `obra-icons-react`
+- **Use Obra Icons** - Import icons from `obra-icons-react` using their Obra names directly (no aliases)
+
+Example icon imports:
+```typescript
+import {
+  IconSearch,
+  IconAdd,
+  IconCodeBranch,
+  IconCircleInfo,
+  IconCircleWarning,
+  IconCircleCheck,
+  IconClock3,
+  IconArrowRightUp,
+  IconRotate,
+  IconGrid,
+} from 'obra-icons-react'
+
+// Then use them directly in JSX:
+<IconSearch className="h-4 w-4" />
+<IconAdd className="h-5 w-5" />
+```
 
 ## Development Commands
 
@@ -91,7 +120,8 @@ export function useUpdateApplication() {
 - Tailwind CSS v4 with CSS-based configuration
 - Dark mode via `.dark` class on `<body>` element
 - Flat design aesthetic with borders instead of shadows
-- Radix UI for accessible base components
+- shadcn/ui components for accessible, pre-styled UI primitives
+- Obra Icons for all iconography
 
 ### Mock Server (`mock-server.js`)
 - Express server on port 8080 with CORS enabled

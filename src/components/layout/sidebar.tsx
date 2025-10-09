@@ -2,15 +2,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAppearance } from '@/lib/theme'
 import { useAuth } from '@/lib/auth'
 import {
-  IconGrid as LayoutGrid,
-  IconSettings as Settings,
-  IconUser as User,
-  IconBookOpen as BookOpen,
-  IconSun as Sun,
-  IconMoon as Moon,
-  IconLogOut as LogOut,
-  IconFolder as FolderGit2,
-  IconServer as Server,
+  IconGrid,
+  IconSettings,
+  IconUser,
+  IconBookOpen,
+  IconSun,
+  IconMoon,
+  IconLogOut,
+  IconFolder,
+  IconServer,
 } from 'obra-icons-react'
 import {
   Sidebar,
@@ -30,32 +30,32 @@ const navItems = [
   {
     title: 'Applications',
     href: '/applications',
-    icon: LayoutGrid,
+    icon: IconGrid,
   },
   {
     title: 'Repositories',
     href: '/repositories',
-    icon: FolderGit2,
+    icon: IconFolder,
   },
   {
     title: 'Clusters',
     href: '/clusters',
-    icon: Server,
+    icon: IconServer,
   },
   {
     title: 'Settings',
     href: '/settings',
-    icon: Settings,
+    icon: IconSettings,
   },
   {
     title: 'User Info',
     href: '/user-info',
-    icon: User,
+    icon: IconUser,
   },
   {
     title: 'Documentation',
     href: '/help',
-    icon: BookOpen,
+    icon: IconBookOpen,
   },
 ]
 
@@ -131,9 +131,9 @@ export function AppSidebar() {
               tooltip={appearance === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
               {appearance === 'dark' || appearance === 'system' ? (
-                <Sun />
+                <IconSun />
               ) : (
-                <Moon />
+                <IconMoon />
               )}
               <span>{appearance === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
             </SidebarMenuButton>
@@ -141,7 +141,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Logout">
               <button onClick={handleLogout} className="w-full">
-                <LogOut />
+                <IconLogOut />
                 <span>Logout</span>
               </button>
             </SidebarMenuButton>

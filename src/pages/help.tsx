@@ -1,40 +1,40 @@
-import { IconBookOpen as BookOpen, IconBrandGithubFill as Github, IconExternalLink as ExternalLink, IconMessageCircle as MessageCircle, IconDocument as FileText, IconRocketShip as Rocket, IconSparkles as Sparkles } from 'obra-icons-react'
+import { IconBookOpen, IconBrandGithubFill, IconExternalLink, IconMessageCircle, IconDocument, IconRocketShip, IconSparkles } from 'obra-icons-react'
 
 const resources = [
   {
     title: 'Official Documentation',
     description: 'Complete guide to Cased CD features and best practices',
-    icon: BookOpen,
+    icon: IconBookOpen,
     href: 'https://argo-cd.readthedocs.io/',
   },
   {
     title: 'GitHub Repository',
     description: 'View source code, report issues, and contribute',
-    icon: Github,
+    icon: IconBrandGithubFill,
     href: 'https://github.com/argoproj/argo-cd',
   },
   {
     title: 'Getting Started',
     description: 'Quick start guide for new users',
-    icon: Rocket,
+    icon: IconRocketShip,
     href: 'https://argoproj.github.io/argo-cd/',
   },
   {
     title: 'Community Forum',
     description: 'Ask questions and connect with other users',
-    icon: MessageCircle,
+    icon: IconMessageCircle,
     href: 'https://github.com/argoproj/argo-cd/discussions',
   },
   {
     title: 'API Documentation',
     description: 'Explore the REST API reference',
-    icon: FileText,
+    icon: IconDocument,
     href: '/swagger-ui',
   },
   {
     title: "What's New",
     description: 'Latest features and release notes',
-    icon: Sparkles,
+    icon: IconSparkles,
     href: 'https://github.com/argoproj/argo-cd/releases',
   },
 ]
@@ -79,7 +79,7 @@ export function HelpPage() {
                       <h3 className="font-medium text-black dark:text-white">
                         {resource.title}
                       </h3>
-                      <ExternalLink className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconExternalLink className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">{resource.description}</p>
                   </div>
@@ -100,7 +100,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-blue-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">User Guide</span>
-                <ExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/operator-manual/"
@@ -110,7 +110,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-emerald-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">Operator Manual</span>
-                <ExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/developer-guide/"
@@ -120,7 +120,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-purple-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">Developer Guide</span>
-                <ExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/faq/"
@@ -130,7 +130,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-amber-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">FAQ</span>
-                <ExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
               </a>
             </div>
           </div>
