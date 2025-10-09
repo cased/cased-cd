@@ -48,13 +48,13 @@ export function ApplicationsPage() {
 
   const handleRefresh = async (name: string) => {
     await refreshMutation.mutateAsync(name);
-    refetch();
+    // No need to manually refetch - React Query invalidation handles it
   };
 
   const handleSync = async (name: string) => {
     try {
       await syncMutation.mutateAsync({ name, prune: true });
-      refetch();
+      // No need to manually refetch - React Query invalidation + polling handles it
     } catch (error) {
       console.error("Sync failed:", error);
     }
@@ -254,6 +254,8 @@ function ApplicationCard({
 }) {
   const healthStatus = app.status?.health?.status || "Unknown";
   const syncStatus = app.status?.sync?.status || "Unknown";
+  const operationPhase = app.status?.operationState?.phase;
+  const isSyncing = operationPhase === "Running" || operationPhase === "Terminating";
   const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo;
   const healthColor = healthIcons[healthStatus]?.color || "text-neutral-500";
 
@@ -303,6 +305,12 @@ function ApplicationCard({
         <Badge variant={syncStatus === "Synced" ? "default" : "destructive"}>
           {syncStatus}
         </Badge>
+        {isSyncing && (
+          <Badge variant="secondary" className="gap-1.5 animate-pulse">
+            <IconCircleForward size={12} className="animate-spin" />
+            Syncing
+          </Badge>
+        )}
       </div>
 
       {/* Repository */}
@@ -322,12 +330,19 @@ function ApplicationCard({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onSync(app.metadata.name);
+              if (!isSyncing) {
+                onSync(app.metadata.name);
+              }
             }}
-            className="text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400 transition-colors"
-            title="Sync application"
+            disabled={isSyncing}
+            className={`transition-colors ${
+              isSyncing
+                ? "text-blue-400 cursor-not-allowed"
+                : "text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400"
+            }`}
+            title={isSyncing ? "Syncing in progress..." : "Sync application"}
           >
-            <IconCircleForward size={14} />
+            <IconCircleForward size={14} className={isSyncing ? "animate-spin" : ""} />
           </button>
           <button
             onClick={(e) => {

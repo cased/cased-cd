@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication } from '@/services/applications'
+import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree } from '@/services/applications'
 import { ResourceTree } from '@/components/resource-tree'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 
@@ -45,6 +45,7 @@ export function ApplicationDetailPage() {
   const [selectedResource, setSelectedResource] = useState<any>(null)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
+  const { data: resourceTree } = useResourceTree(name || '', !!name)
   const syncMutation = useSyncApplication()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
@@ -238,7 +239,7 @@ export function ApplicationDetailPage() {
         <div className="p-8">
           {view === 'tree' && <TreeView app={app} onResourceClick={setSelectedResource} />}
           {view === 'list' && <ListView app={app} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView app={app} onResourceClick={setSelectedResource} />}
+          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} onResourceClick={setSelectedResource} />}
         </div>
       </div>
 
@@ -356,9 +357,10 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
   )
 }
 
-function PodsView({ app, onResourceClick }: { app: any; onResourceClick: (resource: any) => void }) {
-  const resources = app.status?.resources || []
-  const pods = resources.filter((r: any) => r.kind === 'Pod')
+function PodsView({ app, resourceTree, onResourceClick }: { app: any; resourceTree?: any; onResourceClick: (resource: any) => void }) {
+  // Get pods from resource tree (which includes all child resources)
+  const allNodes = resourceTree?.nodes || []
+  const pods = allNodes.filter((node: any) => node.kind === 'Pod')
 
   return (
     <div>
