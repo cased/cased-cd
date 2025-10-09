@@ -1,4 +1,4 @@
-import { Server, Plus, Trash2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react'
+import { IconServer, IconAdd, IconDelete, IconCircleCheck, IconCircleClose, IconCircleForward } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
@@ -47,11 +47,11 @@ export function ClustersPage() {
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                <IconCircleForward className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="primary" className="gap-2" onClick={() => setShowCreatePanel(true)}>
-                <Plus className="h-4 w-4" />
+              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
+                <IconAdd className="h-4 w-4" />
                 Add Cluster
               </Button>
             </div>
@@ -66,7 +66,7 @@ export function ClustersPage() {
           {isLoading && (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
-                <RefreshCw className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
+                <IconCircleForward className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
                 <p className="text-neutral-600 dark:text-neutral-400">Loading clusters...</p>
               </div>
             </div>
@@ -76,7 +76,7 @@ export function ClustersPage() {
           {error && (
             <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
               <div className="flex items-start gap-3">
-                <XCircle className="h-5 w-5 text-red-400 mt-0.5" />
+                <IconCircleClose className="h-5 w-5 text-red-400 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-400 mb-1">Failed to load clusters</h3>
                   <p className="text-sm text-red-400/80 mb-3">
@@ -102,16 +102,16 @@ export function ClustersPage() {
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-3 flex-1">
                       <div className="h-10 w-10 rounded-md bg-white dark:bg-black flex items-center justify-center shrink-0">
-                        <Server className="h-5 w-5 text-black dark:text-white" />
+                        <IconServer className="h-5 w-5 text-black dark:text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-black dark:text-white truncate mb-1">{cluster.name}</h3>
                         {cluster.connectionState?.status && (
-                          <Badge variant={cluster.connectionState.status === 'Successful' ? 'success' : 'warning'} className="mb-2">
+                          <Badge variant={cluster.connectionState.status === 'Successful' ? 'default' : 'destructive'} className="mb-2">
                             {cluster.connectionState.status === 'Successful' ? (
-                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              <IconCircleCheck className="h-3 w-3 mr-1" />
                             ) : (
-                              <XCircle className="h-3 w-3 mr-1" />
+                              <IconCircleClose className="h-3 w-3 mr-1" />
                             )}
                             {cluster.connectionState.status}
                           </Badge>
@@ -161,7 +161,7 @@ export function ClustersPage() {
                       disabled={deleteMutation.isPending}
                       className="w-full text-red-400 hover:text-red-300"
                     >
-                      <Trash2 className="h-4 w-4 mr-2" />
+                      <IconDelete className="h-4 w-4 mr-2" />
                       Delete
                     </Button>
                   </div>
@@ -175,14 +175,14 @@ export function ClustersPage() {
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
-                  <Server className="h-8 w-8 text-neutral-400" />
+                  <IconServer className="h-8 w-8 text-neutral-400" />
                 </div>
                 <h3 className="font-medium text-black dark:text-white mb-2">No clusters yet</h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   Add your first Kubernetes cluster to start deploying applications
                 </p>
-                <Button variant="primary" onClick={() => setShowCreatePanel(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button variant="default" onClick={() => setShowCreatePanel(true)}>
+                  <IconAdd className="h-4 w-4 mr-2" />
                   Add Cluster
                 </Button>
               </div>

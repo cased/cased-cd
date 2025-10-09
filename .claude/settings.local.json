@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bun add:*)",
+      "Bash(cat:*)",
+      "Bash(npm run build:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm run dev:*)",
+      "Bash(git add:*)",
+      "Bash(bunx:*)",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(find:*)",
+      "Bash(yes n)",
+      "Bash(git pull:*)",
+      "Bash(git push:*)",
+      "Bash(node:*)",
+      "Bash(npm info:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

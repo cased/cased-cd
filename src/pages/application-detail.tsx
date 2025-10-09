@@ -1,9 +1,18 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import {
-  ArrowLeft, RefreshCw, Trash2, GitBranch, Activity,
-  AlertCircle, CheckCircle2, Clock, Network, List, Box
-} from 'lucide-react'
+  IconArrowLeft,
+  IconCircleForward,
+  IconDelete,
+  IconCodeBranch,
+  IconCircleInfo,
+  IconCircleWarning,
+  IconCircleCheck,
+  IconClock3,
+  IconCircle,
+  IconUnorderedList,
+  IconBox
+} from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication } from '@/services/applications'
@@ -13,12 +22,12 @@ import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 type ViewType = 'tree' | 'network' | 'list' | 'pods'
 
 const healthIcons = {
-  Healthy: { icon: CheckCircle2, color: 'text-emerald-400' },
-  Progressing: { icon: Clock, color: 'text-blue-400' },
-  Degraded: { icon: AlertCircle, color: 'text-amber-400' },
-  Suspended: { icon: AlertCircle, color: 'text-neutral-400' },
-  Missing: { icon: AlertCircle, color: 'text-red-400' },
-  Unknown: { icon: Activity, color: 'text-neutral-500' },
+  Healthy: { icon: IconCircleCheck, color: 'text-emerald-400' },
+  Progressing: { icon: IconClock3, color: 'text-blue-400' },
+  Degraded: { icon: IconCircleWarning, color: 'text-amber-400' },
+  Suspended: { icon: IconCircleWarning, color: 'text-neutral-400' },
+  Missing: { icon: IconCircleWarning, color: 'text-red-400' },
+  Unknown: { icon: IconCircleInfo, color: 'text-neutral-500' },
 }
 
 export function ApplicationDetailPage() {
@@ -56,7 +65,7 @@ export function ApplicationDetailPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <RefreshCw className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
+          <IconCircleForward className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
           <p className="text-neutral-400">Loading application...</p>
         </div>
       </div>
@@ -68,7 +77,7 @@ export function ApplicationDetailPage() {
       <div className="flex items-center justify-center h-full">
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6 max-w-md">
           <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5" />
+            <IconCircleWarning className="h-5 w-5 text-red-400 mt-0.5" />
             <div>
               <h3 className="font-medium text-red-400 mb-1">Failed to load application</h3>
               <p className="text-sm text-red-400/80 mb-3">
@@ -91,7 +100,7 @@ export function ApplicationDetailPage() {
 
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
-  const HealthIcon = healthIcons[healthStatus]?.icon || Activity
+  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo
   const healthColor = healthIcons[healthStatus]?.color || 'text-neutral-500'
 
   return (
@@ -108,7 +117,7 @@ export function ApplicationDetailPage() {
                 onClick={() => navigate('/applications')}
                 className="gap-2"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <IconArrowLeft className="h-4 w-4" />
                 Back
               </Button>
               <div>
@@ -131,7 +140,7 @@ export function ApplicationDetailPage() {
                 onClick={handleRefresh}
                 disabled={refreshMutation.isPending}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+                <IconCircleForward className={`h-4 w-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
               <Button
@@ -140,7 +149,7 @@ export function ApplicationDetailPage() {
                 onClick={handleSync}
                 disabled={syncMutation.isPending}
               >
-                <Activity className="h-4 w-4 mr-2" />
+                <IconCircleInfo className="h-4 w-4 mr-2" />
                 {syncMutation.isPending ? 'Syncing...' : 'Sync'}
               </Button>
               <Button
@@ -150,7 +159,7 @@ export function ApplicationDetailPage() {
                 disabled={deleteMutation.isPending}
                 className="text-red-400 hover:text-red-300"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
+                <IconDelete className="h-4 w-4 mr-2" />
                 Delete
               </Button>
             </div>
@@ -160,19 +169,19 @@ export function ApplicationDetailPage() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Badge
-                variant={healthStatus === 'Healthy' ? 'success' : healthStatus === 'Degraded' ? 'warning' : 'info'}
+                variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
                 className="gap-1.5"
               >
                 <HealthIcon className={`h-3 w-3 ${healthColor}`} />
                 {healthStatus}
               </Badge>
-              <Badge variant={syncStatus === 'Synced' ? 'success' : 'warning'}>
+              <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
                 {syncStatus}
               </Badge>
             </div>
 
             <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <GitBranch className="h-4 w-4" />
+              <IconCodeBranch className="h-4 w-4" />
               <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
             </div>
 
@@ -186,30 +195,30 @@ export function ApplicationDetailPage() {
           {/* View switcher */}
           <div className="flex items-center gap-2 mt-6">
             <Button
-              variant={view === 'tree' ? 'primary' : 'outline'}
+              variant={view === 'tree' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('tree')}
               className="gap-2"
             >
-              <Network className="h-4 w-4" />
+              <IconCircle className="h-4 w-4" />
               Tree
             </Button>
             <Button
-              variant={view === 'list' ? 'primary' : 'outline'}
+              variant={view === 'list' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('list')}
               className="gap-2"
             >
-              <List className="h-4 w-4" />
+              <IconUnorderedList className="h-4 w-4" />
               List
             </Button>
             <Button
-              variant={view === 'pods' ? 'primary' : 'outline'}
+              variant={view === 'pods' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('pods')}
               className="gap-2"
             >
-              <Box className="h-4 w-4" />
+              <IconBox className="h-4 w-4" />
               Pods
             </Button>
           </div>
@@ -243,7 +252,7 @@ function TreeView({ app, onResourceClick }: { app: any; onResourceClick: (resour
   if (resources.length === 0) {
     return (
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
-        <Network className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
+        <IconCircle className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
         <h3 className="font-medium text-black dark:text-white mb-2">No Resources</h3>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">This application has no resources yet.</p>
       </div>
@@ -277,7 +286,7 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
       {resources.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <List className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
+          <IconUnorderedList className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
           <p className="text-neutral-600 dark:text-neutral-400">No resources found</p>
         </div>
       ) : (
@@ -313,14 +322,14 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                   <td className="px-4 py-3 text-sm text-black dark:text-white">{resource.name}</td>
                   <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</td>
                   <td className="px-4 py-3 text-sm">
-                    <Badge variant={resource.status === 'Synced' ? 'success' : 'warning'} className="text-xs">
+                    <Badge variant={resource.status === 'Synced' ? 'default' : 'destructive'} className="text-xs">
                       {resource.status || 'Unknown'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {resource.health?.status ? (
                       <Badge
-                        variant={resource.health.status === 'Healthy' ? 'success' : 'warning'}
+                        variant={resource.health.status === 'Healthy' ? 'default' : 'destructive'}
                         className="text-xs"
                       >
                         {resource.health.status}
@@ -352,7 +361,7 @@ function PodsView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
       {pods.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <Box className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
+          <IconBox className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
           <p className="text-neutral-600 dark:text-neutral-400">No pods found</p>
         </div>
       ) : (
@@ -367,7 +376,7 @@ function PodsView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                 <h3 className="font-medium text-black dark:text-white text-sm truncate flex-1">{pod.name}</h3>
                 {pod.health?.status && (
                   <Badge
-                    variant={pod.health.status === 'Healthy' ? 'success' : 'warning'}
+                    variant={pod.health.status === 'Healthy' ? 'default' : 'destructive'}
                     className="text-xs ml-2"
                   >
                     {pod.health.status}

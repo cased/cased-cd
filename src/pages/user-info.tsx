@@ -1,4 +1,4 @@
-import { User, Mail, Shield, Clock, Key } from 'lucide-react'
+import { IconUser, IconEmail, IconShield, IconClock3, IconKey } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 
 export function UserInfoPage() {
@@ -29,19 +29,19 @@ export function UserInfoPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-2xl font-semibold text-black dark:text-white">Admin User</h2>
-                  <Badge variant="success">Active</Badge>
+                  <Badge variant="default">Active</Badge>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-4">
-                  <Mail className="h-4 w-4" />
+                  <IconEmail className="h-4 w-4" />
                   <span className="text-sm">admin@cased.cd</span>
                 </div>
                 <div className="flex gap-2">
                   <Badge variant="outline" className="gap-1.5">
-                    <Shield className="h-3 w-3" />
+                    <IconShield className="h-3 w-3" />
                     Administrator
                   </Badge>
                   <Badge variant="outline" className="gap-1.5">
-                    <Clock className="h-3 w-3" />
+                    <IconClock3 className="h-3 w-3" />
                     Member since Jan 2024
                   </Badge>
                 </div>
@@ -54,7 +54,7 @@ export function UserInfoPage() {
             {/* Account Details */}
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
               <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-                <User className="h-4 w-4" />
+                <IconUser className="h-4 w-4" />
                 Account Details
               </h3>
               <dl className="space-y-3">
@@ -76,7 +76,7 @@ export function UserInfoPage() {
             {/* Groups & Permissions */}
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
               <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
+                <IconShield className="h-4 w-4" />
                 Groups & Permissions
               </h3>
               <dl className="space-y-3">
@@ -113,7 +113,7 @@ export function UserInfoPage() {
           {/* API Tokens */}
           <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
             <h3 className="font-medium text-black dark:text-white mb-4 flex items-center gap-2">
-              <Key className="h-4 w-4" />
+              <IconKey className="h-4 w-4" />
               API Tokens
             </h3>
             <div className="space-y-3">
@@ -122,14 +122,14 @@ export function UserInfoPage() {
                   <div className="font-medium text-sm text-black dark:text-white">Production Token</div>
                   <div className="text-xs text-neutral-500 font-mono mt-1">•••••••••••••••••••••••••••</div>
                 </div>
-                <Badge variant="success">Active</Badge>
+                <Badge variant="default">Active</Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="font-medium text-sm text-black dark:text-white">Staging Token</div>
                   <div className="text-xs text-neutral-500 font-mono mt-1">•••••••••••••••••••••••••••</div>
                 </div>
-                <Badge variant="success">Active</Badge>
+                <Badge variant="default">Active</Badge>
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { IconSpinnerBall, IconCircleWarning } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
@@ -106,7 +106,7 @@ export function LoginPage() {
               {error && (
                 <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
                   <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <IconCircleWarning className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm text-red-400">{error}</p>
                     </div>
@@ -116,11 +116,11 @@ export function LoginPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={isLoading}
                 className="w-full gap-2"
               >
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                {isLoading && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>

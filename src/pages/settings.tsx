@@ -1,53 +1,28 @@
-import { Database, Server, FolderGit2, Users, ShieldCheck, Key, ArrowRight } from 'lucide-react'
-import { useRepositories } from '@/services/repositories'
-import { useClusters } from '@/services/clusters'
+import { IconUsers, IconShieldCheck, IconKey, IconArrowRight } from 'obra-icons-react'
 import { useNavigate } from 'react-router-dom'
 
 export function SettingsPage() {
   const navigate = useNavigate()
-  const { data: reposData } = useRepositories()
-  const { data: clustersData } = useClusters()
 
   const settingsCards = [
     {
-      title: 'Repositories',
-      description: 'Connect and manage Git repositories',
-      icon: FolderGit2,
-      count: reposData?.items?.length || 0,
-      path: '/repositories',
-    },
-    {
-      title: 'Clusters',
-      description: 'Configure Kubernetes clusters',
-      icon: Server,
-      count: clustersData?.items?.length || 0,
-      path: '/clusters',
-    },
-    {
-      title: 'Projects',
-      description: 'Organize applications into projects',
-      icon: Database,
-      count: 8,
-      path: undefined,
-    },
-    {
       title: 'Accounts',
       description: 'Manage user accounts and permissions',
-      icon: Users,
+      icon: IconUsers,
       count: 24,
       path: undefined,
     },
     {
       title: 'Certificates',
       description: 'Manage TLS certificates',
-      icon: ShieldCheck,
+      icon: IconShieldCheck,
       count: 6,
       path: undefined,
     },
     {
       title: 'GPG Keys',
       description: 'Configure GPG keys for commit verification',
-      icon: Key,
+      icon: IconKey,
       count: 3,
       path: undefined,
     },
@@ -88,7 +63,7 @@ export function SettingsPage() {
                       <h3 className="font-medium text-black dark:text-white">
                         {card.title}
                       </h3>
-                      <ArrowRight className="h-4 w-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconArrowRight className="h-4 w-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">{card.description}</p>
                   </div>

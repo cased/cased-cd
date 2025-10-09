@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Loader2, FileCode, FormInput } from 'lucide-react'
+import { IconClose, IconSpinnerBall, IconDocumentCode, IconText } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCreateApplication } from '@/services/applications'
@@ -147,7 +147,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <FormInput className="h-3.5 w-3.5" />
+                <IconText className="h-3.5 w-3.5" />
                 Form
               </button>
               <button
@@ -159,12 +159,12 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <FileCode className="h-3.5 w-3.5" />
+                <IconDocumentCode className="h-3.5 w-3.5" />
                 YAML
               </button>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              <X className="h-4 w-4" />
+              <IconClose className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -270,11 +270,11 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
             <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={createMutation.isPending}
                 className="gap-2"
               >
-                {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {createMutation.isPending && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
                 {createMutation.isPending ? 'Creating...' : 'Create Application'}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
@@ -313,11 +313,11 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
             <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={createMutation.isPending}
                 className="gap-2"
               >
-                {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                {createMutation.isPending && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
                 {createMutation.isPending ? 'Creating...' : 'Create Application'}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
