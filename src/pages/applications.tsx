@@ -289,25 +289,17 @@ function ApplicationCard({
 
       {/* Status Badges */}
       <div className="flex items-center gap-1.5 mb-2">
-        <Badge
-          variant={
-            healthStatus === "Healthy"
-              ? "default"
-              : healthStatus === "Degraded"
-              ? "destructive"
-              : "secondary"
-          }
-          className="gap-1.5"
-        >
+        <Badge variant="outline" className="gap-1.5">
           <HealthIcon size={12} className={healthColor} />
           {healthStatus}
         </Badge>
-        <Badge variant={syncStatus === "Synced" ? "default" : "destructive"}>
+        <Badge variant="outline" className="gap-1.5">
+          <IconCircleCheck size={12} className={syncStatus === "Synced" ? "text-emerald-400" : "text-amber-400"} />
           {syncStatus}
         </Badge>
         {isSyncing && (
-          <Badge variant="secondary" className="gap-1.5 animate-pulse">
-            <IconCircleForward size={12} className="animate-spin" />
+          <Badge variant="outline" className="gap-1.5">
+            <IconCircleForward size={12} className="animate-spin text-blue-400" />
             Syncing
           </Badge>
         )}

@@ -107,11 +107,11 @@ export function ClustersPage() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm text-black dark:text-white truncate mb-0.5">{cluster.name}</h3>
                         {cluster.connectionState?.status && (
-                          <Badge variant={cluster.connectionState.status === 'Successful' ? 'default' : 'destructive'} className="mb-1">
+                          <Badge variant="outline" className="gap-1.5 mb-1">
                             {cluster.connectionState.status === 'Successful' ? (
-                              <IconCircleCheck size={12} />
+                              <IconCircleCheck size={12} className="text-emerald-400" />
                             ) : (
-                              <IconCircleClose size={12} />
+                              <IconCircleClose size={12} className="text-red-400" />
                             )}
                             {cluster.connectionState.status}
                           </Badge>

@@ -177,14 +177,12 @@ export function ApplicationDetailPage() {
           {/* Status badges and info */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Badge
-                variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
-                className="gap-1.5"
-              >
+              <Badge variant="outline" className="gap-1.5">
                 <HealthIcon size={12} className={healthColor} />
                 {healthStatus}
               </Badge>
-              <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
+              <Badge variant="outline" className="gap-1.5">
+                <IconCircleCheck size={12} className={syncStatus === 'Synced' ? 'text-emerald-400' : 'text-amber-400'} />
                 {syncStatus}
               </Badge>
             </div>
@@ -331,16 +329,19 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                   <TableCell className="text-sm text-black dark:text-white">{resource.name}</TableCell>
                   <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</TableCell>
                   <TableCell className="text-sm">
-                    <Badge variant={resource.status === 'Synced' ? 'default' : 'destructive'} className="text-xs">
+                    <Badge variant="outline" className="gap-1.5">
+                      <IconCircleCheck size={10} className={resource.status === 'Synced' ? 'text-emerald-400' : 'text-amber-400'} />
                       {resource.status || 'Unknown'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">
                     {resource.health?.status ? (
-                      <Badge
-                        variant={resource.health.status === 'Healthy' ? 'default' : 'destructive'}
-                        className="text-xs"
-                      >
+                      <Badge variant="outline" className="gap-1.5">
+                        {resource.health.status === 'Healthy' ? (
+                          <IconCircleCheck size={10} className="text-emerald-400" />
+                        ) : (
+                          <IconCircleWarning size={10} className="text-amber-400" />
+                        )}
                         {resource.health.status}
                       </Badge>
                     ) : (
@@ -385,10 +386,12 @@ function PodsView({ app, resourceTree, onResourceClick }: { app: any; resourceTr
               <div className="flex items-start justify-between mb-2">
                 <h3 className="text-sm font-medium text-black dark:text-white truncate flex-1">{pod.name}</h3>
                 {pod.health?.status && (
-                  <Badge
-                    variant={pod.health.status === 'Healthy' ? 'default' : 'destructive'}
-                    className="text-[10px] ml-2"
-                  >
+                  <Badge variant="outline" className="gap-1 ml-2">
+                    {pod.health.status === 'Healthy' ? (
+                      <IconCircleCheck size={10} className="text-emerald-400" />
+                    ) : (
+                      <IconCircleWarning size={10} className="text-amber-400" />
+                    )}
                     {pod.health.status}
                   </Badge>
                 )}
