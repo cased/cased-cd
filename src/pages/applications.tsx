@@ -1,8 +1,8 @@
-import { Search, Plus, GitBranch, Activity, AlertCircle, CheckCircle2, Clock, ArrowUpRight, RefreshCw, LayoutGrid } from 'lucide-react'
+import { Search, Plus, GitBranch, Activity, AlertCircle, CheckCircle2, Clock, ArrowUpRight, RefreshCw, LayoutGrid, GitCommit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { useApplications, useRefreshApplication } from '@/services/applications'
+import { useApplications, useRefreshApplication, useSyncApplication } from '@/services/applications'
 import { CreateApplicationPanel } from '@/components/create-application-panel'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -23,6 +23,7 @@ export function ApplicationsPage() {
   const [showCreatePanel, setShowCreatePanel] = useState(false)
   const { data, isLoading, error, refetch } = useApplications()
   const refreshMutation = useRefreshApplication()
+  const syncMutation = useSyncApplication()
 
   // Filter applications based on search
   const filteredApps = data?.items?.filter(app =>
@@ -32,6 +33,15 @@ export function ApplicationsPage() {
   const handleRefresh = async (name: string) => {
     await refreshMutation.mutateAsync(name)
     refetch()
+  }
+
+  const handleSync = async (name: string) => {
+    try {
+      await syncMutation.mutateAsync({ name, prune: true })
+      refetch()
+    } catch (error) {
+      console.error('Sync failed:', error)
+    }
   }
 
   return (
@@ -154,6 +164,7 @@ export function ApplicationsPage() {
                   key={app.metadata.name}
                   app={app}
                   onRefresh={handleRefresh}
+                  onSync={handleSync}
                   onClick={() => navigate(`/applications/${app.metadata.name}`)}
                 />
               ))}
@@ -188,7 +199,12 @@ export function ApplicationsPage() {
 }
 
 // Application Card Component
-function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefresh: (name: string) => void; onClick: () => void }) {
+function ApplicationCard({ app, onRefresh, onSync, onClick }: {
+  app: Application;
+  onRefresh: (name: string) => void;
+  onSync: (name: string) => void;
+  onClick: () => void;
+}) {
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
   const HealthIcon = healthIcons[healthStatus]?.icon || Activity
@@ -241,15 +257,28 @@ function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefr
         <span className="text-xs text-neutral-500 dark:text-neutral-600">
           {app.status?.reconciledAt ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}` : 'Never synced'}
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onRefresh(app.metadata.name)
-          }}
-          className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
-        >
-          <Activity className="h-3.5 w-3.5" />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onSync(app.metadata.name)
+            }}
+            className="text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400 transition-colors"
+            title="Sync application"
+          >
+            <GitCommit className="h-3.5 w-3.5" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              onRefresh(app.metadata.name)
+            }}
+            className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
+            title="Refresh application"
+          >
+            <Activity className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   )

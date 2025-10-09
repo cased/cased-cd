@@ -53,10 +53,12 @@ export const clustersApi = {
     return response.data
   },
 
-  // Delete cluster
+  // Delete cluster - Try using query param instead of path param
   deleteCluster: async (server: string): Promise<void> => {
-    const endpoint = ENDPOINTS.cluster(server)
-    console.log('DELETE endpoint:', endpoint)
+    // Try with query parameter instead
+    const endpoint = `/clusters?server=${encodeURIComponent(server)}`
+    console.log('DELETE endpoint (query param):', endpoint)
+    console.log('DELETE full URL:', `http://localhost:8090/api/v1${endpoint}`)
     await api.delete(endpoint)
   },
 

@@ -12,18 +12,22 @@ const API_TIMEOUT = 30000
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   timeout: API_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token and Content-Type
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('argocd_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // Always set Content-Type to application/json for all requests
+    config.headers['Content-Type'] = 'application/json'
+    config.headers['Accept'] = 'application/json'
+
+    console.log('Request:', config.method, config.url)
+    console.log('Headers after interceptor:', JSON.stringify(config.headers, null, 2))
     return config
   },
   (error) => {
@@ -63,17 +67,7 @@ export const api = {
   },
 
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    // Don't send Content-Type header for DELETE requests (ArgoCD doesn't like it)
-    return apiClient.delete<T>(url, {
-      ...config,
-      headers: {
-        ...config?.headers,
-      },
-      transformRequest: [(data, headers) => {
-        delete headers['Content-Type']
-        return data
-      }],
-    })
+    return apiClient.delete<T>(url, config)
   },
 }
 

@@ -16,10 +16,14 @@ export function ClustersPage() {
         console.log('Deleting cluster with server:', server)
         await deleteMutation.mutateAsync(server)
         refetch()
+        alert('Cluster deleted successfully!')
       } catch (error: any) {
         console.error('Delete failed:', error)
         console.error('Error response:', error.response)
-        alert(`Failed to delete cluster: ${error.response?.data?.message || error.message || 'Unknown error'}`)
+        console.error('Error response data:', error.response?.data)
+        console.error('Error status:', error.response?.status)
+        const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || JSON.stringify(error.response?.data) || 'Unknown error'
+        alert(`Failed to delete cluster: ${errorMsg}`)
       }
     }
   }
