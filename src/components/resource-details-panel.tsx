@@ -56,7 +56,7 @@ status:
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <IconDocumentCode className="h-5 w-5 text-muted-foreground" />
+              <IconDocumentCode size={20} className="text-muted-foreground" />
               <h2 className="text-lg font-semibold text-foreground truncate">{resource.name}</h2>
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -68,7 +68,7 @@ status:
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            <IconClose className="h-4 w-4" />
+            <IconClose size={16} />
           </Button>
         </div>
 
@@ -92,12 +92,12 @@ status:
 
       {/* Actions */}
       <div className="border-b border-border p-4 flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
-          <IconCopy className="h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" onClick={handleCopy} className="gap-1">
+          <IconCopy size={14} />
           Copy
         </Button>
-        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-          <IconDownload className="h-3.5 w-3.5" />
+        <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1">
+          <IconDownload size={14} />
           Download
         </Button>
       </div>

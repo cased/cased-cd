@@ -41,11 +41,11 @@ export function RepositoriesPage() {
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
-                <IconCircleForward className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
                 Refresh
               </Button>
-              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
-                <IconAdd className="h-4 w-4" />
+              <Button variant="default" className="gap-1" onClick={() => setShowCreatePanel(true)}>
+                <IconAdd size={16} />
                 Connect Repository
               </Button>
             </div>
@@ -60,7 +60,7 @@ export function RepositoriesPage() {
           {isLoading && (
             <div className="flex items-center justify-center min-h-[400px]">
               <div className="text-center">
-                <IconCircleForward className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
+                <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
                 <p className="text-neutral-600 dark:text-neutral-400">Loading repositories...</p>
               </div>
             </div>
@@ -70,7 +70,7 @@ export function RepositoriesPage() {
           {error && (
             <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
               <div className="flex items-start gap-3">
-                <IconCircleClose className="h-5 w-5 text-red-400 mt-0.5" />
+                <IconCircleClose size={20} className="text-red-400 mt-0.5" />
                 <div>
                   <h3 className="font-medium text-red-400 mb-1">Failed to load repositories</h3>
                   <p className="text-sm text-red-400/80 mb-3">
@@ -97,7 +97,7 @@ export function RepositoriesPage() {
                       {/* Header */}
                       <div className="flex items-center gap-3 mb-3">
                         <div className="h-10 w-10 rounded-md bg-white dark:bg-black flex items-center justify-center">
-                          <IconFolder className="h-5 w-5 text-black dark:text-white" />
+                          <IconFolder size={20} className="text-black dark:text-white" />
                         </div>
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
@@ -108,9 +108,9 @@ export function RepositoriesPage() {
                             {repo.connectionState?.status && (
                               <Badge variant={repo.connectionState.status === 'Successful' ? 'default' : 'destructive'}>
                                 {repo.connectionState.status === 'Successful' ? (
-                                  <IconCircleCheck className="h-3 w-3 mr-1" />
+                                  <IconCircleCheck size={12} />
                                 ) : (
-                                  <IconCircleClose className="h-3 w-3 mr-1" />
+                                  <IconCircleClose size={12} />
                                 )}
                                 {repo.connectionState.status}
                               </Badge>
@@ -138,7 +138,7 @@ export function RepositoriesPage() {
                       disabled={deleteMutation.isPending}
                       className="text-red-400 hover:text-red-300"
                     >
-                      <IconDelete className="h-4 w-4" />
+                      <IconDelete size={16} />
                     </Button>
                   </div>
                 </div>
@@ -151,14 +151,14 @@ export function RepositoriesPage() {
             <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
               <div className="max-w-md mx-auto">
                 <div className="h-16 w-16 rounded-full bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-4">
-                  <IconFolder className="h-8 w-8 text-neutral-400" />
+                  <IconFolder size={32} className="text-neutral-400" />
                 </div>
                 <h3 className="font-medium text-black dark:text-white mb-2">No repositories yet</h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   Connect your first Git, Helm, or OCI repository to get started
                 </p>
                 <Button variant="default" onClick={() => setShowCreatePanel(true)}>
-                  <IconAdd className="h-4 w-4 mr-2" />
+                  <IconAdd size={16} />
                   Connect Repository
                 </Button>
               </div>

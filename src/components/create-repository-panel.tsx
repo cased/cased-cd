@@ -87,7 +87,7 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
-              <IconFolder className="h-4 w-4 text-neutral-600 dark:text-neutral-400" />
+              <IconFolder size={16} className="text-neutral-600 dark:text-neutral-400" />
             </div>
             <h2 className="text-lg font-semibold text-black dark:text-white">Connect Repository</h2>
           </div>
@@ -95,7 +95,7 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
             onClick={onClose}
             className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
           >
-            <IconClose className="h-5 w-5" />
+            <IconClose size={20} />
           </button>
         </div>
 

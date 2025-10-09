@@ -63,7 +63,7 @@ export function SettingsPage() {
                 >
                   {/* Icon */}
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-white dark:bg-black mb-4">
-                    <Icon className="h-5 w-5 text-black dark:text-white" />
+                    <Icon size={20} className="text-black dark:text-white" />
                   </div>
 
                   {/* Content */}
@@ -72,7 +72,7 @@ export function SettingsPage() {
                       <h3 className="font-medium text-black dark:text-white">
                         {card.title}
                       </h3>
-                      <IconArrowRight className="h-4 w-4 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconArrowRight size={16} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">
                       {card.description}

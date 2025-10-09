@@ -15,6 +15,14 @@ import {
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication } from '@/services/applications'
 import { ResourceTree } from '@/components/resource-tree'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
@@ -65,7 +73,7 @@ export function ApplicationDetailPage() {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center">
-          <IconCircleForward className="h-8 w-8 animate-spin text-neutral-400 mx-auto mb-4" />
+          <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
           <p className="text-neutral-400">Loading application...</p>
         </div>
       </div>
@@ -77,7 +85,7 @@ export function ApplicationDetailPage() {
       <div className="flex items-center justify-center h-full">
         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6 max-w-md">
           <div className="flex items-start gap-3">
-            <IconCircleWarning className="h-5 w-5 text-red-400 mt-0.5" />
+            <IconCircleWarning size={20} className="text-red-400 mt-0.5" />
             <div>
               <h3 className="font-medium text-red-400 mb-1">Failed to load application</h3>
               <p className="text-sm text-red-400/80 mb-3">
@@ -108,29 +116,17 @@ export function ApplicationDetailPage() {
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
         <div className="px-8 py-6">
-          {/* Back button and title */}
+          {/* Controls row */}
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/applications')}
-                className="gap-2"
-              >
-                <IconArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
-              <div>
-                <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
-                  {app.metadata.name}
-                </h1>
-                <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 mt-1">
-                  <span>{app.spec.destination.namespace || 'default'}</span>
-                  <span>·</span>
-                  <span>{app.spec.destination.server || app.spec.destination.name || 'unknown'}</span>
-                </div>
-              </div>
-            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/applications')}
+              className="gap-1"
+            >
+              <IconArrowLeft size={16} />
+              Back
+            </Button>
 
             {/* Actions */}
             <div className="flex gap-2">
@@ -140,7 +136,7 @@ export function ApplicationDetailPage() {
                 onClick={handleRefresh}
                 disabled={refreshMutation.isPending}
               >
-                <IconCircleForward className={`h-4 w-4 mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+                <IconCircleForward size={16} className={refreshMutation.isPending ? 'animate-spin' : ''} />
                 Refresh
               </Button>
               <Button
@@ -149,7 +145,7 @@ export function ApplicationDetailPage() {
                 onClick={handleSync}
                 disabled={syncMutation.isPending}
               >
-                <IconCircleInfo className="h-4 w-4 mr-2" />
+                <IconCircleInfo size={16} />
                 {syncMutation.isPending ? 'Syncing...' : 'Sync'}
               </Button>
               <Button
@@ -159,9 +155,21 @@ export function ApplicationDetailPage() {
                 disabled={deleteMutation.isPending}
                 className="text-red-400 hover:text-red-300"
               >
-                <IconDelete className="h-4 w-4 mr-2" />
+                <IconDelete size={16} />
                 Delete
               </Button>
+            </div>
+          </div>
+
+          {/* Title and info */}
+          <div className="mb-6">
+            <h1 className="text-2xl font-semibold text-black dark:text-white tracking-tight">
+              {app.metadata.name}
+            </h1>
+            <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+              <span>{app.spec.destination.namespace || 'default'}</span>
+              <span>·</span>
+              <span>{app.spec.destination.server || app.spec.destination.name || 'unknown'}</span>
             </div>
           </div>
 
@@ -172,7 +180,7 @@ export function ApplicationDetailPage() {
                 variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
                 className="gap-1.5"
               >
-                <HealthIcon className={`h-3 w-3 ${healthColor}`} />
+                <HealthIcon size={12} className={healthColor} />
                 {healthStatus}
               </Badge>
               <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
@@ -181,7 +189,7 @@ export function ApplicationDetailPage() {
             </div>
 
             <div className="flex items-center gap-2 text-sm text-neutral-600 dark:text-neutral-400">
-              <IconCodeBranch className="h-4 w-4" />
+              <IconCodeBranch size={16} />
               <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
             </div>
 
@@ -198,27 +206,27 @@ export function ApplicationDetailPage() {
               variant={view === 'tree' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('tree')}
-              className="gap-2"
+              className="gap-1"
             >
-              <IconCircle className="h-4 w-4" />
+              <IconCircle size={16} />
               Tree
             </Button>
             <Button
               variant={view === 'list' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('list')}
-              className="gap-2"
+              className="gap-1"
             >
-              <IconUnorderedList className="h-4 w-4" />
+              <IconUnorderedList size={16} />
               List
             </Button>
             <Button
               variant={view === 'pods' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('pods')}
-              className="gap-2"
+              className="gap-1"
             >
-              <IconBox className="h-4 w-4" />
+              <IconBox size={16} />
               Pods
             </Button>
           </div>
@@ -252,7 +260,7 @@ function TreeView({ app, onResourceClick }: { app: any; onResourceClick: (resour
   if (resources.length === 0) {
     return (
       <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-12 text-center">
-        <IconCircle className="h-16 w-16 text-neutral-600 mx-auto mb-4" />
+        <IconCircle size={64} className="text-neutral-600 mx-auto mb-4" />
         <h3 className="font-medium text-black dark:text-white mb-2">No Resources</h3>
         <p className="text-sm text-neutral-600 dark:text-neutral-400">This application has no resources yet.</p>
       </div>
@@ -286,47 +294,47 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
       {resources.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <IconUnorderedList className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
+          <IconUnorderedList size={48} className="text-neutral-600 mx-auto mb-3" />
           <p className="text-neutral-600 dark:text-neutral-400">No resources found</p>
         </div>
       ) : (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900">
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-neutral-100 dark:bg-neutral-900">
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Kind
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Namespace
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Status
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Health
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-800 dark:divide-neutral-200">
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {resources.map((resource: any, i: number) => (
-                <tr
+                <TableRow
                   key={i}
-                  className="hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() => onResourceClick(resource)}
                 >
-                  <td className="px-4 py-3 text-sm text-black dark:text-white">{resource.kind}</td>
-                  <td className="px-4 py-3 text-sm text-black dark:text-white">{resource.name}</td>
-                  <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</td>
-                  <td className="px-4 py-3 text-sm">
+                  <TableCell className="text-sm text-black dark:text-white">{resource.kind}</TableCell>
+                  <TableCell className="text-sm text-black dark:text-white">{resource.name}</TableCell>
+                  <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</TableCell>
+                  <TableCell className="text-sm">
                     <Badge variant={resource.status === 'Synced' ? 'default' : 'destructive'} className="text-xs">
                       {resource.status || 'Unknown'}
                     </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-sm">
+                  </TableCell>
+                  <TableCell className="text-sm">
                     {resource.health?.status ? (
                       <Badge
                         variant={resource.health.status === 'Healthy' ? 'default' : 'destructive'}
@@ -337,11 +345,11 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                     ) : (
                       <span className="text-neutral-600 text-xs">-</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>
@@ -361,7 +369,7 @@ function PodsView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
       {pods.length === 0 ? (
         <div className="rounded-lg border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-8 text-center">
-          <IconBox className="h-12 w-12 text-neutral-600 mx-auto mb-3" />
+          <IconBox size={48} className="text-neutral-600 mx-auto mb-3" />
           <p className="text-neutral-600 dark:text-neutral-400">No pods found</p>
         </div>
       ) : (

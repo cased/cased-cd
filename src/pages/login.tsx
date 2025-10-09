@@ -106,7 +106,7 @@ export function LoginPage() {
               {error && (
                 <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
                   <div className="flex items-start gap-3">
-                    <IconCircleWarning className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <IconCircleWarning size={20} className="text-red-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
                       <p className="text-sm text-red-400">{error}</p>
                     </div>
@@ -120,7 +120,7 @@ export function LoginPage() {
                 disabled={isLoading}
                 className="w-full gap-2"
               >
-                {isLoading && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
+                {isLoading && <IconSpinnerBall size={16} className="animate-spin" />}
                 {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </form>

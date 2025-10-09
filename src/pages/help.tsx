@@ -70,7 +70,7 @@ export function HelpPage() {
                 >
                   {/* Icon */}
                   <div className="inline-flex h-10 w-10 items-center justify-center rounded-md bg-white dark:bg-black mb-4">
-                    <Icon className="h-5 w-5 text-black dark:text-white" />
+                    <Icon size={20} className="text-black dark:text-white" />
                   </div>
 
                   {/* Content */}
@@ -79,7 +79,7 @@ export function HelpPage() {
                       <h3 className="font-medium text-black dark:text-white">
                         {resource.title}
                       </h3>
-                      <IconExternalLink className="h-3.5 w-3.5 text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconExternalLink size={14} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <p className="text-sm text-neutral-600 dark:text-neutral-400">{resource.description}</p>
                   </div>
@@ -100,7 +100,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-blue-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">User Guide</span>
-                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink size={12} className="text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/operator-manual/"
@@ -110,7 +110,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-emerald-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">Operator Manual</span>
-                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink size={12} className="text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/developer-guide/"
@@ -120,7 +120,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-purple-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">Developer Guide</span>
-                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink size={12} className="text-neutral-600 ml-auto" />
               </a>
               <a
                 href="https://argo-cd.readthedocs.io/en/stable/faq/"
@@ -130,7 +130,7 @@ export function HelpPage() {
               >
                 <div className="h-2 w-2 rounded-full bg-amber-400" />
                 <span className="text-sm text-neutral-700 dark:text-neutral-300">FAQ</span>
-                <IconExternalLink className="h-3 w-3 text-neutral-600 ml-auto" />
+                <IconExternalLink size={12} className="text-neutral-600 ml-auto" />
               </a>
             </div>
           </div>

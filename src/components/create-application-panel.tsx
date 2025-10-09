@@ -147,7 +147,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <IconText className="h-3.5 w-3.5" />
+                <IconText size={14} />
                 Form
               </button>
               <button
@@ -159,12 +159,12 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                     : 'text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white'
                 }`}
               >
-                <IconDocumentCode className="h-3.5 w-3.5" />
+                <IconDocumentCode size={14} />
                 YAML
               </button>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose}>
-              <IconClose className="h-4 w-4" />
+              <IconClose size={16} />
             </Button>
           </div>
         </div>
@@ -272,9 +272,9 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                 type="submit"
                 variant="default"
                 disabled={createMutation.isPending}
-                className="gap-2"
+                className="gap-1"
               >
-                {createMutation.isPending && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
+                {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
                 {createMutation.isPending ? 'Creating...' : 'Create Application'}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>
@@ -315,9 +315,9 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                 type="submit"
                 variant="default"
                 disabled={createMutation.isPending}
-                className="gap-2"
+                className="gap-1"
               >
-                {createMutation.isPending && <IconSpinnerBall className="h-4 w-4 animate-spin" />}
+                {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
                 {createMutation.isPending ? 'Creating...' : 'Create Application'}
               </Button>
               <Button type="button" variant="outline" onClick={onClose}>

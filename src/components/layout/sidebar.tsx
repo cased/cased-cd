@@ -1,12 +1,9 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useAppearance } from "@/lib/theme";
 import { useAuth } from "@/lib/auth";
 import {
   IconGrid,
   IconSettings,
   IconBookOpen,
-  IconSun,
-  IconMoon,
   IconLogOut,
   IconFolder,
   IconServer,
@@ -43,23 +40,12 @@ const navItems = [
     href: "/clusters",
     icon: IconServer,
   },
-  {
-    title: "Settings",
-    href: "/settings",
-    icon: IconSettings,
-  },
 ];
 
 export function AppSidebar({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { appearance, setAppearance } = useAppearance();
   const { logout } = useAuth();
-
-  const toggleTheme = () => {
-    const newAppearance = appearance === "dark" ? "light" : "dark";
-    setAppearance(newAppearance);
-  };
 
   const handleLogout = () => {
     logout();
@@ -130,21 +116,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
-                onClick={toggleTheme}
-                tooltip={
-                  appearance === "dark"
-                    ? "Switch to Light Mode"
-                    : "Switch to Dark Mode"
-                }
+                asChild
+                isActive={location.pathname.startsWith("/settings")}
+                tooltip="Settings"
               >
-                {appearance === "dark" || appearance === "system" ? (
-                  <IconSun />
-                ) : (
-                  <IconMoon />
-                )}
-                <span>
-                  {appearance === "dark" ? "Light Mode" : "Dark Mode"}
-                </span>
+                <Link to="/settings">
+                  <IconSettings />
+                  <span>Settings</span>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
