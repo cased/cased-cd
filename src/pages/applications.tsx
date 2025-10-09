@@ -9,7 +9,6 @@ import {
   IconArrowRightUp,
   IconCircleForward,
   IconGrid,
-  IconCodeCommit,
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -326,7 +325,7 @@ function ApplicationCard({
             className="text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400 transition-colors"
             title="Sync application"
           >
-            <IconCodeCommit className="h-3.5 w-3.5" />
+            <IconCircleForward className="h-3.5 w-3.5" />
           </button>
           <button
             onClick={(e) => {
