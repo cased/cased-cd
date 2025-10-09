@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   useApplications,
   useRefreshApplication,
+  useSyncApplication,
 } from "@/services/applications";
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { useState } from "react";
@@ -37,6 +38,7 @@ export function ApplicationsPage() {
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const { data, isLoading, error, refetch } = useApplications();
   const refreshMutation = useRefreshApplication();
+  const syncMutation = useSyncApplication();
 
   // Filter applications based on search
   const filteredApps =
@@ -47,6 +49,15 @@ export function ApplicationsPage() {
   const handleRefresh = async (name: string) => {
     await refreshMutation.mutateAsync(name);
     refetch();
+  };
+
+  const handleSync = async (name: string) => {
+    try {
+      await syncMutation.mutateAsync({ name, prune: true });
+      refetch();
+    } catch (error) {
+      console.error("Sync failed:", error);
+    }
   };
 
   return (
@@ -193,6 +204,7 @@ export function ApplicationsPage() {
                   key={app.metadata.name}
                   app={app}
                   onRefresh={handleRefresh}
+                  onSync={handleSync}
                   onClick={() => navigate(`/applications/${app.metadata.name}`)}
                 />
               ))}
@@ -232,10 +244,12 @@ export function ApplicationsPage() {
 function ApplicationCard({
   app,
   onRefresh,
+  onSync,
   onClick,
 }: {
   app: Application;
   onRefresh: (name: string) => void;
+  onSync: (name: string) => void;
   onClick: () => void;
 }) {
   const healthStatus = app.status?.health?.status || "Unknown";
@@ -304,15 +318,28 @@ function ApplicationCard({
             ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
             : "Never synced"}
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onRefresh(app.metadata.name);
-          }}
-          className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
-        >
-          <IconCircleInfo size={14} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onSync(app.metadata.name);
+            }}
+            className="text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400 transition-colors"
+            title="Sync application"
+          >
+            <IconCircleForward size={14} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRefresh(app.metadata.name);
+            }}
+            className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
+            title="Refresh application"
+          >
+            <IconCircleInfo size={14} />
+          </button>
+        </div>
       </div>
     </div>
   );

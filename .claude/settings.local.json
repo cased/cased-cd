@@ -17,6 +17,9 @@
       "Bash(node:*)",
       "Bash(npm info:*)",
       "Bash(npm run dev:mock:*)",
+      "Bash(npm install:*)",
+      "Bash(git stash:*)",
+      "Bash(npm run test:run:*)",
       "WebFetch(domain:ui.shadcn.com)"
     ],
     "deny": [],
