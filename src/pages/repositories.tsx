@@ -44,7 +44,7 @@ export function RepositoriesPage() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="primary" className="gap-2" onClick={() => setShowCreatePanel(true)}>
+              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
                 <Plus className="h-4 w-4" />
                 Connect Repository
               </Button>
@@ -102,11 +102,11 @@ export function RepositoriesPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <h3 className="font-medium text-black dark:text-white">{repo.name || repo.repo}</h3>
-                            <Badge variant={repo.type === 'git' ? 'info' : repo.type === 'helm' ? 'success' : 'warning'}>
+                            <Badge variant={repo.type === 'git' ? 'secondary' : repo.type === 'helm' ? 'default' : 'destructive'}>
                               {repo.type || 'git'}
                             </Badge>
                             {repo.connectionState?.status && (
-                              <Badge variant={repo.connectionState.status === 'Successful' ? 'success' : 'warning'}>
+                              <Badge variant={repo.connectionState.status === 'Successful' ? 'default' : 'destructive'}>
                                 {repo.connectionState.status === 'Successful' ? (
                                   <CheckCircle2 className="h-3 w-3 mr-1" />
                                 ) : (
@@ -157,7 +157,7 @@ export function RepositoriesPage() {
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   Connect your first Git, Helm, or OCI repository to get started
                 </p>
-                <Button variant="primary" onClick={() => setShowCreatePanel(true)}>
+                <Button variant="default" onClick={() => setShowCreatePanel(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Connect Repository
                 </Button>

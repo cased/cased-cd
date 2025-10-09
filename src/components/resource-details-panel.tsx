@@ -73,14 +73,14 @@ status:
         <div className="flex items-center gap-2">
           {resource.health?.status && (
             <Badge
-              variant={resource.health.status === 'Healthy' ? 'success' : 'warning'}
+              variant={resource.health.status === 'Healthy' ? 'default' : 'destructive'}
               className="text-xs"
             >
               {resource.health.status}
             </Badge>
           )}
           {resource.status && (
-            <Badge variant={resource.status === 'Synced' ? 'success' : 'warning'} className="text-xs">
+            <Badge variant={resource.status === 'Synced' ? 'default' : 'destructive'} className="text-xs">
               {resource.status}
             </Badge>
           )}

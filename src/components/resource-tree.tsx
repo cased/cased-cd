@@ -60,7 +60,7 @@ function ResourceNode({ data }: { data: any }) {
       )}
       <div className="mt-2">
         <Badge
-          variant={healthStatus === 'Healthy' ? 'success' : healthStatus === 'Degraded' ? 'warning' : 'info'}
+          variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
           className="text-xs"
         >
           {healthStatus}

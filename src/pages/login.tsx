@@ -116,7 +116,7 @@ export function LoginPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={isLoading}
                 className="w-full gap-2"
               >

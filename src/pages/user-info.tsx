@@ -29,7 +29,7 @@ export function UserInfoPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="text-2xl font-semibold text-black dark:text-white">Admin User</h2>
-                  <Badge variant="success">Active</Badge>
+                  <Badge variant="default">Active</Badge>
                 </div>
                 <div className="flex items-center gap-2 text-neutral-600 dark:text-neutral-400 mb-4">
                   <Mail className="h-4 w-4" />
@@ -122,14 +122,14 @@ export function UserInfoPage() {
                   <div className="font-medium text-sm text-black dark:text-white">Production Token</div>
                   <div className="text-xs text-neutral-500 font-mono mt-1">•••••••••••••••••••••••••••</div>
                 </div>
-                <Badge variant="success">Active</Badge>
+                <Badge variant="default">Active</Badge>
               </div>
               <div className="flex items-center justify-between p-3 rounded-md bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="font-medium text-sm text-black dark:text-white">Staging Token</div>
                   <div className="text-xs text-neutral-500 font-mono mt-1">•••••••••••••••••••••••••••</div>
                 </div>
-                <Badge variant="success">Active</Badge>
+                <Badge variant="default">Active</Badge>
               </div>
             </div>
           </div>

@@ -169,13 +169,13 @@ export function ApplicationDetailPage() {
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
               <Badge
-                variant={healthStatus === 'Healthy' ? 'success' : healthStatus === 'Degraded' ? 'warning' : 'info'}
+                variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
                 className="gap-1.5"
               >
                 <HealthIcon className={`h-3 w-3 ${healthColor}`} />
                 {healthStatus}
               </Badge>
-              <Badge variant={syncStatus === 'Synced' ? 'success' : 'warning'}>
+              <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
                 {syncStatus}
               </Badge>
             </div>
@@ -195,7 +195,7 @@ export function ApplicationDetailPage() {
           {/* View switcher */}
           <div className="flex items-center gap-2 mt-6">
             <Button
-              variant={view === 'tree' ? 'primary' : 'outline'}
+              variant={view === 'tree' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('tree')}
               className="gap-2"
@@ -204,7 +204,7 @@ export function ApplicationDetailPage() {
               Tree
             </Button>
             <Button
-              variant={view === 'list' ? 'primary' : 'outline'}
+              variant={view === 'list' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('list')}
               className="gap-2"
@@ -213,7 +213,7 @@ export function ApplicationDetailPage() {
               List
             </Button>
             <Button
-              variant={view === 'pods' ? 'primary' : 'outline'}
+              variant={view === 'pods' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setView('pods')}
               className="gap-2"
@@ -322,14 +322,14 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                   <td className="px-4 py-3 text-sm text-black dark:text-white">{resource.name}</td>
                   <td className="px-4 py-3 text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</td>
                   <td className="px-4 py-3 text-sm">
-                    <Badge variant={resource.status === 'Synced' ? 'success' : 'warning'} className="text-xs">
+                    <Badge variant={resource.status === 'Synced' ? 'default' : 'destructive'} className="text-xs">
                       {resource.status || 'Unknown'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {resource.health?.status ? (
                       <Badge
-                        variant={resource.health.status === 'Healthy' ? 'success' : 'warning'}
+                        variant={resource.health.status === 'Healthy' ? 'default' : 'destructive'}
                         className="text-xs"
                       >
                         {resource.health.status}
@@ -376,7 +376,7 @@ function PodsView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                 <h3 className="font-medium text-black dark:text-white text-sm truncate flex-1">{pod.name}</h3>
                 {pod.health?.status && (
                   <Badge
-                    variant={pod.health.status === 'Healthy' ? 'success' : 'warning'}
+                    variant={pod.health.status === 'Healthy' ? 'default' : 'destructive'}
                     className="text-xs ml-2"
                   >
                     {pod.health.status}

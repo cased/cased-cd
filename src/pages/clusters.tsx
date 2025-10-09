@@ -46,7 +46,7 @@ export function ClustersPage() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="primary" className="gap-2" onClick={() => setShowCreatePanel(true)}>
+              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
                 <Plus className="h-4 w-4" />
                 Add Cluster
               </Button>
@@ -103,7 +103,7 @@ export function ClustersPage() {
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-black dark:text-white truncate mb-1">{cluster.name}</h3>
                         {cluster.connectionState?.status && (
-                          <Badge variant={cluster.connectionState.status === 'Successful' ? 'success' : 'warning'} className="mb-2">
+                          <Badge variant={cluster.connectionState.status === 'Successful' ? 'default' : 'destructive'} className="mb-2">
                             {cluster.connectionState.status === 'Successful' ? (
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                             ) : (
@@ -177,7 +177,7 @@ export function ClustersPage() {
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6">
                   Add your first Kubernetes cluster to start deploying applications
                 </p>
-                <Button variant="primary" onClick={() => setShowCreatePanel(true)}>
+                <Button variant="default" onClick={() => setShowCreatePanel(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Cluster
                 </Button>

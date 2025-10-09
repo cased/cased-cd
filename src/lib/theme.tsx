@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, createContext, useContext, useState } from 'react'
+import { type ReactNode, useEffect, createContext, useContext, useState } from 'react'
 
 export type Appearance = 'dark' | 'light' | 'system'
 

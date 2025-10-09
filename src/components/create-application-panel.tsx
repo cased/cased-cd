@@ -270,7 +270,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
             <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={createMutation.isPending}
                 className="gap-2"
               >
@@ -313,7 +313,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
             <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
               <Button
                 type="submit"
-                variant="primary"
+                variant="default"
                 disabled={createMutation.isPending}
                 className="gap-2"
               >

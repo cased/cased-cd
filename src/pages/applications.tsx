@@ -67,7 +67,7 @@ export function ApplicationsPage() {
                 <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
-              <Button variant="primary" className="gap-2" onClick={() => setShowCreatePanel(true)}>
+              <Button variant="default" className="gap-2" onClick={() => setShowCreatePanel(true)}>
                 <Plus className="h-4 w-4" />
                 New Application
               </Button>
@@ -148,7 +148,7 @@ export function ApplicationsPage() {
                   }
                 </p>
                 {!searchQuery && (
-                  <Button variant="primary" onClick={() => setShowCreatePanel(true)}>
+                  <Button variant="default" onClick={() => setShowCreatePanel(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Application
                   </Button>
@@ -230,13 +230,13 @@ function ApplicationCard({ app, onRefresh, onClick }: { app: Application; onRefr
       {/* Status Badges */}
       <div className="flex items-center gap-2 mb-4">
         <Badge
-          variant={healthStatus === 'Healthy' ? 'success' : healthStatus === 'Degraded' ? 'warning' : 'info'}
+          variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
           className="gap-1.5"
         >
           <HealthIcon className={`h-3 w-3 ${healthColor}`} />
           {healthStatus}
         </Badge>
-        <Badge variant={syncStatus === 'Synced' ? 'success' : 'warning'}>
+        <Badge variant={syncStatus === 'Synced' ? 'default' : 'destructive'}>
           {syncStatus}
         </Badge>
       </div>
