@@ -59,15 +59,15 @@ export function UserInfoPage() {
               </h3>
               <dl className="space-y-2">
                 <div>
-                  <dt className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">Username</dt>
+                  <dt className="text-[12px] font-medium text-neutral-500 uppercase tracking-wider">Username</dt>
                   <dd className="mt-0.5 text-xs text-neutral-800 dark:text-neutral-200 font-mono">admin</dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">User ID</dt>
+                  <dt className="text-[12px] font-medium text-neutral-500 uppercase tracking-wider">User ID</dt>
                   <dd className="mt-0.5 text-xs text-neutral-800 dark:text-neutral-200 font-mono">usr_2kj4h3k2j4h3</dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">Issuer</dt>
+                  <dt className="text-[12px] font-medium text-neutral-500 uppercase tracking-wider">Issuer</dt>
                   <dd className="mt-0.5 text-xs text-neutral-800 dark:text-neutral-200 font-mono">cased-cd</dd>
                 </div>
               </dl>
@@ -81,14 +81,14 @@ export function UserInfoPage() {
               </h3>
               <dl className="space-y-2">
                 <div>
-                  <dt className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">Groups</dt>
+                  <dt className="text-[12px] font-medium text-neutral-500 uppercase tracking-wider">Groups</dt>
                   <dd className="mt-1 flex flex-wrap gap-1.5">
                     <Badge>admins</Badge>
                     <Badge variant="outline">developers</Badge>
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider">Permissions</dt>
+                  <dt className="text-[12px] font-medium text-neutral-500 uppercase tracking-wider">Permissions</dt>
                   <dd className="mt-1 text-xs text-neutral-800 dark:text-neutral-200">
                     <ul className="space-y-1">
                       <li className="flex items-center gap-1.5">
@@ -120,14 +120,14 @@ export function UserInfoPage() {
               <div className="flex items-center justify-between p-2 rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="font-medium text-xs text-black dark:text-white">Production Token</div>
-                  <div className="text-[10px] text-neutral-500 font-mono mt-0.5">•••••••••••••••••••••••••••</div>
+                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">•••••••••••••••••••••••••••</div>
                 </div>
                 <Badge variant="default">Active</Badge>
               </div>
               <div className="flex items-center justify-between p-2 rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
                 <div>
                   <div className="font-medium text-xs text-black dark:text-white">Staging Token</div>
-                  <div className="text-[10px] text-neutral-500 font-mono mt-0.5">•••••••••••••••••••••••••••</div>
+                  <div className="text-[11px] text-neutral-500 font-mono mt-0.5">•••••••••••••••••••••••••••</div>
                 </div>
                 <Badge variant="default">Active</Badge>
               </div>
