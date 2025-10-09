@@ -11,7 +11,8 @@
       "Bash(bun install:*)",
       "Bash(bun run:*)",
       "Bash(find:*)",
-      "Bash(yes n)"
+      "Bash(yes n)",
+      "Bash(git pull:*)"
     ],
     "deny": [],
     "ask": []
