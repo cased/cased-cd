@@ -142,7 +142,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 <a href="/user-info">
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="text-xs font-medium">Admin User</span>
-                    <span className="text-[10px] text-sidebar-foreground/70">
+                    <span className="text-[11px] text-sidebar-foreground/70">
                       admin@cased.cd
                     </span>
                   </div>

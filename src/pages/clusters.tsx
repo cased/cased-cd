@@ -122,7 +122,7 @@ export function ClustersPage() {
 
                   {/* Server URL */}
                   <div className="mb-2">
-                    <p className="text-[10px] text-neutral-500 dark:text-neutral-600 mb-0.5">Server</p>
+                    <p className="text-[11px] text-neutral-500 dark:text-neutral-600 mb-0.5">Server</p>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400 font-mono truncate">
                       {cluster.server}
                     </p>
@@ -132,19 +132,19 @@ export function ClustersPage() {
                   {cluster.info && (
                     <div className="space-y-1 mb-2">
                       {cluster.info.serverVersion && (
-                        <div className="flex justify-between text-[10px]">
+                        <div className="flex justify-between text-[11px]">
                           <span className="text-neutral-500 dark:text-neutral-600">Version</span>
                           <span className="text-neutral-600 dark:text-neutral-400 font-mono">{cluster.info.serverVersion}</span>
                         </div>
                       )}
                       {cluster.info.applicationsCount !== undefined && (
-                        <div className="flex justify-between text-[10px]">
+                        <div className="flex justify-between text-[11px]">
                           <span className="text-neutral-500 dark:text-neutral-600">Applications</span>
                           <span className="text-neutral-600 dark:text-neutral-400">{cluster.info.applicationsCount}</span>
                         </div>
                       )}
                       {cluster.info.cacheInfo?.resourcesCount !== undefined && (
-                        <div className="flex justify-between text-[10px]">
+                        <div className="flex justify-between text-[11px]">
                           <span className="text-neutral-500 dark:text-neutral-600">Resources</span>
                           <span className="text-neutral-600 dark:text-neutral-400">{cluster.info.cacheInfo.resourcesCount}</span>
                         </div>

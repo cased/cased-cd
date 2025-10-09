@@ -144,7 +144,7 @@ export function HelpPage() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-semibold text-black dark:text-white font-mono">v2.12.0</div>
-                <div className="text-[10px] text-neutral-500 mt-0.5">Released Oct 2024</div>
+                <div className="text-[11px] text-neutral-500 mt-0.5">Released Oct 2024</div>
               </div>
             </div>
           </div>

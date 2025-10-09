@@ -313,7 +313,7 @@ function ApplicationCard({
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
-        <span className="text-[10px] text-neutral-500 dark:text-neutral-600">
+        <span className="text-[11px] text-neutral-500 dark:text-neutral-600">
           {app.status?.reconciledAt
             ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
             : "Never synced"}
