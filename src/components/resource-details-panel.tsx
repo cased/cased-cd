@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
 import yaml from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml'
-import { atomOneDark } from 'react-syntax-highlighter/dist/esm/styles/hljs'
+import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import * as YAML from 'js-yaml'
 
 SyntaxHighlighter.registerLanguage('yaml', yaml)
@@ -30,6 +30,9 @@ status:
   sync: ${resource.status || 'Unknown'}
 `
 
+  // Detect if we're in dark mode by checking if body has dark class
+  const isDark = document.body.classList.contains('dark')
+
   const handleCopy = () => {
     navigator.clipboard.writeText(yamlString)
   }
@@ -47,16 +50,16 @@ status:
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-[600px] bg-neutral-950 border-l border-neutral-800 flex flex-col z-50 shadow-2xl">
+    <div className="fixed inset-y-0 right-0 w-[600px] bg-card border-l border-border flex flex-col z-50 shadow-2xl">
       {/* Header */}
-      <div className="border-b border-neutral-800 p-6">
+      <div className="border-b border-border p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <IconDocumentCode className="h-5 w-5 text-neutral-400" />
-              <h2 className="text-lg font-semibold text-white truncate">{resource.name}</h2>
+              <IconDocumentCode className="h-5 w-5 text-muted-foreground" />
+              <h2 className="text-lg font-semibold text-foreground truncate">{resource.name}</h2>
             </div>
-            <div className="flex items-center gap-2 text-sm text-neutral-400">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Badge variant="outline" className="text-xs">
                 {resource.kind}
               </Badge>
@@ -88,7 +91,7 @@ status:
       </div>
 
       {/* Actions */}
-      <div className="border-b border-neutral-800 p-4 flex items-center gap-2">
+      <div className="border-b border-border p-4 flex items-center gap-2">
         <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
           <IconCopy className="h-3.5 w-3.5" />
           Copy
@@ -101,14 +104,14 @@ status:
 
       {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        <div className="rounded-lg border border-neutral-800 overflow-hidden">
+        <div className="rounded-lg border border-border overflow-hidden">
           <SyntaxHighlighter
             language="yaml"
-            style={atomOneDark}
+            style={isDark ? atomOneDark : atomOneLight}
             customStyle={{
               margin: 0,
               padding: '1rem',
-              background: '#0a0a0a',
+              background: isDark ? '#0a0a0a' : '#fafafa',
               fontSize: '13px',
               lineHeight: '1.5',
             }}
