@@ -6,6 +6,15 @@ import {
 } from "obra-icons-react";
 import { useNavigate } from "react-router-dom";
 import { useAppearance } from "@/lib/theme";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { PageHeader } from "@/components/page-header";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -36,17 +45,10 @@ export function SettingsPage() {
   ];
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">
-            Settings
-          </h1>
-          <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-            Configure repositories, clusters, projects, and access control
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        title="Settings"
+        description="Configure repositories, clusters, projects, and access control"
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
@@ -72,7 +74,10 @@ export function SettingsPage() {
                       <h3 className="font-medium text-sm text-black dark:text-white">
                         {card.title}
                       </h3>
-                      <IconArrowRight size={14} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <IconArrowRight
+                        size={14}
+                        className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                      />
                     </div>
                     <p className="text-xs text-neutral-600 dark:text-neutral-400">
                       {card.description}
@@ -80,7 +85,7 @@ export function SettingsPage() {
                   </div>
 
                   {/* Count Badge */}
-                  <div className="inline-flex items-center rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2 py-0.5 text-[10px] font-medium text-neutral-600 dark:text-neutral-400">
+                  <div className="inline-flex items-center rounded bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 px-2 py-0.5 text-[11px] font-medium text-neutral-600 dark:text-neutral-400">
                     {card.count} {card.count === 1 ? "item" : "items"}
                   </div>
                 </div>
@@ -88,19 +93,19 @@ export function SettingsPage() {
             })}
           </div>
 
-          {/* Additional Settings Section */}
-          <div className="mt-4">
-            <h2 className="text-sm font-semibold text-black dark:text-white mb-2">
+          {/* Full-bleed Divider */}
+          <Separator className="my-6 -mx-4 w-[calc(100%+2rem)]" />
+
+          {/* General Settings Section */}
+          <div>
+            <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
               General
             </h2>
-            <div className="flex flex-col gap-2">
-              <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3">
-                <h3 className="font-medium text-sm text-black dark:text-white mb-1">
-                  Appearance
-                </h3>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
-                  Customize the look and feel of your dashboard
-                </p>
+            <Card className="border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none">
+              <CardHeader className="p-4">
+                <CardTitle className="text-sm">Appearance</CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
                 <div className="flex gap-2">
                   <button
                     onClick={() => setAppearance("light")}
@@ -133,39 +138,41 @@ export function SettingsPage() {
                     System
                   </button>
                 </div>
-              </div>
+              </CardContent>
 
-              <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3">
-                <h3 className="font-medium text-sm text-black dark:text-white mb-1">
-                  Notifications
-                </h3>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
+              <Separator className="my-0" />
+
+              <CardHeader className="p-4">
+                <CardTitle className="text-sm">Notifications</CardTitle>
+                <CardDescription className="text-sm">
                   Configure how you receive alerts and updates
-                </p>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
                 <div className="flex flex-col gap-1.5">
-                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
                       defaultChecked
                     />
-                    <span className="text-neutral-600 dark:text-neutral-400">
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
                       Email notifications
                     </span>
                   </label>
-                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <label className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
                       className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
                       defaultChecked
                     />
-                    <span className="text-neutral-600 dark:text-neutral-400">
+                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
                       Slack notifications
                     </span>
                   </label>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
