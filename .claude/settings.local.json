@@ -15,7 +15,10 @@
       "Bash(git pull:*)",
       "Bash(git push:*)",
       "Bash(node:*)",
-      "Bash(npm info:*)"
+      "Bash(npm info:*)",
+      "Bash(npm install:*)",
+      "Bash(git stash:*)",
+      "Bash(npm run test:run:*)"
     ],
     "deny": [],
     "ask": []
