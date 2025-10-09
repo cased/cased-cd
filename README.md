@@ -59,6 +59,19 @@ Visit `http://localhost:5173` and login with any credentials.
 # - Start kubectl port-forward to ArgoCD on port 9001
 # - Display admin credentials
 # - Save credentials to .argocd-credentials file
+
+# (Optional) Seed with test data
+./scripts/seed-argocd.sh
+
+# This will add:
+# - 3 test repositories (argocd-examples, kubernetes-examples, bitnami)
+# - 2 test clusters (staging-cluster, production-cluster)
+# - 3 test applications (guestbook, helm-guestbook, kustomize-guestbook)
+
+# (Optional) Clean test data
+./scripts/clean-argocd.sh
+
+# This will remove all seeded test data (apps, clusters, repos)
 ```
 
 #### Run Frontend Against Real ArgoCD
@@ -105,7 +118,9 @@ src/
 └── types/            # TypeScript type definitions
 
 scripts/
-├── setup-argocd.sh   # Setup local ArgoCD
+├── setup-argocd.sh    # Setup local ArgoCD
+├── seed-argocd.sh     # Seed with test data
+├── clean-argocd.sh    # Remove test data
 └── teardown-argocd.sh # Teardown cluster
 
 mock-server.js        # Express mock API server
@@ -117,6 +132,8 @@ mock-server.js        # Express mock API server
 - `npm run dev:mock` - Start mock Express API server
 - `npm run dev:real` - Start Vite dev server with real ArgoCD API
 - `./scripts/setup-argocd.sh` - Setup local ArgoCD cluster with CORS proxy
+- `./scripts/seed-argocd.sh` - Populate ArgoCD with test data (repositories, clusters, apps)
+- `./scripts/clean-argocd.sh` - Remove all seeded test data
 - `./scripts/teardown-argocd.sh` - Remove ArgoCD cluster and cleanup
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build

@@ -10,10 +10,15 @@ export function RepositoriesPage() {
   const deleteMutation = useDeleteRepository()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
 
-  const handleDelete = async (url: string) => {
-    if (confirm(`Are you sure you want to delete this repository?`)) {
-      await deleteMutation.mutateAsync(url)
-      refetch()
+  const handleDelete = async (url: string, name: string, project?: string) => {
+    if (confirm(`Are you sure you want to delete repository "${name || url}"?`)) {
+      try {
+        await deleteMutation.mutateAsync({ url, project })
+        refetch()
+      } catch (error) {
+        console.error('Delete failed:', error)
+        alert(`Failed to delete repository: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
     }
   }
 
@@ -129,7 +134,7 @@ export function RepositoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(repo.repo)}
+                      onClick={() => handleDelete(repo.repo, repo.name || '', repo.project)}
                       disabled={deleteMutation.isPending}
                       className="text-red-400 hover:text-red-300"
                     >

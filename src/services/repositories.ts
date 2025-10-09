@@ -6,6 +6,7 @@ import type { Repository, RepositoryList } from '@/types/api'
 const ENDPOINTS = {
   repositories: '/repositories',
   repository: (url: string) => `/repositories/${encodeURIComponent(url)}`,
+  deleteRepository: (url: string, project?: string) => `/repositories/${encodeURIComponent(url)}?appProject=${project || ''}`,
 }
 
 // Query Keys
@@ -56,8 +57,8 @@ export const repositoriesApi = {
   },
 
   // Delete repository
-  deleteRepository: async (url: string): Promise<void> => {
-    await api.delete(ENDPOINTS.repository(url))
+  deleteRepository: async (url: string, project?: string): Promise<void> => {
+    await api.delete(ENDPOINTS.deleteRepository(url, project))
   },
 
   // Test repository connection
@@ -119,7 +120,7 @@ export function useDeleteRepository() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (url: string) => repositoriesApi.deleteRepository(url),
+    mutationFn: ({ url, project }: { url: string; project?: string }) => repositoriesApi.deleteRepository(url, project),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() })
     },

@@ -55,7 +55,9 @@ export const clustersApi = {
 
   // Delete cluster
   deleteCluster: async (server: string): Promise<void> => {
-    await api.delete(ENDPOINTS.cluster(server))
+    const endpoint = ENDPOINTS.cluster(server)
+    console.log('DELETE endpoint:', endpoint)
+    await api.delete(endpoint)
   },
 
   // Test cluster connection

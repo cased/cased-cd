@@ -10,10 +10,17 @@ export function ClustersPage() {
   const deleteMutation = useDeleteCluster()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
 
-  const handleDelete = async (server: string) => {
-    if (confirm(`Are you sure you want to delete this cluster?`)) {
-      await deleteMutation.mutateAsync(server)
-      refetch()
+  const handleDelete = async (server: string, name: string) => {
+    if (confirm(`Are you sure you want to delete cluster "${name}"?`)) {
+      try {
+        console.log('Deleting cluster with server:', server)
+        await deleteMutation.mutateAsync(server)
+        refetch()
+      } catch (error: any) {
+        console.error('Delete failed:', error)
+        console.error('Error response:', error.response)
+        alert(`Failed to delete cluster: ${error.response?.data?.message || error.message || 'Unknown error'}`)
+      }
     }
   }
 
@@ -146,7 +153,7 @@ export function ClustersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(cluster.server)}
+                      onClick={() => handleDelete(cluster.server, cluster.name)}
                       disabled={deleteMutation.isPending}
                       className="w-full text-red-400 hover:text-red-300"
                     >

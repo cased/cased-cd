@@ -63,7 +63,17 @@ export const api = {
   },
 
   delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.delete<T>(url, config)
+    // Don't send Content-Type header for DELETE requests (ArgoCD doesn't like it)
+    return apiClient.delete<T>(url, {
+      ...config,
+      headers: {
+        ...config?.headers,
+      },
+      transformRequest: [(data, headers) => {
+        delete headers['Content-Type']
+        return data
+      }],
+    })
   },
 }
 
