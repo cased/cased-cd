@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -149,27 +151,25 @@ export function SettingsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 pt-0">
-                <div className="flex flex-col gap-1.5">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-                      defaultChecked
-                    />
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="email-notifications" defaultChecked />
+                    <Label
+                      htmlFor="email-notifications"
+                      className="cursor-pointer"
+                    >
                       Email notifications
-                    </span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="rounded border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-                      defaultChecked
-                    />
-                    <span className="text-sm text-neutral-600 dark:text-neutral-400">
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Checkbox id="slack-notifications" defaultChecked />
+                    <Label
+                      htmlFor="slack-notifications"
+                      className="cursor-pointer"
+                    >
                       Slack notifications
-                    </span>
-                  </label>
+                    </Label>
+                  </div>
                 </div>
               </CardContent>
             </Card>
