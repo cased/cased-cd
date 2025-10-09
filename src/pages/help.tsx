@@ -108,7 +108,7 @@ export function HelpPage() {
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 p-2 rounded hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors group"
               >
-                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <div className="h-1.5 w-1.5 rounded-full bg-grass-9" />
                 <span className="text-xs text-neutral-700 dark:text-neutral-300">Operator Manual</span>
                 <IconExternalLink size={10} className="text-neutral-600 ml-auto" />
               </a>

@@ -30,7 +30,7 @@ interface ResourceTreeProps {
 }
 
 const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
+  Healthy: { icon: IconCircleCheck, color: 'text-grass-11', bg: 'bg-grass-9/10', border: 'border-grass-9/20' },
   Progressing: { icon: IconClock3, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20' },
   Degraded: { icon: IconCircleWarning, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
   Suspended: { icon: IconCircleWarning, color: 'text-neutral-400', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
@@ -229,7 +229,7 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
             const resource = node.data.resource as Resource
             const healthStatus = resource.health?.status || 'Unknown'
             const colors = {
-              Healthy: '#10b981',
+              Healthy: '#46a758',
               Progressing: '#3b82f6',
               Degraded: '#f59e0b',
               Suspended: '#737373',

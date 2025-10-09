@@ -108,7 +108,7 @@ export function RepositoriesPage() {
                             {repo.connectionState?.status && (
                               <Badge variant="outline" className="gap-1.5">
                                 {repo.connectionState.status === 'Successful' ? (
-                                  <IconCircleCheck size={12} className="text-emerald-400" />
+                                  <IconCircleCheck size={12} className="text-grass-11" />
                                 ) : (
                                   <IconCircleClose size={12} className="text-red-400" />
                                 )}

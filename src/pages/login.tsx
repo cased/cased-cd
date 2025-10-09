@@ -44,7 +44,7 @@ export function LoginPage() {
           </p>
           <div className="mt-8 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-emerald-400" />
+              <div className="h-2 w-2 rounded-full bg-grass-9" />
               <span className="text-neutral-300">Continuous Deployment</span>
             </div>
             <div className="flex items-center gap-3">

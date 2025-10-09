@@ -92,15 +92,15 @@ export function UserInfoPage() {
                   <dd className="mt-1 text-xs text-neutral-800 dark:text-neutral-200">
                     <ul className="space-y-1">
                       <li className="flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                        <div className="h-1 w-1 rounded-full bg-grass-9" />
                         Full cluster access
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                        <div className="h-1 w-1 rounded-full bg-grass-9" />
                         Create & delete applications
                       </li>
                       <li className="flex items-center gap-1.5">
-                        <div className="h-1 w-1 rounded-full bg-emerald-400" />
+                        <div className="h-1 w-1 rounded-full bg-grass-9" />
                         Manage repositories
                       </li>
                     </ul>

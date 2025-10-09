@@ -24,7 +24,7 @@ import { useNavigate } from "react-router-dom";
 import type { Application } from "@/types/api";
 
 const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: "text-emerald-400" },
+  Healthy: { icon: IconCircleCheck, color: "text-grass-11" },
   Progressing: { icon: IconClock3, color: "text-blue-400" },
   Degraded: { icon: IconCircleWarning, color: "text-amber-400" },
   Suspended: { icon: IconCircleWarning, color: "text-neutral-400" },
@@ -294,7 +294,7 @@ function ApplicationCard({
           {healthStatus}
         </Badge>
         <Badge variant="outline" className="gap-1.5">
-          <IconCircleCheck size={12} className={syncStatus === "Synced" ? "text-emerald-400" : "text-amber-400"} />
+          <IconCircleCheck size={12} className={syncStatus === "Synced" ? "text-grass-11" : "text-amber-400"} />
           {syncStatus}
         </Badge>
         {isSyncing && (

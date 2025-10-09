@@ -30,7 +30,7 @@ import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 type ViewType = 'tree' | 'network' | 'list' | 'pods'
 
 const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: 'text-emerald-400' },
+  Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
   Progressing: { icon: IconClock3, color: 'text-blue-400' },
   Degraded: { icon: IconCircleWarning, color: 'text-amber-400' },
   Suspended: { icon: IconCircleWarning, color: 'text-neutral-400' },
@@ -182,7 +182,7 @@ export function ApplicationDetailPage() {
                 {healthStatus}
               </Badge>
               <Badge variant="outline" className="gap-1.5">
-                <IconCircleCheck size={12} className={syncStatus === 'Synced' ? 'text-emerald-400' : 'text-amber-400'} />
+                <IconCircleCheck size={12} className={syncStatus === 'Synced' ? 'text-grass-11' : 'text-amber-400'} />
                 {syncStatus}
               </Badge>
             </div>
@@ -330,7 +330,7 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                   <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</TableCell>
                   <TableCell className="text-sm">
                     <Badge variant="outline" className="gap-1.5">
-                      <IconCircleCheck size={10} className={resource.status === 'Synced' ? 'text-emerald-400' : 'text-amber-400'} />
+                      <IconCircleCheck size={10} className={resource.status === 'Synced' ? 'text-grass-11' : 'text-amber-400'} />
                       {resource.status || 'Unknown'}
                     </Badge>
                   </TableCell>
@@ -338,7 +338,7 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
                     {resource.health?.status ? (
                       <Badge variant="outline" className="gap-1.5">
                         {resource.health.status === 'Healthy' ? (
-                          <IconCircleCheck size={10} className="text-emerald-400" />
+                          <IconCircleCheck size={10} className="text-grass-11" />
                         ) : (
                           <IconCircleWarning size={10} className="text-amber-400" />
                         )}
@@ -388,7 +388,7 @@ function PodsView({ app, resourceTree, onResourceClick }: { app: any; resourceTr
                 {pod.health?.status && (
                   <Badge variant="outline" className="gap-1 ml-2">
                     {pod.health.status === 'Healthy' ? (
-                      <IconCircleCheck size={10} className="text-emerald-400" />
+                      <IconCircleCheck size={10} className="text-grass-11" />
                     ) : (
                       <IconCircleWarning size={10} className="text-amber-400" />
                     )}
