@@ -23,11 +23,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree } from '@/services/applications'
 import { ResourceTree } from '@/components/resource-tree'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 
 type ViewType = 'tree' | 'network' | 'list' | 'pods'
+
+interface ResourceFilters {
+  kind: string
+  status: string
+  namespace: string
+  health: string
+}
 
 const healthIcons = {
   Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
@@ -38,11 +52,120 @@ const healthIcons = {
   Unknown: { icon: IconCircleInfo, color: 'text-neutral-500' },
 }
 
+// Helper function to extract unique values from resources
+function getUniqueValues(resources: any[], key: string): string[] {
+  const values = new Set<string>()
+  resources.forEach(resource => {
+    let value: string | undefined
+    if (key === 'health') {
+      value = resource.health?.status
+    } else {
+      value = resource[key]
+    }
+    if (value) values.add(value)
+  })
+  return Array.from(values).sort()
+}
+
+// Helper function to filter resources
+function filterResources(resources: any[], filters: ResourceFilters): any[] {
+  return resources.filter(resource => {
+    if (filters.kind !== 'all' && resource.kind !== filters.kind) return false
+    if (filters.status !== 'all' && resource.status !== filters.status) return false
+    if (filters.namespace !== 'all' && resource.namespace !== filters.namespace) return false
+    if (filters.health !== 'all' && resource.health?.status !== filters.health) return false
+    return true
+  })
+}
+
+interface FilterBarProps {
+  resources: any[]
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+}
+
+function FilterBar({ resources, filters, onFiltersChange }: FilterBarProps) {
+  const kinds = getUniqueValues(resources, 'kind')
+  const statuses = getUniqueValues(resources, 'status')
+  const namespaces = getUniqueValues(resources, 'namespace')
+  const healthStatuses = getUniqueValues(resources, 'health')
+
+  return (
+    <div className="flex items-center gap-2">
+      <Select
+        value={filters.kind}
+        onValueChange={(value) => onFiltersChange({ ...filters, kind: value })}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Kind" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Kinds</SelectItem>
+          {kinds.map(kind => (
+            <SelectItem key={kind} value={kind}>{kind}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.status}
+        onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Status" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Statuses</SelectItem>
+          {statuses.map(status => (
+            <SelectItem key={status} value={status}>{status}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.namespace}
+        onValueChange={(value) => onFiltersChange({ ...filters, namespace: value })}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Namespace" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Namespaces</SelectItem>
+          {namespaces.map(namespace => (
+            <SelectItem key={namespace} value={namespace}>{namespace}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={filters.health}
+        onValueChange={(value) => onFiltersChange({ ...filters, health: value })}
+      >
+        <SelectTrigger className="w-[140px] h-8 text-xs">
+          <SelectValue placeholder="Health" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Health</SelectItem>
+          {healthStatuses.map(health => (
+            <SelectItem key={health} value={health}>{health}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  )
+}
+
 export function ApplicationDetailPage() {
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewType>('tree')
   const [selectedResource, setSelectedResource] = useState<any>(null)
+  const [filters, setFilters] = useState<ResourceFilters>({
+    kind: 'all',
+    status: 'all',
+    namespace: 'all',
+    health: 'all',
+  })
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
@@ -235,9 +358,9 @@ export function ApplicationDetailPage() {
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
         <div className="p-4">
-          {view === 'tree' && <TreeView app={app} onResourceClick={setSelectedResource} />}
-          {view === 'list' && <ListView app={app} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} onResourceClick={setSelectedResource} />}
+          {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
         </div>
       </div>
 
@@ -253,8 +376,9 @@ export function ApplicationDetailPage() {
 }
 
 // Placeholder components for different views
-function TreeView({ app, onResourceClick }: { app: any; onResourceClick: (resource: any) => void }) {
+function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
   const resources = app.status?.resources || []
+  const filteredResources = filterResources(resources, filters)
 
   if (resources.length === 0) {
     return (
@@ -268,30 +392,37 @@ function TreeView({ app, onResourceClick }: { app: any; onResourceClick: (resour
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({resources.length} resources)</h2>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({filteredResources.length} of {resources.length} resources)</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+        </div>
+        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
       <ResourceTree
-        resources={resources}
+        resources={filteredResources}
         onResourceClick={onResourceClick}
       />
     </div>
   )
 }
 
-function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resource: any) => void }) {
+function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
   const resources = app.status?.resources || []
+  const filteredResources = filterResources(resources, filters)
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-sm font-medium text-black dark:text-white">Resources ({resources.length})</h2>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
+        </div>
+        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
-      {resources.length === 0 ? (
+      {filteredResources.length === 0 ? (
         <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
           <IconUnorderedList size={36} className="text-neutral-600 mx-auto mb-2" />
           <p className="text-xs text-neutral-600 dark:text-neutral-400">No resources found</p>
@@ -319,7 +450,7 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
               </TableRow>
             </TableHeader>
             <TableBody>
-              {resources.map((resource: any, i: number) => (
+              {filteredResources.map((resource: any, i: number) => (
                 <TableRow
                   key={i}
                   className="cursor-pointer"
@@ -358,26 +489,30 @@ function ListView({ app, onResourceClick }: { app: any; onResourceClick: (resour
   )
 }
 
-function PodsView({ app, resourceTree, onResourceClick }: { app: any; resourceTree?: any; onResourceClick: (resource: any) => void }) {
+function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick }: { app: any; resourceTree?: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
   // Get pods from resource tree (which includes all child resources)
   const allNodes = resourceTree?.nodes || []
   const pods = allNodes.filter((node: any) => node.kind === 'Pod')
+  const filteredPods = filterResources(pods, filters)
 
   return (
     <div>
-      <div className="mb-3">
-        <h2 className="text-sm font-medium text-black dark:text-white">Pods ({pods.length})</h2>
-        <p className="text-xs text-neutral-600 dark:text-neutral-400">All pods in this application</p>
+      <div className="mb-3 flex items-center justify-between">
+        <div>
+          <h2 className="text-sm font-medium text-black dark:text-white">Pods ({filteredPods.length} of {pods.length})</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">All pods in this application</p>
+        </div>
+        <FilterBar resources={pods} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
-      {pods.length === 0 ? (
+      {filteredPods.length === 0 ? (
         <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
           <IconBox size={36} className="text-neutral-600 mx-auto mb-2" />
           <p className="text-xs text-neutral-600 dark:text-neutral-400">No pods found</p>
         </div>
       ) : (
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {pods.map((pod: any, i: number) => (
+          {filteredPods.map((pod: any, i: number) => (
             <div
               key={i}
               className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
