@@ -21,6 +21,7 @@ import {
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
 
 const healthIcons = {
@@ -31,23 +32,6 @@ const healthIcons = {
   Missing: { icon: IconCircleWarning, color: "text-red-400" },
   Unknown: { icon: IconCircleInfo, color: "text-neutral-500" },
 };
-
-// Format relative time (e.g., "2 minutes ago", "3 hours ago")
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const past = new Date(timestamp);
-  const diffMs = now.getTime() - past.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
-
-  if (diffSec < 60) return "just now";
-  if (diffMin < 60) return `${diffMin} ${diffMin === 1 ? "minute" : "minutes"} ago`;
-  if (diffHour < 24) return `${diffHour} ${diffHour === 1 ? "hour" : "hours"} ago`;
-  if (diffDay < 7) return `${diffDay} ${diffDay === 1 ? "day" : "days"} ago`;
-  return past.toLocaleDateString();
-}
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
@@ -331,7 +315,7 @@ function ApplicationCard({
           <IconClock3 size={11} />
           <span>
             {app.status?.reconciledAt
-              ? formatRelativeTime(app.status.reconciledAt)
+              ? formatDistanceToNow(new Date(app.status.reconciledAt), { addSuffix: true })
               : "Never synced"}
           </span>
         </div>

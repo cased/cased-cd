@@ -17,12 +17,12 @@
   - [ ] useConfirmDialog wrapper around ConfirmDialog
 
 ### Missing Core Features
-- [ ] Projects page - UI for existing service layer
+- [x] Projects page - UI for existing service layer ✅
 - [ ] Application logs/events viewer
 - [ ] Application sync options (prune, dry-run params)
 - [ ] Resource action buttons (restart pod, delete resource, etc.)
 - [ ] Application history/rollback
-- [ ] Diff view (compare desired vs live state)
+- [ ] Diff view (compare desired vs live state) **← Confirmed real ArgoCD feature**
 - [ ] SSO/RBAC settings UI
 
 ## Medium Priority
@@ -65,12 +65,12 @@
 - [ ] Add pagination for large lists
 
 ## Quick Wins (< 1 hour each)
-- [ ] Add loading skeletons to all list views
+- [ ] Add loading skeletons to all list views (8 pages missing skeletons!)
 - [ ] Add empty states with helpful CTAs
 - [ ] Add keyboard shortcut to close dialogs (ESC)
 - [ ] Add "Copy to clipboard" for application names/URLs
 - [ ] Add breadcrumbs to application detail page
-- [ ] Add last sync time to application cards
+- [x] Add last sync time to application cards ✅ (using date-fns)
 - [ ] Show connection status indicators for clusters/repos
 
 ## Long-term Architecture Ideas
