@@ -19,5 +19,10 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // Disable react-refresh/only-export-components
+      // This is a HMR optimization warning, not a type safety issue
+      'react-refresh/only-export-components': 'off',
+    },
   },
 ])
