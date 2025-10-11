@@ -78,7 +78,7 @@ npm run preview             # Preview production build
 - Centralized Axios client with automatic JWT token injection
 - Request/response interceptors
 - Automatic 401 redirect to login
-- Switches between mock API (port 8080) and real ArgoCD (port 9000) via `VITE_USE_REAL_API` env var
+- Switches between mock API (port 8080) and real ArgoCD (port 8090) via `VITE_USE_REAL_API` env var
 
 ### Authentication (`src/lib/auth.tsx`)
 
@@ -173,10 +173,9 @@ The setup script (`scripts/setup-argocd.sh`) configures:
 
 - k3d cluster named 'cased-cd'
 - ArgoCD in insecure mode (`server.insecure=true`)
-- CORS enabled for localhost:5173-5178
-- nginx reverse proxy on port 9000 (adds CORS headers)
-- kubectl port-forward on port 9001 (ArgoCD server)
-- Frontend connects to nginx proxy at `http://localhost:9000/api/v1`
+- kubectl port-forward on port 9001 (ArgoCD server pod)
+- nginx reverse proxy on port 8090 (adds CORS headers, proxies to port 9001)
+- Frontend connects to nginx proxy at `http://localhost:8090/api/v1`
 
 ### Production Deployment Notes
 

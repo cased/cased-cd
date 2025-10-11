@@ -42,11 +42,11 @@ Visit `http://localhost:5173` and login with any credentials.
 
 # This will:
 # - Install k3d, kubectl, and nginx if needed
-# - Create a local Kubernetes cluster 'cased-cd' with LoadBalancer on port 9000
+# - Create a local Kubernetes cluster 'cased-cd'
 # - Install ArgoCD
 # - Configure ArgoCD for local development (insecure mode)
-# - Expose ArgoCD via LoadBalancer service (eliminates port-forward crashes)
-# - Setup nginx CORS proxy on port 8090 (proxies to LoadBalancer)
+# - Start kubectl port-forward on port 9001
+# - Setup nginx CORS proxy on port 8090 (proxies to port-forward)
 # - Display admin credentials
 # - Save credentials to .argocd-credentials file
 
@@ -81,12 +81,10 @@ Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login wit
 
 **Note:** The setup uses:
 - Port 8090: nginx CORS proxy (frontend connects here)
-- Port 9000: k3d loadbalancer exposing ArgoCD LoadBalancer service
+- Port 9001: kubectl port-forward to ArgoCD server
 - Vite will pick an available port between 5173-5178
 
-**Architecture:** Frontend → nginx (8090) → k3d LoadBalancer (9000) → ArgoCD Service (LoadBalancer) → ArgoCD Pod
-
-**Why LoadBalancer?** This approach is robust and production-ready. Unlike port-forward which crashes when pods restart, LoadBalancer provides stable, persistent access to ArgoCD.
+**Architecture:** Frontend → nginx (8090) → kubectl port-forward (9001) → ArgoCD Pod
 
 #### Teardown
 
@@ -95,7 +93,7 @@ Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login wit
 ./scripts/teardown-argocd.sh
 ```
 
-This will stop nginx, kill port-forward, delete the k3d cluster, and clean up config files.
+This will stop nginx, kill kubectl port-forward processes, delete the k3d cluster, and clean up config files.
 
 ## Project Structure
 
@@ -175,21 +173,19 @@ The app uses a centralized Axios client (`src/lib/api-client.ts`) with:
 **You don't need to modify the ArgoCD backend!** The app works with the standard ArgoCD API.
 
 The setup script configures:
-- k3d cluster with built-in Traefik LoadBalancer on port 9000
-- ArgoCD exposed via LoadBalancer service (stable, doesn't crash on pod restarts)
-- nginx reverse proxy on port 8090 that adds CORS headers
+- k3d cluster named 'cased-cd'
 - ArgoCD in insecure mode for local development (`server.insecure=true`)
+- kubectl port-forward on port 9001 (ArgoCD server pod)
+- nginx reverse proxy on port 8090 that adds CORS headers
 
-The frontend connects to nginx (port 8090), which proxies to k3d LoadBalancer (port 9000) and adds proper CORS headers.
+The frontend connects to nginx (port 8090), which proxies to kubectl port-forward (port 9001) and adds proper CORS headers.
 
 **Production Deployment:**
-The same architecture works for production:
+For production deployment:
 1. Deploy frontend as static site
-2. Deploy ArgoCD with LoadBalancer or Ingress
-3. Deploy nginx (or any reverse proxy) to add CORS headers
-4. Point frontend to nginx URL
-
-This setup is production-ready - the only difference is using real load balancers instead of k3d's local one.
+2. Deploy ArgoCD with Ingress or LoadBalancer
+3. Configure CORS on ArgoCD or use a reverse proxy (nginx/Envoy) to add CORS headers
+4. Point frontend to the CORS-enabled ArgoCD URL
 
 ## Contributing
 
