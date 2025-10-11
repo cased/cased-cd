@@ -44,6 +44,16 @@ interface ResourceFilters {
   health: string
 }
 
+interface K8sResource {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status: string
+  }
+}
+
 const healthIcons = {
   Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
   Progressing: { icon: IconClock3, color: 'text-blue-400' },
@@ -54,14 +64,14 @@ const healthIcons = {
 }
 
 // Helper function to extract unique values from resources
-function getUniqueValues(resources: any[], key: string): string[] {
+function getUniqueValues(resources: K8sResource[], key: string): string[] {
   const values = new Set<string>()
   resources.forEach(resource => {
     let value: string | undefined
     if (key === 'health') {
       value = resource.health?.status
     } else {
-      value = resource[key]
+      value = resource[key as keyof K8sResource] as string | undefined
     }
     if (value) values.add(value)
   })
@@ -69,7 +79,7 @@ function getUniqueValues(resources: any[], key: string): string[] {
 }
 
 // Helper function to filter resources
-function filterResources(resources: any[], filters: ResourceFilters): any[] {
+function filterResources(resources: K8sResource[], filters: ResourceFilters): K8sResource[] {
   return resources.filter(resource => {
     if (filters.kind !== 'all' && resource.kind !== filters.kind) return false
     if (filters.status !== 'all' && resource.status !== filters.status) return false
@@ -80,7 +90,7 @@ function filterResources(resources: any[], filters: ResourceFilters): any[] {
 }
 
 interface FilterBarProps {
-  resources: any[]
+  resources: K8sResource[]
   filters: ResourceFilters
   onFiltersChange: (filters: ResourceFilters) => void
 }
@@ -160,7 +170,7 @@ export function ApplicationDetailPage() {
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewType>('tree')
-  const [selectedResource, setSelectedResource] = useState<any>(null)
+  const [selectedResource, setSelectedResource] = useState<K8sResource | null>(null)
   const [filters, setFilters] = useState<ResourceFilters>({
     kind: 'all',
     status: 'all',
@@ -368,7 +378,7 @@ export function ApplicationDetailPage() {
         <div className="p-4">
           {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
           {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
         </div>
       </div>
 
@@ -397,7 +407,14 @@ export function ApplicationDetailPage() {
 }
 
 // Placeholder components for different views
-function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface TreeViewProps {
+  app: { status?: { resources?: K8sResource[] } }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
   const resources = app.status?.resources || []
   const filteredResources = filterResources(resources, filters)
 
@@ -429,7 +446,14 @@ function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any
   )
 }
 
-function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface ListViewProps {
+  app: { status?: { resources?: K8sResource[] } }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function ListView({ app, filters, onFiltersChange, onResourceClick }: ListViewProps) {
   const resources = app.status?.resources || []
   const filteredResources = filterResources(resources, filters)
 
@@ -471,7 +495,7 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.map((resource: any, i: number) => (
+              {filteredResources.map((resource, i: number) => (
                 <TableRow
                   key={i}
                   className="cursor-pointer"
@@ -510,10 +534,17 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
   )
 }
 
-function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick }: { app: any; resourceTree?: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface PodsViewProps {
+  resourceTree?: { nodes?: K8sResource[] }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function PodsView({ resourceTree, filters, onFiltersChange, onResourceClick }: PodsViewProps) {
   // Get pods from resource tree (which includes all child resources)
   const allNodes = resourceTree?.nodes || []
-  const pods = allNodes.filter((node: any) => node.kind === 'Pod')
+  const pods = allNodes.filter((node) => node.kind === 'Pod')
   const filteredPods = filterResources(pods, filters)
 
   return (
@@ -533,7 +564,7 @@ function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick
         </div>
       ) : (
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredPods.map((pod: any, i: number) => (
+          {filteredPods.map((pod, i: number) => (
             <div
               key={i}
               className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"

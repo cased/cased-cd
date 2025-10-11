@@ -27,13 +27,18 @@ export function ClustersPage() {
       setDeleteDialogOpen(false)
       setClusterToDelete(null)
       refetch()
-    } catch (error: any) {
+    } catch (error) {
       console.error('Delete failed:', error)
-      console.error('Error response:', error.response)
-      console.error('Error response data:', error.response?.data)
-      console.error('Error status:', error.response?.status)
-      const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || JSON.stringify(error.response?.data) || 'Unknown error'
-      alert(`Failed to delete cluster: ${errorMsg}`)
+      if (error instanceof Error && 'response' in error) {
+        const response = error.response as { data?: { message?: string; error?: string }; status?: number }
+        console.error('Error response:', response)
+        console.error('Error response data:', response?.data)
+        console.error('Error status:', response?.status)
+        const errorMsg = response?.data?.message || response?.data?.error || error.message || JSON.stringify(response?.data) || 'Unknown error'
+        alert(`Failed to delete cluster: ${errorMsg}`)
+      } else {
+        alert(`Failed to delete cluster: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
     }
   }
 

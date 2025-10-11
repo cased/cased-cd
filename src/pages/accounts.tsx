@@ -57,9 +57,12 @@ export function AccountsPage() {
         expiresIn: 2592000, // 30 days in seconds
       })
       setGeneratedToken(result.token)
-    } catch (error: any) {
+    } catch (error) {
       console.error('Failed to create token:', error)
-      alert(error.response?.data?.message || 'Failed to create token. Account may not have apiKey capability.')
+      const message = error instanceof Error && 'response' in error
+        ? (error.response as { data?: { message?: string } })?.data?.message
+        : undefined
+      alert(message || 'Failed to create token. Account may not have apiKey capability.')
     }
   }
 
