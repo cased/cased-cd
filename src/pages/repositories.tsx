@@ -11,10 +11,10 @@ export function RepositoriesPage() {
   const deleteMutation = useDeleteRepository()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [repoToDelete, setRepoToDelete] = useState<{ url: string; name: string; project?: string } | null>(null)
+  const [repoToDelete, setRepoToDelete] = useState<{ url: string; name: string } | null>(null)
 
-  const handleDeleteClick = (url: string, name: string, project?: string) => {
-    setRepoToDelete({ url, name, project })
+  const handleDeleteClick = (url: string, name: string) => {
+    setRepoToDelete({ url, name })
     setDeleteDialogOpen(true)
   }
 
@@ -22,7 +22,7 @@ export function RepositoriesPage() {
     if (!repoToDelete) return
 
     try {
-      await deleteMutation.mutateAsync({ url: repoToDelete.url, project: repoToDelete.project })
+      await deleteMutation.mutateAsync(repoToDelete.url)
       setDeleteDialogOpen(false)
       setRepoToDelete(null)
       refetch()
@@ -146,7 +146,7 @@ export function RepositoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteClick(repo.repo, repo.name || '', repo.project)}
+                      onClick={() => handleDeleteClick(repo.repo, repo.name || '')}
                       className="text-red-400 hover:text-red-300"
                     >
                       <IconDelete size={16} />
