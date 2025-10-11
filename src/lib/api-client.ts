@@ -2,7 +2,7 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // API base configuration
-// Use mock server (8080) by default, real ArgoCD (8090) when VITE_USE_REAL_API is set
+// Use mock server (8080) by default, real ArgoCD via nginx CORS proxy (8090) when VITE_USE_REAL_API is set
 const API_BASE_URL = import.meta.env.VITE_USE_REAL_API
   ? 'http://localhost:8090/api/v1'
   : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
@@ -26,8 +26,6 @@ apiClient.interceptors.request.use(
     config.headers['Content-Type'] = 'application/json'
     config.headers['Accept'] = 'application/json'
 
-    console.log('Request:', config.method, config.url)
-    console.log('Headers after interceptor:', JSON.stringify(config.headers, null, 2))
     return config
   },
   (error) => {

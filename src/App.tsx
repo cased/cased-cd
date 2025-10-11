@@ -3,6 +3,7 @@ import { ThemeProvider } from './lib/theme'
 import { QueryProvider } from './lib/query-client'
 import { AuthProvider, ProtectedRoute } from './lib/auth'
 import { Layout } from './components/layout/layout'
+import { Toaster } from './components/ui/sonner'
 import { LoginPage } from './pages/login'
 import { ApplicationsPage } from './pages/applications'
 import { ApplicationDetailPage } from './pages/application-detail'
@@ -47,6 +48,7 @@ function App() {
                 <Route path="help" element={<HelpPage />} />
               </Route>
             </Routes>
+            <Toaster />
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>

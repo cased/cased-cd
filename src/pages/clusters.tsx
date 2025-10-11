@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
 import { CreateClusterPanel } from '@/components/create-cluster-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { toast } from 'sonner'
 import { useState } from 'react'
 
 export function ClustersPage() {
@@ -22,8 +23,10 @@ export function ClustersPage() {
     if (!clusterToDelete) return
 
     try {
-      console.log('Deleting cluster with server:', clusterToDelete.server)
       await deleteMutation.mutateAsync(clusterToDelete.server)
+      toast.success('Cluster deleted', {
+        description: `Successfully deleted cluster "${clusterToDelete.name}"`,
+      })
       setDeleteDialogOpen(false)
       setClusterToDelete(null)
       refetch()
@@ -31,13 +34,14 @@ export function ClustersPage() {
       console.error('Delete failed:', error)
       if (error instanceof Error && 'response' in error) {
         const response = error.response as { data?: { message?: string; error?: string }; status?: number }
-        console.error('Error response:', response)
-        console.error('Error response data:', response?.data)
-        console.error('Error status:', response?.status)
         const errorMsg = response?.data?.message || response?.data?.error || error.message || JSON.stringify(response?.data) || 'Unknown error'
-        alert(`Failed to delete cluster: ${errorMsg}`)
+        toast.error('Failed to delete cluster', {
+          description: errorMsg,
+        })
       } else {
-        alert(`Failed to delete cluster: ${error instanceof Error ? error.message : 'Unknown error'}`)
+        toast.error('Failed to delete cluster', {
+          description: error instanceof Error ? error.message : 'Unknown error',
+        })
       }
     }
   }

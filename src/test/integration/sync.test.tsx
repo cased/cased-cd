@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import axios from 'axios'
 
 // Integration test for sync functionality
-// Requires ArgoCD to be running and accessible
+// Requires ArgoCD to be running and accessible via nginx CORS proxy
 describe('Sync Integration Test', () => {
   const ARGOCD_API = 'http://localhost:8090/api/v1'
   const TEST_APP = 'guestbook' // From seed script
