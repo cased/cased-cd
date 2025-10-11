@@ -63,8 +63,8 @@ export const clustersApi = {
   },
 
   // Test cluster connection
-  testCluster: async (cluster: Cluster): Promise<{ status: string }> => {
-    const response = await api.post(`${ENDPOINTS.clusters}/validate`, cluster)
+  testCluster: async (cluster: Cluster): Promise<{ status: 'Successful' | 'Failed'; message?: string }> => {
+    const response = await api.post<{ status: 'Successful' | 'Failed'; message?: string }>(`${ENDPOINTS.clusters}/validate`, cluster)
     return response.data
   },
 }

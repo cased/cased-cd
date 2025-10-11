@@ -50,7 +50,7 @@ interface K8sResource {
   namespace?: string
   status?: string
   health?: {
-    status: string
+    status?: string
   }
 }
 

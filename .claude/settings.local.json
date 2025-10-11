@@ -22,7 +22,11 @@
       "Bash(npm run test:run:*)",
       "WebFetch(domain:ui.shadcn.com)",
       "Bash(git fetch:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "Bash(awk:*)",
+      "Bash(test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nFix all TypeScript build errors\n\nFixed 14 TypeScript compilation errors:\n\n1. create-application-panel.tsx - Add required namespace field to Application metadata\n2. create-cluster-panel.tsx - Change Unknown status to Failed, fix button variant\n3. create-repository-panel.tsx - Change Unknown status to Failed, fix button variant  \n4. resource-tree.tsx - Add proper type assertions for healthStatus indexing\n5. application-detail.tsx - Make health.status optional to match Resource type\n6. resource-details-panel.tsx - Make health.status optional to match K8sResource type\n7. types/api.ts - Make OperationState.operation optional\n8. services/clusters.ts - Add proper return type for testCluster\n9. services/repositories.ts - Add proper return type for testRepository\n10. services/applications.test.tsx - Add complete AxiosResponse mock objects\n\nAll TypeScript errors resolved. Build now passes successfully.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []

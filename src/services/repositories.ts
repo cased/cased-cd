@@ -62,8 +62,8 @@ export const repositoriesApi = {
   },
 
   // Test repository connection
-  testRepository: async (repo: Repository): Promise<{ status: string }> => {
-    const response = await api.post(`${ENDPOINTS.repositories}/validate`, repo)
+  testRepository: async (repo: Repository): Promise<{ status: 'Successful' | 'Failed'; message?: string }> => {
+    const response = await api.post<{ status: 'Successful' | 'Failed'; message?: string }>(`${ENDPOINTS.repositories}/validate`, repo)
     return response.data
   },
 }

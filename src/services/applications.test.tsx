@@ -34,7 +34,7 @@ describe('useSyncApplication', () => {
 
   it('should sync an application successfully', async () => {
     // Mock successful API response
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -76,7 +76,7 @@ describe('useSyncApplication', () => {
   })
 
   it('should sync with dry run option', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -97,7 +97,7 @@ describe('useSyncApplication', () => {
   })
 
   it('should invalidate queries after successful sync', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
@@ -120,7 +120,7 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should call the sync endpoint with correct payload', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
 
     await applicationsApi.syncApplication('my-app', true, false)
 
@@ -132,7 +132,7 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should handle undefined options', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
 
     await applicationsApi.syncApplication('my-app')
 

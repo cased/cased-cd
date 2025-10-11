@@ -46,7 +46,7 @@ interface ResourceNodeData {
 // Custom node component
 function ResourceNode({ data }: { data: ResourceNodeData }) {
   const resource = data.resource
-  const healthStatus = resource.health?.status || 'Unknown'
+  const healthStatus = (resource.health?.status || 'Unknown') as keyof typeof healthIcons
   const health = healthIcons[healthStatus] || healthIcons.Unknown
   const HealthIcon = health.icon
 
@@ -232,8 +232,8 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
           className="bg-neutral-900 border border-neutral-800 rounded-lg"
           nodeColor={(node) => {
             const resource = node.data.resource as Resource
-            const healthStatus = resource.health?.status || 'Unknown'
-            const colors = {
+            const healthStatus = (resource.health?.status || 'Unknown') as keyof typeof healthIcons
+            const colors: Record<keyof typeof healthIcons, string> = {
               Healthy: '#46a758',
               Progressing: '#3b82f6',
               Degraded: '#f59e0b',

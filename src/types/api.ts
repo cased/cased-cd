@@ -108,7 +108,7 @@ export interface ResourceStatus {
 }
 
 export interface OperationState {
-  operation: {
+  operation?: {
     sync?: {
       revision?: string
       prune?: boolean

@@ -1,4 +1,109 @@
-# Cased CD - Production Roadmap
+# TODO
+
+## High Priority
+
+### Code Organization & Refactoring
+- [ ] Extract shared form components
+  - [ ] FormField wrapper component
+  - [ ] FormSection component
+  - [ ] YamlEditor component (reused in all create panels)
+- [ ] Break down application-detail.tsx (602 lines)
+  - [ ] Extract FilterBar to separate file
+  - [ ] Extract TreeView, ListView, PodsView into components/application-detail/
+  - [ ] Move K8sResource type to shared types
+- [ ] Create shared hooks
+  - [ ] useFormValidation for create panels
+  - [ ] useResourceFilters for filtering logic
+  - [ ] useConfirmDialog wrapper around ConfirmDialog
+
+### Missing Core Features
+- [ ] Projects page - UI for existing service layer
+- [ ] Application logs/events viewer
+- [ ] Application sync options (prune, dry-run params)
+- [ ] Resource action buttons (restart pod, delete resource, etc.)
+- [ ] Application history/rollback
+- [ ] Diff view (compare desired vs live state)
+- [ ] SSO/RBAC settings UI
+
+## Medium Priority
+
+### UX Improvements
+- [ ] Search/filter across all pages (applications, repos, clusters)
+- [ ] Bulk operations (delete multiple apps, sync multiple apps)
+- [ ] Real-time updates (WebSocket support for live status)
+- [ ] Notifications/toast system for success/error messages (replace alert())
+- [ ] Loading skeletons (Skeleton component exists but not used everywhere)
+- [ ] Empty states for all lists
+- [ ] Keyboard shortcuts (ESC to close dialogs, etc.)
+
+### Testing Coverage
+- [ ] Add component tests
+  - [ ] ConfirmDialog
+  - [ ] Create panels (form + YAML modes)
+  - [ ] Filter/search logic
+- [ ] Add service layer tests
+  - [ ] All mutation hooks
+  - [ ] Error handling
+- [ ] Add E2E tests
+  - [ ] Login flow
+  - [ ] Create application flow
+  - [ ] Sync/delete operations
+
+## Low Priority
+
+### Type Safety Improvements
+- [ ] Create shared K8sResource type (currently duplicated in 2 files)
+- [ ] Stricter form types (currently using loose object states)
+- [ ] Zod schema validation for forms
+- [ ] Generate types from OpenAPI spec if available
+
+### Performance Optimizations
+- [ ] Virtualization for long lists (applications, resources)
+- [ ] Lazy load application detail page components
+- [ ] Debounce search/filter inputs
+- [ ] Optimize React Flow in resource tree
+- [ ] Add pagination for large lists
+
+## Quick Wins (< 1 hour each)
+- [ ] Add loading skeletons to all list views
+- [ ] Add empty states with helpful CTAs
+- [ ] Add keyboard shortcut to close dialogs (ESC)
+- [ ] Add "Copy to clipboard" for application names/URLs
+- [ ] Add breadcrumbs to application detail page
+- [ ] Add last sync time to application cards
+- [ ] Show connection status indicators for clusters/repos
+
+## Long-term Architecture Ideas
+
+### State Management Evolution
+- Consider Zustand for complex UI state (filters, selections, view preferences)
+
+### Form Management
+- React Hook Form + Zod for complex forms
+
+### Real-time Updates
+- WebSocket connection for live updates (instead of polling)
+
+### Modular Architecture
+- Group by feature instead of type:
+  ```
+  src/features/
+    applications/
+      components/
+      hooks/
+      services/
+    clusters/
+    repositories/
+  ```
+
+### Plugin System
+- Allow custom resource renderers
+- Custom actions per resource type
+- Theme customization
+
+---
+
+# Cased CD - Production Roadmap (Original)
 
 Making this **real** - AI-assisted rapid development 🚀
 
