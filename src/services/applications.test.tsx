@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useSyncApplication, applicationsApi } from './applications'
 import api from '@/lib/api-client'
+import type { AxiosResponse } from 'axios'
 import React from 'react'
 
 // Mock the API client
@@ -34,7 +35,14 @@ describe('useSyncApplication', () => {
 
   it('should sync an application successfully', async () => {
     // Mock successful API response
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -76,7 +84,14 @@ describe('useSyncApplication', () => {
   })
 
   it('should sync with dry run option', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -97,7 +112,14 @@ describe('useSyncApplication', () => {
   })
 
   it('should invalidate queries after successful sync', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
@@ -120,7 +142,14 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should call the sync endpoint with correct payload', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     await applicationsApi.syncApplication('my-app', true, false)
 
@@ -132,7 +161,14 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should handle undefined options', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {}, status: 200, statusText: 'OK', headers: {}, config: {} as any } as any)
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     await applicationsApi.syncApplication('my-app')
 
