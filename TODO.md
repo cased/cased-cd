@@ -31,7 +31,7 @@
 - [ ] Search/filter across all pages (applications, repos, clusters)
 - [ ] Bulk operations (delete multiple apps, sync multiple apps)
 - [ ] Real-time updates (WebSocket support for live status)
-- [ ] Notifications/toast system for success/error messages (replace alert())
+- [x] Notifications/toast system for success/error messages (replace alert()) ✅
 - [ ] Loading skeletons (Skeleton component exists but not used everywhere)
 - [ ] Empty states for all lists
 - [ ] Keyboard shortcuts (ESC to close dialogs, etc.)
@@ -212,7 +212,7 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] Orphaned resources handling
 
 ### 3.4 Accounts & RBAC
-- [ ] User account management
+- [x] User account management ✅
 - [ ] Role-based access control
 - [ ] Group management
 - [ ] Permission matrix view
@@ -221,9 +221,9 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] Audit log viewer
 
 ### 3.5 System Settings
-- [ ] General settings (URL, theme, etc.)
-- [ ] Certificate management UI
-- [ ] GPG key management UI
+- [x] General settings (URL, theme, etc.) ✅
+- [x] Certificate management UI ✅
+- [x] GPG key management UI ✅
 - [ ] Notification settings (email, Slack, etc.)
 - [ ] Resource customization configuration
 - [ ] ConfigManagement plugin settings
@@ -282,8 +282,8 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] Loading skeletons for all pages
 - [ ] Empty states with helpful CTAs
 - [ ] Error boundaries with retry logic
-- [ ] Toast notifications system
-- [ ] Confirmation dialogs for destructive actions
+- [x] Toast notifications system ✅
+- [x] Confirmation dialogs for destructive actions ✅
 - [ ] Keyboard shortcuts (⌘K command palette)
 - [ ] Breadcrumbs navigation
 - [ ] Responsive design for mobile/tablet

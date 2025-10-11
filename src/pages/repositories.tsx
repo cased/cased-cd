@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
 import { CreateRepositoryPanel } from '@/components/create-repository-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { toast } from 'sonner'
 import { useState } from 'react'
 
 export function RepositoriesPage() {
@@ -23,12 +24,17 @@ export function RepositoriesPage() {
 
     try {
       await deleteMutation.mutateAsync(repoToDelete.url)
+      toast.success('Repository deleted', {
+        description: `Successfully deleted repository "${repoToDelete.name || repoToDelete.url}"`,
+      })
       setDeleteDialogOpen(false)
       setRepoToDelete(null)
       refetch()
     } catch (error) {
       console.error('Delete failed:', error)
-      alert(`Failed to delete repository: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      toast.error('Failed to delete repository', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
     }
   }
 

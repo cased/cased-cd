@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { toast } from 'sonner'
 import {
   Table,
   TableBody,
@@ -187,14 +188,32 @@ export function ApplicationDetailPage() {
 
   const handleSync = async () => {
     if (!name) return
-    await syncMutation.mutateAsync({ name, prune: false, dryRun: false })
-    refetch()
+    try {
+      await syncMutation.mutateAsync({ name, prune: false, dryRun: false })
+      toast.success('Application synced', {
+        description: 'Sync initiated successfully',
+      })
+      refetch()
+    } catch (error) {
+      toast.error('Failed to sync application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
   }
 
   const handleRefresh = async () => {
     if (!name) return
-    await refreshMutation.mutateAsync(name)
-    refetch()
+    try {
+      await refreshMutation.mutateAsync(name)
+      toast.success('Application refreshed', {
+        description: 'Refresh initiated successfully',
+      })
+      refetch()
+    } catch (error) {
+      toast.error('Failed to refresh application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
   }
 
   const handleDeleteClick = () => {
@@ -205,10 +224,16 @@ export function ApplicationDetailPage() {
     if (!name) return
     try {
       await deleteMutation.mutateAsync({ name, cascade: true })
+      toast.success('Application deleted', {
+        description: `Successfully deleted application "${name}" with cascade`,
+      })
       setDeleteDialogOpen(false)
       navigate('/applications')
     } catch (error) {
       console.error('Failed to delete application:', error)
+      toast.error('Failed to delete application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
     }
   }
 

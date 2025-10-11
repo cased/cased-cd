@@ -44,9 +44,9 @@ Visit `http://localhost:5173` and login with any credentials.
 # - Install k3d, kubectl, and nginx if needed
 # - Create a local Kubernetes cluster 'cased-cd'
 # - Install ArgoCD
-# - Configure ArgoCD for local development (insecure mode, CORS)
-# - Setup nginx CORS proxy on port 8090
-# - Start kubectl port-forward to ArgoCD on port 9001
+# - Configure ArgoCD for local development (insecure mode)
+# - Start kubectl port-forward on port 9001
+# - Setup nginx CORS proxy on port 8090 (proxies to port-forward)
 # - Display admin credentials
 # - Save credentials to .argocd-credentials file
 
@@ -81,8 +81,10 @@ Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login wit
 
 **Note:** The setup uses:
 - Port 8090: nginx CORS proxy (frontend connects here)
-- Port 9001: kubectl port-forward to ArgoCD
+- Port 9001: kubectl port-forward to ArgoCD server
 - Vite will pick an available port between 5173-5178
+
+**Architecture:** Frontend → nginx (8090) → kubectl port-forward (9001) → ArgoCD Pod
 
 #### Teardown
 
@@ -91,7 +93,7 @@ Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login wit
 ./scripts/teardown-argocd.sh
 ```
 
-This will stop nginx, kill port-forward, delete the k3d cluster, and clean up config files.
+This will stop nginx, kill kubectl port-forward processes, delete the k3d cluster, and clean up config files.
 
 ## Project Structure
 
@@ -170,15 +172,20 @@ The app uses a centralized Axios client (`src/lib/api-client.ts`) with:
 
 **You don't need to modify the ArgoCD backend!** The app works with the standard ArgoCD API.
 
-The setup script configures ArgoCD to:
-- Disable TLS for local development (`server.insecure=true`)
-- Enable CORS for allowed origins (localhost:5173-5178)
-- Sets up nginx reverse proxy to add CORS headers (since ArgoCD's CORS support is limited)
+The setup script configures:
+- k3d cluster named 'cased-cd'
+- ArgoCD in insecure mode for local development (`server.insecure=true`)
+- kubectl port-forward on port 9001 (ArgoCD server pod)
+- nginx reverse proxy on port 8090 that adds CORS headers
 
-For production, you'd need to:
-1. Deploy this as a static site
-2. Configure your ArgoCD server to allow CORS from your domain, OR
-3. Deploy a CORS proxy similar to the nginx setup
+The frontend connects to nginx (port 8090), which proxies to kubectl port-forward (port 9001) and adds proper CORS headers.
+
+**Production Deployment:**
+For production deployment:
+1. Deploy frontend as static site
+2. Deploy ArgoCD with Ingress or LoadBalancer
+3. Configure CORS on ArgoCD or use a reverse proxy (nginx/Envoy) to add CORS headers
+4. Point frontend to the CORS-enabled ArgoCD URL
 
 ## Contributing
 
