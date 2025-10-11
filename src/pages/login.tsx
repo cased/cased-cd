@@ -25,8 +25,13 @@ export function LoginPage() {
     try {
       await login(username, password)
       navigate(returnUrl, { replace: true })
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Login failed')
+    } catch (err) {
+      if (err instanceof Error && 'response' in err) {
+        const response = err.response as { data?: { error?: string } }
+        setError(response?.data?.error || err.message || 'Login failed')
+      } else {
+        setError(err instanceof Error ? err.message : 'Login failed')
+      }
       setIsLoading(false)
     }
   }

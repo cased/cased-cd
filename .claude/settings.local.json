@@ -20,7 +20,9 @@
       "Bash(npm install:*)",
       "Bash(git stash:*)",
       "Bash(npm run test:run:*)",
-      "WebFetch(domain:ui.shadcn.com)"
+      "WebFetch(domain:ui.shadcn.com)",
+      "Bash(git fetch:*)",
+      "Bash(npm run lint:*)"
     ],
     "deny": [],
     "ask": []

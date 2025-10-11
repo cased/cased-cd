@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -38,9 +38,14 @@ const healthIcons = {
   Unknown: { icon: IconCircleInfo, color: 'text-neutral-500', bg: 'bg-neutral-500/10', border: 'border-neutral-500/20' },
 }
 
+interface ResourceNodeData {
+  resource: Resource
+  onClick?: (resource: Resource) => void
+}
+
 // Custom node component
-function ResourceNode({ data }: { data: any }) {
-  const resource = data.resource as Resource
+function ResourceNode({ data }: { data: ResourceNodeData }) {
+  const resource = data.resource
   const healthStatus = resource.health?.status || 'Unknown'
   const health = healthIcons[healthStatus] || healthIcons.Unknown
   const HealthIcon = health.icon
@@ -204,8 +209,8 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
     return { nodes, edges }
   }, [resources, onResourceClick])
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  const [nodes, , onNodesChange] = useNodesState(initialNodes)
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
 
   return (
     <div className="h-[600px] rounded-lg border border-neutral-800 bg-neutral-950 overflow-hidden">
