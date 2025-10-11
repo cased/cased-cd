@@ -2,16 +2,6 @@
 
 A modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and Radix UI.
 
-## Features
-
-- 🎨 Modern, flat design aesthetic inspired by Vercel
-- 🌓 Full dark/light mode support
-- ⚡ Built with Vite for lightning-fast development
-- 🎯 Type-safe with TypeScript
-- 🎨 Styled with Tailwind CSS v4
-- ♿ Accessible components with Radix UI
-- 🔄 Real-time data with TanStack Query
-
 ## Development
 
 ### Prerequisites
@@ -128,15 +118,24 @@ mock-server.js        # Express mock API server
 
 ## Scripts
 
+### Development
 - `npm run dev` - Start Vite dev server (uses mock API by default)
 - `npm run dev:mock` - Start mock Express API server
 - `npm run dev:real` - Start Vite dev server with real ArgoCD API
-- `./scripts/setup-argocd.sh` - Setup local ArgoCD cluster with CORS proxy
+
+### ArgoCD Setup
+- `npm run argocd:setup` - Setup local ArgoCD cluster with CORS proxy
 - `./scripts/seed-argocd.sh` - Populate ArgoCD with test data (repositories, clusters, apps)
 - `./scripts/clean-argocd.sh` - Remove all seeded test data
-- `./scripts/teardown-argocd.sh` - Remove ArgoCD cluster and cleanup
+- `npm run argocd:teardown` - Remove ArgoCD cluster and cleanup
+
+### Build & Test
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run test` - Run tests in watch mode
+- `npm run test:run` - Run tests once (for CI)
+- `npm run test:ui` - Run tests with Vitest UI
 
 ## Environment Variables
 
