@@ -34,6 +34,9 @@ dist-ssr
 # VS Code settings
 .vscode/settings.local.json
 
+# Claude Code settings
+.claude/settings.local.json
+
 # ArgoCD local development
 .argocd-credentials
 .argocd-portforward.pid
