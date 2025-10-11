@@ -15,6 +15,7 @@ import {
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Table,
   TableBody,
@@ -43,6 +44,16 @@ interface ResourceFilters {
   health: string
 }
 
+interface K8sResource {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status?: string
+  }
+}
+
 const healthIcons = {
   Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
   Progressing: { icon: IconClock3, color: 'text-blue-400' },
@@ -53,14 +64,14 @@ const healthIcons = {
 }
 
 // Helper function to extract unique values from resources
-function getUniqueValues(resources: any[], key: string): string[] {
+function getUniqueValues(resources: K8sResource[], key: string): string[] {
   const values = new Set<string>()
   resources.forEach(resource => {
     let value: string | undefined
     if (key === 'health') {
       value = resource.health?.status
     } else {
-      value = resource[key]
+      value = resource[key as keyof K8sResource] as string | undefined
     }
     if (value) values.add(value)
   })
@@ -68,7 +79,7 @@ function getUniqueValues(resources: any[], key: string): string[] {
 }
 
 // Helper function to filter resources
-function filterResources(resources: any[], filters: ResourceFilters): any[] {
+function filterResources(resources: K8sResource[], filters: ResourceFilters): K8sResource[] {
   return resources.filter(resource => {
     if (filters.kind !== 'all' && resource.kind !== filters.kind) return false
     if (filters.status !== 'all' && resource.status !== filters.status) return false
@@ -79,7 +90,7 @@ function filterResources(resources: any[], filters: ResourceFilters): any[] {
 }
 
 interface FilterBarProps {
-  resources: any[]
+  resources: K8sResource[]
   filters: ResourceFilters
   onFiltersChange: (filters: ResourceFilters) => void
 }
@@ -159,13 +170,14 @@ export function ApplicationDetailPage() {
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewType>('tree')
-  const [selectedResource, setSelectedResource] = useState<any>(null)
+  const [selectedResource, setSelectedResource] = useState<K8sResource | null>(null)
   const [filters, setFilters] = useState<ResourceFilters>({
     kind: 'all',
     status: 'all',
     namespace: 'all',
     health: 'all',
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
@@ -185,11 +197,18 @@ export function ApplicationDetailPage() {
     refetch()
   }
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
     if (!name) return
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
+    try {
       await deleteMutation.mutateAsync({ name, cascade: true })
+      setDeleteDialogOpen(false)
       navigate('/applications')
+    } catch (error) {
+      console.error('Failed to delete application:', error)
     }
   }
 
@@ -275,8 +294,7 @@ export function ApplicationDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
+                onClick={handleDeleteClick}
                 className="text-red-400 hover:text-red-300"
               >
                 <IconDelete size={16} />
@@ -360,7 +378,7 @@ export function ApplicationDetailPage() {
         <div className="p-4">
           {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
           {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
         </div>
       </div>
 
@@ -371,12 +389,32 @@ export function ApplicationDetailPage() {
           onClose={() => setSelectedResource(null)}
         />
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Application"
+        description={`Are you sure you want to delete the application "${name}"? This action cannot be undone and will remove all associated resources from the cluster.`}
+        confirmText="Delete"
+        resourceName={name || ''}
+        resourceType="application"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }
 
 // Placeholder components for different views
-function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface TreeViewProps {
+  app: { status?: { resources?: K8sResource[] } }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
   const resources = app.status?.resources || []
   const filteredResources = filterResources(resources, filters)
 
@@ -408,7 +446,14 @@ function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any
   )
 }
 
-function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface ListViewProps {
+  app: { status?: { resources?: K8sResource[] } }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function ListView({ app, filters, onFiltersChange, onResourceClick }: ListViewProps) {
   const resources = app.status?.resources || []
   const filteredResources = filterResources(resources, filters)
 
@@ -450,7 +495,7 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.map((resource: any, i: number) => (
+              {filteredResources.map((resource, i: number) => (
                 <TableRow
                   key={i}
                   className="cursor-pointer"
@@ -489,10 +534,17 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
   )
 }
 
-function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick }: { app: any; resourceTree?: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface PodsViewProps {
+  resourceTree?: { nodes?: K8sResource[] }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function PodsView({ resourceTree, filters, onFiltersChange, onResourceClick }: PodsViewProps) {
   // Get pods from resource tree (which includes all child resources)
   const allNodes = resourceTree?.nodes || []
-  const pods = allNodes.filter((node: any) => node.kind === 'Pod')
+  const pods = allNodes.filter((node) => node.kind === 'Pod')
   const filteredPods = filterResources(pods, filters)
 
   return (
@@ -512,7 +564,7 @@ function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick
         </div>
       ) : (
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredPods.map((pod: any, i: number) => (
+          {filteredPods.map((pod, i: number) => (
             <div
               key={i}
               className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"

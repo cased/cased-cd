@@ -77,7 +77,6 @@ export function ApplicationsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
@@ -89,8 +88,6 @@ export function ApplicationsPage() {
               </Button>
               <Button
                 variant="default"
-                size="sm"
-                className="gap-1"
                 onClick={() => setShowCreatePanel(true)}
               >
                 <IconAdd size={16} />

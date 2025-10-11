@@ -26,19 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = async (username: string, password: string) => {
-    try {
-      const response = await api.post<{ token: string }>('/session', {
-        username,
-        password,
-      })
+    const response = await api.post<{ token: string }>('/session', {
+      username,
+      password,
+    })
 
-      const newToken = response.data.token
-      localStorage.setItem('argocd_token', newToken)
-      setToken(newToken)
-    } catch (error) {
-      // Re-throw so the login form can handle it
-      throw error
-    }
+    const newToken = response.data.token
+    localStorage.setItem('argocd_token', newToken)
+    setToken(newToken)
   }
 
   const logout = () => {

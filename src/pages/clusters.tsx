@@ -3,27 +3,41 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
 import { CreateClusterPanel } from '@/components/create-cluster-panel'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState } from 'react'
 
 export function ClustersPage() {
   const { data, isLoading, error, refetch } = useClusters()
   const deleteMutation = useDeleteCluster()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [clusterToDelete, setClusterToDelete] = useState<{ server: string; name: string } | null>(null)
 
-  const handleDelete = async (server: string, name: string) => {
-    if (confirm(`Are you sure you want to delete cluster "${name}"?`)) {
-      try {
-        console.log('Deleting cluster with server:', server)
-        await deleteMutation.mutateAsync(server)
-        refetch()
-        alert('Cluster deleted successfully!')
-      } catch (error: any) {
-        console.error('Delete failed:', error)
-        console.error('Error response:', error.response)
-        console.error('Error response data:', error.response?.data)
-        console.error('Error status:', error.response?.status)
-        const errorMsg = error.response?.data?.message || error.response?.data?.error || error.message || JSON.stringify(error.response?.data) || 'Unknown error'
+  const handleDeleteClick = (server: string, name: string) => {
+    setClusterToDelete({ server, name })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!clusterToDelete) return
+
+    try {
+      console.log('Deleting cluster with server:', clusterToDelete.server)
+      await deleteMutation.mutateAsync(clusterToDelete.server)
+      setDeleteDialogOpen(false)
+      setClusterToDelete(null)
+      refetch()
+    } catch (error) {
+      console.error('Delete failed:', error)
+      if (error instanceof Error && 'response' in error) {
+        const response = error.response as { data?: { message?: string; error?: string }; status?: number }
+        console.error('Error response:', response)
+        console.error('Error response data:', response?.data)
+        console.error('Error status:', response?.status)
+        const errorMsg = response?.data?.message || response?.data?.error || error.message || JSON.stringify(response?.data) || 'Unknown error'
         alert(`Failed to delete cluster: ${errorMsg}`)
+      } else {
+        alert(`Failed to delete cluster: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
     }
   }
@@ -43,14 +57,16 @@ export function ClustersPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
                 <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
                 Refresh
               </Button>
-              <Button variant="default" className="gap-1" onClick={() => setShowCreatePanel(true)}>
+              <Button
+                variant="default"
+                onClick={() => setShowCreatePanel(true)}
+              >
                 <IconAdd size={16} />
                 Add Cluster
               </Button>
@@ -157,8 +173,7 @@ export function ClustersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(cluster.server, cluster.name)}
-                      disabled={deleteMutation.isPending}
+                      onClick={() => handleDeleteClick(cluster.server, cluster.name)}
                       className="w-full text-red-400 hover:text-red-300"
                     >
                       <IconDelete size={16} />
@@ -196,6 +211,19 @@ export function ClustersPage() {
         isOpen={showCreatePanel}
         onClose={() => setShowCreatePanel(false)}
         onSuccess={() => refetch()}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Cluster"
+        description={`Are you sure you want to delete the cluster "${clusterToDelete?.name}"? This action cannot be undone and may affect deployed applications.`}
+        confirmText="Delete"
+        resourceName={clusterToDelete?.name || ''}
+        resourceType="cluster"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   )

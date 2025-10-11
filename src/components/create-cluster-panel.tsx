@@ -47,7 +47,6 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
       const cluster: Cluster = {
         name: formData.name,
         server: formData.server,
-        namespaces: formData.namespaces ? formData.namespaces.split(',').map(ns => ns.trim()) : undefined,
         config: {
           bearerToken: formData.config.bearerToken || undefined,
           tlsClientConfig: {
@@ -58,7 +57,8 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
           },
         },
         connectionState: {
-          status: 'Unknown',
+          status: 'Failed',
+          message: 'Not yet connected',
         },
       }
 
@@ -289,7 +289,7 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
             Cancel
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             onClick={handleSubmit}
             disabled={createMutation.isPending}
           >

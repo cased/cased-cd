@@ -108,13 +108,13 @@ export interface ResourceStatus {
 }
 
 export interface OperationState {
-  operation: {
+  operation?: {
     sync?: {
       revision?: string
       prune?: boolean
       syncStrategy?: {
-        hook?: any
-        apply?: any
+        hook?: Record<string, unknown>
+        apply?: Record<string, unknown>
       }
     }
   }
@@ -300,7 +300,7 @@ export interface Version {
 // Generic API Response
 export interface ApiResponse<T> {
   data: T
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 // Error Response

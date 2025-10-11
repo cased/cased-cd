@@ -32,6 +32,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
     const application: Application = {
       metadata: {
         name: formData.name,
+        namespace: 'argocd',
       },
       spec: {
         project: formData.project,
@@ -68,6 +69,7 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
       const app = {
         metadata: {
           name: formData.name,
+          namespace: 'argocd',
         },
         spec: {
           project: formData.project,

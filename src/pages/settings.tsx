@@ -3,6 +3,7 @@ import {
   IconShieldCheck,
   IconKey,
   IconArrowRight,
+  IconServer,
 } from "obra-icons-react";
 import { useNavigate } from "react-router-dom";
 import { useAppearance } from "@/lib/theme";
@@ -17,32 +18,50 @@ import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { useApplications } from "@/services/applications";
+import { useCertificates } from "@/services/certificates";
+import { useGPGKeys } from "@/services/gpgkeys";
 
 export function SettingsPage() {
   const navigate = useNavigate();
   const { appearance, setAppearance } = useAppearance();
+  const { data: appsData } = useApplications();
+  const { data: certsData } = useCertificates();
+  const { data: gpgData } = useGPGKeys();
+
+  // Try to detect cluster info from applications
+  const clusterInfo = appsData?.items?.[0]?.spec?.destination?.server ||
+                      appsData?.items?.[0]?.spec?.destination?.name ||
+                      'https://kubernetes.default.svc';
+
+  const isLocalCluster = clusterInfo.includes('kubernetes.default.svc') ||
+                         clusterInfo.includes('localhost') ||
+                         clusterInfo.includes('127.0.0.1');
+
+  const clusterName = isLocalCluster ? 'k3d-cased-cd (Local)' : 'Production Cluster';
+  const appCount = appsData?.items?.length || 0;
 
   const settingsCards = [
     {
       title: "Accounts",
       description: "Manage user accounts and permissions",
       icon: IconUsers,
-      count: 24,
-      path: undefined,
+      count: appCount > 0 ? 1 : 0, // Show actual account count (for now just showing if we have data)
+      path: "/accounts",
     },
     {
       title: "Certificates",
       description: "Manage TLS certificates",
       icon: IconShieldCheck,
-      count: 6,
-      path: undefined,
+      count: certsData?.items?.length || 0,
+      path: "/certificates",
     },
     {
       title: "GPG Keys",
       description: "Configure GPG keys for commit verification",
       icon: IconKey,
-      count: 3,
-      path: undefined,
+      count: gpgData?.items?.length || 0,
+      path: "/gpgkeys",
     },
   ];
   return (
@@ -97,6 +116,46 @@ export function SettingsPage() {
 
           {/* Full-bleed Divider */}
           <Separator className="my-6 -mx-4 w-[calc(100%+2rem)]" />
+
+          {/* Cluster Info Section */}
+          <div className="mb-6">
+            <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+              Cluster
+            </h2>
+            <Card className="border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none">
+              <CardHeader className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+                    <IconServer size={20} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div className="flex-1">
+                    <CardTitle className="text-sm">{clusterName}</CardTitle>
+                    <CardDescription className="text-xs mt-0.5">
+                      {appCount} {appCount === 1 ? 'application' : 'applications'} deployed
+                    </CardDescription>
+                  </div>
+                  {!isLocalCluster && (
+                    <div className="px-2 py-1 rounded text-xs font-medium bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                      Production
+                    </div>
+                  )}
+                  {isLocalCluster && (
+                    <div className="px-2 py-1 rounded text-xs font-medium bg-green-100 dark:bg-green-950 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800">
+                      Local
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 pt-0">
+                <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                  <div className="flex items-start gap-2">
+                    <span className="font-medium">Endpoint:</span>
+                    <span className="font-mono break-all">{clusterInfo}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           {/* General Settings Section */}
           <div>

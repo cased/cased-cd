@@ -8,10 +8,20 @@ import * as YAML from 'js-yaml'
 
 SyntaxHighlighter.registerLanguage('yaml', yaml)
 
+interface K8sResource {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status?: string
+  }
+}
+
 interface ResourceDetailsPanelProps {
-  resource: any
+  resource: K8sResource
   onClose: () => void
-  manifest?: any
+  manifest?: Record<string, unknown>
 }
 
 export function ResourceDetailsPanel({ resource, onClose, manifest }: ResourceDetailsPanelProps) {

@@ -185,6 +185,20 @@ app.post('/api/v1/applications/:name/sync', (req, res) => {
   res.json({ status: 'success' })
 })
 
+// Mock application delete endpoint
+app.delete('/api/v1/applications/:name', (req, res) => {
+  const { name } = req.params
+  const { cascade } = req.query
+
+  // Remove from in-memory store
+  applications = applications.filter(app => app.metadata.name !== name)
+
+  res.json({
+    status: 'success',
+    message: `Application ${name} deleted${cascade === 'true' ? ' with cascade' : ''}`
+  })
+})
+
 // Mock repositories list endpoint
 app.get('/api/v1/repositories', (req, res) => {
   res.json({

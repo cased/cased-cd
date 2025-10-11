@@ -3,22 +3,32 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
 import { CreateRepositoryPanel } from '@/components/create-repository-panel'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useState } from 'react'
 
 export function RepositoriesPage() {
   const { data, isLoading, error, refetch } = useRepositories()
   const deleteMutation = useDeleteRepository()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [repoToDelete, setRepoToDelete] = useState<{ url: string; name: string } | null>(null)
 
-  const handleDelete = async (url: string, name: string, project?: string) => {
-    if (confirm(`Are you sure you want to delete repository "${name || url}"?`)) {
-      try {
-        await deleteMutation.mutateAsync({ url, project })
-        refetch()
-      } catch (error) {
-        console.error('Delete failed:', error)
-        alert(`Failed to delete repository: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
+  const handleDeleteClick = (url: string, name: string) => {
+    setRepoToDelete({ url, name })
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!repoToDelete) return
+
+    try {
+      await deleteMutation.mutateAsync(repoToDelete.url)
+      setDeleteDialogOpen(false)
+      setRepoToDelete(null)
+      refetch()
+    } catch (error) {
+      console.error('Delete failed:', error)
+      alert(`Failed to delete repository: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 
@@ -37,14 +47,16 @@ export function RepositoriesPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
                 <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
                 Refresh
               </Button>
-              <Button variant="default" className="gap-1" onClick={() => setShowCreatePanel(true)}>
+              <Button
+                variant="default"
+                onClick={() => setShowCreatePanel(true)}
+              >
                 <IconAdd size={16} />
                 Connect Repository
               </Button>
@@ -134,8 +146,7 @@ export function RepositoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(repo.repo, repo.name || '', repo.project)}
-                      disabled={deleteMutation.isPending}
+                      onClick={() => handleDeleteClick(repo.repo, repo.name || '')}
                       className="text-red-400 hover:text-red-300"
                     >
                       <IconDelete size={16} />
@@ -172,6 +183,19 @@ export function RepositoriesPage() {
         isOpen={showCreatePanel}
         onClose={() => setShowCreatePanel(false)}
         onSuccess={() => refetch()}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Repository"
+        description={`Are you sure you want to delete the repository "${repoToDelete?.name || repoToDelete?.url}"? This action cannot be undone and may affect deployed applications.`}
+        confirmText="Delete"
+        resourceName={repoToDelete?.name || repoToDelete?.url || ''}
+        resourceType="repository"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
       />
     </div>
   )

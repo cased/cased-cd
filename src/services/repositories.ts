@@ -6,7 +6,6 @@ import type { Repository, RepositoryList } from '@/types/api'
 const ENDPOINTS = {
   repositories: '/repositories',
   repository: (url: string) => `/repositories/${encodeURIComponent(url)}`,
-  deleteRepository: (url: string, project?: string) => `/repositories/${encodeURIComponent(url)}?appProject=${project || ''}`,
 }
 
 // Query Keys
@@ -57,13 +56,14 @@ export const repositoriesApi = {
   },
 
   // Delete repository
-  deleteRepository: async (url: string, project?: string): Promise<void> => {
-    await api.delete(ENDPOINTS.deleteRepository(url, project))
+  deleteRepository: async (url: string): Promise<void> => {
+    // Use path parameter only - ArgoCD API doesn't support appProject query param
+    await api.delete(ENDPOINTS.repository(url))
   },
 
   // Test repository connection
-  testRepository: async (repo: Repository): Promise<{ status: string }> => {
-    const response = await api.post(`${ENDPOINTS.repositories}/validate`, repo)
+  testRepository: async (repo: Repository): Promise<{ status: 'Successful' | 'Failed'; message?: string }> => {
+    const response = await api.post<{ status: 'Successful' | 'Failed'; message?: string }>(`${ENDPOINTS.repositories}/validate`, repo)
     return response.data
   },
 }
@@ -120,7 +120,7 @@ export function useDeleteRepository() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ url, project }: { url: string; project?: string }) => repositoriesApi.deleteRepository(url, project),
+    mutationFn: (url: string) => repositoriesApi.deleteRepository(url),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: repositoryKeys.lists() })
     },

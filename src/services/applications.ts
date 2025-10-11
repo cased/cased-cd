@@ -32,6 +32,18 @@ export interface ApplicationFilters {
   sync?: string
 }
 
+export interface ResourceTree {
+  nodes?: Array<{
+    kind: string
+    name: string
+    namespace?: string
+    status?: string
+    health?: {
+      status: string
+    }
+  }>
+}
+
 // API Functions
 export const applicationsApi = {
   // Get all applications
@@ -87,8 +99,8 @@ export const applicationsApi = {
   },
 
   // Get resource tree (includes pods and all child resources)
-  getResourceTree: async (name: string): Promise<any> => {
-    const response = await api.get(ENDPOINTS.resourceTree(name))
+  getResourceTree: async (name: string): Promise<ResourceTree> => {
+    const response = await api.get<ResourceTree>(ENDPOINTS.resourceTree(name))
     return response.data
   },
 }
