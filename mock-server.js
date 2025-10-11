@@ -333,6 +333,137 @@ app.delete('/api/v1/clusters/:server', (req, res) => {
   res.json({ status: 'success' })
 })
 
+// In-memory projects store
+let projects = [
+  {
+    metadata: {
+      name: 'default',
+      namespace: 'argocd',
+      creationTimestamp: new Date().toISOString(),
+    },
+    spec: {
+      sourceRepos: ['*'],
+      destinations: [
+        {
+          server: '*',
+          namespace: '*',
+        },
+      ],
+    },
+  },
+  {
+    metadata: {
+      name: 'production',
+      namespace: 'argocd',
+      creationTimestamp: new Date().toISOString(),
+    },
+    spec: {
+      sourceRepos: [
+        'https://github.com/company/prod-apps',
+        'https://charts.bitnami.com/bitnami',
+      ],
+      destinations: [
+        {
+          name: 'production',
+          namespace: 'prod-*',
+        },
+      ],
+      roles: [
+        {
+          name: 'deployer',
+          description: 'Deployment role',
+          policies: ['p, proj:production:deployer, applications, sync, production/*'],
+        },
+      ],
+    },
+  },
+  {
+    metadata: {
+      name: 'development',
+      namespace: 'argocd',
+      creationTimestamp: new Date().toISOString(),
+    },
+    spec: {
+      sourceRepos: ['*'],
+      destinations: [
+        {
+          name: 'staging',
+          namespace: 'dev-*',
+        },
+        {
+          name: 'staging',
+          namespace: 'test-*',
+        },
+      ],
+    },
+  },
+]
+
+// Mock projects list endpoint
+app.get('/api/v1/projects', (req, res) => {
+  res.json({ items: projects })
+})
+
+// Mock project detail endpoint
+app.get('/api/v1/projects/:name', (req, res) => {
+  const { name } = req.params
+  const project = projects.find(p => p.metadata.name === name)
+
+  if (project) {
+    res.json(project)
+  } else {
+    res.status(404).json({ error: 'Project not found' })
+  }
+})
+
+// Mock project create endpoint
+app.post('/api/v1/projects', (req, res) => {
+  const newProject = {
+    ...req.body,
+    metadata: {
+      ...req.body.metadata,
+      namespace: req.body.metadata.namespace || 'argocd',
+      creationTimestamp: new Date().toISOString(),
+    },
+  }
+  projects.push(newProject)
+  res.status(201).json(newProject)
+})
+
+// Mock project update endpoint
+app.put('/api/v1/projects/:name', (req, res) => {
+  const { name } = req.params
+  const index = projects.findIndex(p => p.metadata.name === name)
+
+  if (index !== -1) {
+    projects[index] = {
+      ...projects[index],
+      ...req.body,
+      metadata: {
+        ...projects[index].metadata,
+        ...req.body.metadata,
+      },
+    }
+    res.json(projects[index])
+  } else {
+    res.status(404).json({ error: 'Project not found' })
+  }
+})
+
+// Mock project delete endpoint
+app.delete('/api/v1/projects/:name', (req, res) => {
+  const { name } = req.params
+
+  // Don't allow deleting the default project
+  if (name === 'default') {
+    res.status(400).json({ error: 'Cannot delete the default project' })
+    return
+  }
+
+  projects = projects.filter(p => p.metadata.name !== name)
+  res.json({ status: 'success', message: `Project ${name} deleted` })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })
