@@ -7,6 +7,7 @@ import {
   IconLogOut,
   IconFolder,
   IconServer,
+  IconBox,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -39,6 +40,11 @@ const navItems = [
     title: "Clusters",
     href: "/clusters",
     icon: IconServer,
+  },
+  {
+    title: "Projects",
+    href: "/projects",
+    icon: IconBox,
   },
 ];
 

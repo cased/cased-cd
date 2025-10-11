@@ -13,6 +13,7 @@ import { CertificatesPage } from './pages/certificates'
 import { GPGKeysPage } from './pages/gpgkeys'
 import { RepositoriesPage } from './pages/repositories'
 import { ClustersPage } from './pages/clusters'
+import { ProjectsPage } from './pages/projects'
 import { UserInfoPage } from './pages/user-info'
 import { HelpPage } from './pages/help'
 
@@ -44,6 +45,7 @@ function App() {
                 <Route path="gpgkeys" element={<GPGKeysPage />} />
                 <Route path="repositories" element={<RepositoriesPage />} />
                 <Route path="clusters" element={<ClustersPage />} />
+                <Route path="projects" element={<ProjectsPage />} />
                 <Route path="user-info" element={<UserInfoPage />} />
                 <Route path="help" element={<HelpPage />} />
               </Route>
