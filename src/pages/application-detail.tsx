@@ -15,6 +15,7 @@ import {
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   Table,
   TableBody,
@@ -166,6 +167,7 @@ export function ApplicationDetailPage() {
     namespace: 'all',
     health: 'all',
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
@@ -185,11 +187,18 @@ export function ApplicationDetailPage() {
     refetch()
   }
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
     if (!name) return
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
+    try {
       await deleteMutation.mutateAsync({ name, cascade: true })
+      setDeleteDialogOpen(false)
       navigate('/applications')
+    } catch (error) {
+      console.error('Failed to delete application:', error)
     }
   }
 
@@ -275,8 +284,7 @@ export function ApplicationDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
+                onClick={handleDeleteClick}
                 className="text-red-400 hover:text-red-300"
               >
                 <IconDelete size={16} />
@@ -371,6 +379,19 @@ export function ApplicationDetailPage() {
           onClose={() => setSelectedResource(null)}
         />
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Application"
+        description={`Are you sure you want to delete the application "${name}"? This action cannot be undone and will remove all associated resources from the cluster.`}
+        confirmText="Delete"
+        resourceName={name || ''}
+        resourceType="application"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   )
 }

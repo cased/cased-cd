@@ -32,28 +32,28 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex">
+    <div className="min-h-screen bg-white flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-neutral-900 to-black items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 items-center justify-center p-12">
         <div className="max-w-md">
           <div className="mb-12">
             <img src="/cased-logo.svg" alt="Cased CD" className="h-18 w-auto" />
           </div>
-          <p className="text-xl text-neutral-400">
+          <p className="text-xl text-blue-100">
             Modern GitOps deployment platform powered by ArgoCD
           </p>
           <div className="mt-8 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-grass-9" />
-              <span className="text-neutral-300">Continuous Deployment</span>
+              <div className="h-2 w-2 rounded-full bg-white" />
+              <span className="text-blue-50">Continuous Deployment</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-blue-400" />
-              <span className="text-neutral-300">GitOps Automation</span>
+              <div className="h-2 w-2 rounded-full bg-white" />
+              <span className="text-blue-50">GitOps Automation</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="h-2 w-2 rounded-full bg-amber-400" />
-              <span className="text-neutral-300">Deployment Intelligence</span>
+              <div className="h-2 w-2 rounded-full bg-white" />
+              <span className="text-blue-50">Deployment Intelligence</span>
             </div>
           </div>
         </div>
@@ -63,15 +63,15 @@ export function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           {/* Login card */}
-          <div className="rounded-lg border border-neutral-800 bg-neutral-950 p-8">
+          <div className="rounded-lg border border-neutral-200 bg-white p-8 shadow-lg">
             <div className="mb-8">
-              <h2 className="text-2xl font-semibold text-white mb-2">Welcome back</h2>
-              <p className="text-sm text-neutral-400">Sign in to your account to continue</p>
+              <h2 className="text-2xl font-semibold text-neutral-900 mb-2">Welcome back</h2>
+              <p className="text-sm text-neutral-600">Sign in to your account to continue</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-neutral-400 mb-2">
+                <label htmlFor="username" className="block text-sm font-medium text-neutral-700 mb-2">
                   Username
                 </label>
                 <Input
@@ -84,11 +84,12 @@ export function LoginPage() {
                   autoComplete="username"
                   autoFocus
                   disabled={isLoading}
+                  className="bg-white text-neutral-900"
                 />
               </div>
 
               <div>
-                <label htmlFor="password" className="block text-sm font-medium text-neutral-400 mb-2">
+                <label htmlFor="password" className="block text-sm font-medium text-neutral-700 mb-2">
                   Password
                 </label>
                 <Input
@@ -100,6 +101,7 @@ export function LoginPage() {
                   required
                   autoComplete="current-password"
                   disabled={isLoading}
+                  className="bg-white text-neutral-900"
                 />
               </div>
 
@@ -126,7 +128,7 @@ export function LoginPage() {
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-xs text-neutral-600">
+              <p className="text-xs text-neutral-500">
                 Default credentials: admin / password
               </p>
             </div>
@@ -134,7 +136,7 @@ export function LoginPage() {
 
           {/* Footer */}
           <div className="mt-8 text-center">
-            <p className="text-xs text-neutral-600">
+            <p className="text-xs text-neutral-500">
               Powered by ArgoCD • Built by Cased
             </p>
           </div>

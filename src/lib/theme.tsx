@@ -31,9 +31,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const mediaQuery = matchMedia('(prefers-color-scheme: dark)')
     const switchAppearance = ({ matches }: { matches: boolean }) => {
       if (matches) {
-        document.body.classList.add('dark')
+        document.documentElement.classList.add('dark')
       } else {
-        document.body.classList.remove('dark')
+        document.documentElement.classList.remove('dark')
       }
     }
 
