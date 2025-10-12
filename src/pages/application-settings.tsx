@@ -223,7 +223,7 @@ export function ApplicationSettingsPage() {
     <div className="min-h-screen bg-white dark:bg-black">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 py-4">
+        <div className="max-w-3xl mx-auto px-6 py-6">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -246,7 +246,7 @@ export function ApplicationSettingsPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-5xl mx-auto px-6 py-8">
+      <div className="max-w-3xl mx-auto px-6 py-12 pb-24">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* General Settings */}
