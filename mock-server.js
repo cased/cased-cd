@@ -140,6 +140,48 @@ app.get('/api/v1/applications/:name', (req, res) => {
           health: { status: 'Healthy' },
         },
       ],
+      history: [
+        {
+          id: 3,
+          revision: 'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0',
+          deployedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+          deployStartedAt: new Date(Date.now() - 2 * 60 * 60 * 1000 - 30000).toISOString(),
+          initiatedBy: {
+            username: 'admin',
+            automated: false,
+          },
+        },
+        {
+          id: 2,
+          revision: 'b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1',
+          deployedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+          deployStartedAt: new Date(Date.now() - 24 * 60 * 60 * 1000 - 45000).toISOString(),
+          initiatedBy: {
+            username: 'system',
+            automated: true,
+          },
+        },
+        {
+          id: 1,
+          revision: 'c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2',
+          deployedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days ago
+          deployStartedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 - 60000).toISOString(),
+          initiatedBy: {
+            username: 'developer',
+            automated: false,
+          },
+        },
+        {
+          id: 0,
+          revision: 'd4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3',
+          deployedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days ago
+          deployStartedAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000 - 90000).toISOString(),
+          initiatedBy: {
+            username: 'admin',
+            automated: false,
+          },
+        },
+      ],
     },
   })
 })
@@ -195,6 +237,45 @@ app.get('/api/v1/applications/:name/resource-tree', (req, res) => {
 // Mock sync endpoint
 app.post('/api/v1/applications/:name/sync', (req, res) => {
   res.json({ status: 'success' })
+})
+
+// Mock rollback endpoint
+app.post('/api/v1/applications/:name/rollback', (req, res) => {
+  const { name } = req.params
+  const { id, prune } = req.body
+
+  console.log(`Rollback request for ${name} to revision ${id}, prune: ${prune}`)
+
+  res.json({
+    metadata: {
+      name,
+      namespace: 'argocd',
+    },
+    spec: {
+      source: {
+        repoURL: 'https://github.com/argoproj/argocd-example-apps',
+        path: 'guestbook',
+        targetRevision: 'HEAD',
+      },
+      destination: {
+        server: 'https://kubernetes.default.svc',
+        namespace: 'default',
+      },
+    },
+    status: {
+      sync: {
+        status: 'OutOfSync',
+      },
+      health: {
+        status: 'Progressing',
+      },
+      operationState: {
+        phase: 'Running',
+        message: `Rolling back to revision ${id}...`,
+        startedAt: new Date().toISOString(),
+      },
+    },
+  })
 })
 
 // Mock application delete endpoint
