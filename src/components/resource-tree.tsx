@@ -5,6 +5,8 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
+  Handle,
+  Position,
 } from '@xyflow/react'
 import type { Node, Edge, NodeTypes } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -56,26 +58,34 @@ function ResourceNode({ data }: { data: ResourceNodeData }) {
   const HealthIcon = health.icon
 
   return (
-    <div
-      className={`px-4 py-3 rounded-lg border ${health.border} ${health.bg} bg-neutral-950 min-w-[200px] cursor-pointer hover:border-neutral-600 transition-colors`}
-      onClick={() => data.onClick?.(resource)}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <HealthIcon className={`h-4 w-4 ${health.color}`} />
-        <span className="text-xs font-medium text-neutral-500 uppercase">{resource.kind}</span>
+    <div className="relative">
+      {/* Input handle (left side) - for incoming edges */}
+      <Handle type="target" position={Position.Left} />
+
+      <div
+        className={`px-4 py-3 rounded-lg border ${health.border} ${health.bg} bg-neutral-950 min-w-[200px] cursor-pointer hover:border-neutral-600 transition-colors`}
+        onClick={() => data.onClick?.(resource)}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <HealthIcon className={`h-4 w-4 ${health.color}`} />
+          <span className="text-xs font-medium text-neutral-500 uppercase">{resource.kind}</span>
+        </div>
+        <div className="font-medium text-white text-sm mb-1 truncate">{resource.name}</div>
+        {resource.namespace && (
+          <div className="text-xs text-neutral-400">ns: {resource.namespace}</div>
+        )}
+        <div className="mt-2">
+          <Badge
+            variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
+            className="text-xs"
+          >
+            {healthStatus}
+          </Badge>
+        </div>
       </div>
-      <div className="font-medium text-white text-sm mb-1 truncate">{resource.name}</div>
-      {resource.namespace && (
-        <div className="text-xs text-neutral-400">ns: {resource.namespace}</div>
-      )}
-      <div className="mt-2">
-        <Badge
-          variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
-          className="text-xs"
-        >
-          {healthStatus}
-        </Badge>
-      </div>
+
+      {/* Output handle (right side) - for outgoing edges */}
+      <Handle type="source" position={Position.Right} />
     </div>
   )
 }
