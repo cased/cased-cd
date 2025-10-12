@@ -21,6 +21,7 @@ import {
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
 
 const healthIcons = {
@@ -310,11 +311,14 @@ function ApplicationCard({
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
-        <span className="text-[11px] text-neutral-500 dark:text-neutral-600">
-          {app.status?.reconciledAt
-            ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
-            : "Never synced"}
-        </span>
+        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-600">
+          <IconClock3 size={11} />
+          <span>
+            {app.status?.reconciledAt
+              ? formatDistanceToNow(new Date(app.status.reconciledAt), { addSuffix: true })
+              : "Never synced"}
+          </span>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={(e) => {

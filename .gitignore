@@ -45,3 +45,5 @@ dist-ssr
 *.tmp
 *.temp
 .cache
+
+.claude/settings.local.json

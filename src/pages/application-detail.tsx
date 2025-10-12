@@ -11,7 +11,8 @@ import {
   IconClock3,
   IconCircle,
   IconUnorderedList,
-  IconBox
+  IconBox,
+  IconCode
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,11 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree } from '@/services/applications'
-import { ResourceTree } from '@/components/resource-tree'
+import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
+import { ResourceDiffPanel } from '@/components/resource-diff-panel'
+import { ResourceTree } from '@/components/resource-tree'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff'
 
 interface ResourceFilters {
   kind: string
@@ -53,6 +55,8 @@ interface K8sResource {
   health?: {
     status?: string
   }
+  group?: string
+  version?: string
 }
 
 const healthIcons = {
@@ -182,6 +186,20 @@ export function ApplicationDetailPage() {
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
+  const { data: managedResources, isLoading: isLoadingManagedResources } = useManagedResources(name || '', !!name && view === 'diff')
+  const { data: resourceManifest } = useResource(
+    {
+      appName: name || '',
+      appNamespace: app?.metadata?.namespace,
+      resourceName: selectedResource?.name || '',
+      kind: selectedResource?.kind || '',
+      namespace: selectedResource?.namespace,
+      group: selectedResource?.group,
+      version: selectedResource?.version,
+    },
+    !!name && !!selectedResource
+  )
+
   const syncMutation = useSyncApplication()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
@@ -394,23 +412,41 @@ export function ApplicationDetailPage() {
               <IconBox size={16} />
               Pods
             </Button>
+            <Button
+              variant={view === 'diff' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('diff')}
+              className="gap-1"
+            >
+              <IconCode size={16} />
+              Diff
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-        </div>
+        {view === 'diff' ? (
+          <ResourceDiffPanel
+            resources={managedResources?.items || []}
+            resourceStatuses={app?.status?.resources}
+            isLoading={isLoadingManagedResources}
+          />
+        ) : (
+          <div className="p-4">
+            {view === 'tree' && <TreeView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          </div>
+        )}
       </div>
 
       {/* Resource Details Panel */}
       {selectedResource && (
         <ResourceDetailsPanel
           resource={selectedResource}
+          manifest={resourceManifest}
           onClose={() => setSelectedResource(null)}
         />
       )}
@@ -433,14 +469,14 @@ export function ApplicationDetailPage() {
 
 // Placeholder components for different views
 interface TreeViewProps {
-  app: { status?: { resources?: K8sResource[] } }
+  resourceTree?: { nodes?: K8sResource[] }
   filters: ResourceFilters
   onFiltersChange: (filters: ResourceFilters) => void
   onResourceClick: (resource: K8sResource) => void
 }
 
-function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
-  const resources = app.status?.resources || []
+function TreeView({ resourceTree, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
+  const resources = resourceTree?.nodes || []
   const filteredResources = filterResources(resources, filters)
 
   if (resources.length === 0) {
@@ -457,16 +493,20 @@ function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewPr
     <div>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({filteredResources.length} of {resources.length} resources)</h2>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+          <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">Resource tree visualization</p>
         </div>
         <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
-      <ResourceTree
-        resources={filteredResources}
-        onResourceClick={onResourceClick}
-      />
+      {filteredResources.length === 0 ? (
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+          <IconUnorderedList size={36} className="text-neutral-600 mx-auto mb-2" />
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">No resources match the filters</p>
+        </div>
+      ) : (
+        <ResourceTree resources={filteredResources} onResourceClick={onResourceClick} />
+      )}
     </div>
   )
 }

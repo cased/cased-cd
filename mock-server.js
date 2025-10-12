@@ -149,32 +149,44 @@ app.get('/api/v1/applications/:name/resource-tree', (req, res) => {
   res.json({
     nodes: [
       {
+        kind: 'Service',
+        name: 'guestbook-ui',
+        namespace: 'default',
+        status: 'Synced',
+        health: { status: 'Healthy' },
+        group: '',
+        version: 'v1',
+        parentRefs: [],
+      },
+      {
         kind: 'Deployment',
         name: 'guestbook-ui',
         namespace: 'default',
+        status: 'Synced',
         health: { status: 'Healthy' },
+        group: 'apps',
+        version: 'v1',
         parentRefs: [],
       },
       {
         kind: 'ReplicaSet',
         name: 'guestbook-ui-85985d774c',
         namespace: 'default',
+        status: 'Synced',
         health: { status: 'Healthy' },
-        parentRefs: [{ kind: 'Deployment', name: 'guestbook-ui' }],
+        group: 'apps',
+        version: 'v1',
+        parentRefs: [{ kind: 'Deployment', name: 'guestbook-ui', namespace: 'default' }],
       },
       {
         kind: 'Pod',
         name: 'guestbook-ui-85985d774c-7nlwl',
         namespace: 'default',
+        status: 'Running',
         health: { status: 'Healthy' },
-        parentRefs: [{ kind: 'ReplicaSet', name: 'guestbook-ui-85985d774c' }],
-      },
-      {
-        kind: 'Service',
-        name: 'guestbook-ui',
-        namespace: 'default',
-        health: { status: 'Healthy' },
-        parentRefs: [],
+        group: '',
+        version: 'v1',
+        parentRefs: [{ kind: 'ReplicaSet', name: 'guestbook-ui-85985d774c', namespace: 'default' }],
       },
     ],
   })
@@ -462,6 +474,255 @@ app.delete('/api/v1/projects/:name', (req, res) => {
 
   projects = projects.filter(p => p.metadata.name !== name)
   res.json({ status: 'success', message: `Project ${name} deleted` })
+})
+
+// Mock resource endpoint (get individual resource manifest)
+app.get('/api/v1/applications/:name/resource', (req, res) => {
+  const { resourceName, kind, namespace } = req.query
+
+  // Mock manifests for different resource types
+  const manifests = {
+    Service: {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook'
+        }
+      },
+      spec: {
+        type: 'ClusterIP',
+        ports: [
+          {
+            port: 80,
+            targetPort: 80,
+            protocol: 'TCP'
+          }
+        ],
+        selector: {
+          app: 'guestbook-ui'
+        }
+      }
+    },
+    Deployment: {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook'
+        }
+      },
+      spec: {
+        replicas: 1,
+        selector: {
+          matchLabels: {
+            app: 'guestbook-ui'
+          }
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'guestbook-ui'
+            }
+          },
+          spec: {
+            containers: [
+              {
+                name: 'guestbook-ui',
+                image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+                ports: [
+                  {
+                    containerPort: 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    ReplicaSet: {
+      apiVersion: 'apps/v1',
+      kind: 'ReplicaSet',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook-ui'
+        }
+      },
+      spec: {
+        replicas: 1,
+        selector: {
+          matchLabels: {
+            app: 'guestbook-ui'
+          }
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'guestbook-ui'
+            }
+          },
+          spec: {
+            containers: [
+              {
+                name: 'guestbook-ui',
+                image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+                ports: [
+                  {
+                    containerPort: 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      status: {
+        replicas: 1,
+        fullyLabeledReplicas: 1,
+        readyReplicas: 1,
+        availableReplicas: 1
+      }
+    },
+    Pod: {
+      apiVersion: 'v1',
+      kind: 'Pod',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook-ui'
+        }
+      },
+      spec: {
+        containers: [
+          {
+            name: 'guestbook-ui',
+            image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+            ports: [
+              {
+                containerPort: 80
+              }
+            ]
+          }
+        ]
+      },
+      status: {
+        phase: 'Running',
+        conditions: [
+          {
+            type: 'Ready',
+            status: 'True'
+          }
+        ]
+      }
+    }
+  }
+
+  const manifest = manifests[kind] || {
+    apiVersion: 'v1',
+    kind: kind,
+    metadata: {
+      name: resourceName,
+      namespace: namespace || 'default'
+    }
+  }
+
+  res.json({ manifest })
+})
+
+// Mock managed resources endpoint (for diff view)
+app.get('/api/v1/applications/:name/managed-resources', (req, res) => {
+  const { name } = req.params
+
+  // Mock YAML manifests
+  const deploymentLive = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook-ui
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: guestbook
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+      - name: guestbook
+        image: gcr.io/heptio-images/ks-guestbook-demo:0.1
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"`
+
+  const deploymentTarget = deploymentLive // Make it synced for now
+
+  const serviceLive = `apiVersion: v1
+kind: Service
+metadata:
+  name: guestbook-ui
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: guestbook
+    tier: frontend`
+
+  const serviceTarget = serviceLive // Service is in sync
+
+  res.json({
+    items: [
+      {
+        group: 'apps',
+        kind: 'Deployment',
+        namespace: 'default',
+        name: 'guestbook-ui',
+        version: 'v1',
+        liveState: deploymentLive,
+        targetState: deploymentTarget,
+        syncStatus: 'Synced',
+        health: {
+          status: 'Healthy',
+          message: 'Deployment has minimum availability',
+        },
+      },
+      {
+        group: '',
+        kind: 'Service',
+        namespace: 'default',
+        name: 'guestbook-ui',
+        version: 'v1',
+        liveState: serviceLive,
+        targetState: serviceTarget,
+        syncStatus: 'Synced',
+        health: {
+          status: 'Healthy',
+          message: 'Service is healthy',
+        },
+      },
+    ],
+  })
 })
 
 app.listen(PORT, () => {

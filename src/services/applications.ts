@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api-client'
-import type { Application, ApplicationList } from '@/types/api'
+import type { Application, ApplicationList, ManagedResourcesResponse } from '@/types/api'
 
 // API endpoints
 const ENDPOINTS = {
@@ -10,6 +10,7 @@ const ENDPOINTS = {
   rollback: (name: string) => `/applications/${name}/rollback`,
   resource: (name: string) => `/applications/${name}/resource`,
   resourceTree: (name: string) => `/applications/${name}/resource-tree`,
+  managedResources: (name: string) => `/applications/${name}/managed-resources`,
 }
 
 // Query Keys
@@ -20,6 +21,9 @@ export const applicationKeys = {
   details: () => [...applicationKeys.all, 'detail'] as const,
   detail: (name: string) => [...applicationKeys.details(), name] as const,
   resourceTree: (name: string) => [...applicationKeys.all, 'resourceTree', name] as const,
+  managedResources: (name: string) => [...applicationKeys.all, 'managedResources', name] as const,
+  resource: (appName: string, resourceName: string, kind: string, namespace?: string) =>
+    [...applicationKeys.all, 'resource', appName, kind, namespace || '', resourceName] as const,
 }
 
 // Types
@@ -102,6 +106,50 @@ export const applicationsApi = {
   getResourceTree: async (name: string): Promise<ResourceTree> => {
     const response = await api.get<ResourceTree>(ENDPOINTS.resourceTree(name))
     return response.data
+  },
+
+  // Get managed resources with diff information
+  getManagedResources: async (name: string): Promise<ManagedResourcesResponse> => {
+    const response = await api.get<ManagedResourcesResponse>(ENDPOINTS.managedResources(name))
+    return response.data
+  },
+
+  // Get individual resource manifest
+  getResource: async (params: {
+    appName: string
+    appNamespace?: string
+    resourceName: string
+    kind: string
+    namespace?: string
+    group?: string
+    version?: string
+  }): Promise<Record<string, unknown>> => {
+    // ArgoCD requires both 'name' AND 'resourceName' parameters (quirky API design)
+    const queryParams = new URLSearchParams({
+      name: params.resourceName,           // Primary parameter
+      resourceName: params.resourceName,   // Duplicate (required by ArgoCD)
+      kind: params.kind,
+      version: params.version || '',       // Send empty string if missing
+      group: params.group || '',           // Send empty string for core API
+    })
+
+    if (params.namespace) {
+      queryParams.append('namespace', params.namespace)
+    }
+
+    if (params.appNamespace) {
+      queryParams.append('appNamespace', params.appNamespace)
+    }
+
+    const response = await api.get<{ manifest: unknown }>(
+      `${ENDPOINTS.resource(params.appName)}?${queryParams.toString()}`
+    )
+    // ArgoCD returns manifest as JSON string sometimes, so parse if needed
+    const manifest = response.data.manifest
+    if (typeof manifest === 'string') {
+      return JSON.parse(manifest)
+    }
+    return manifest as Record<string, unknown>
   },
 }
 
@@ -284,5 +332,33 @@ export function useResourceTree(name: string, enabled: boolean = true) {
     enabled: enabled && !!name,
     staleTime: 5 * 1000, // 5 seconds
     refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
+  })
+}
+
+// Get managed resources with diff information
+export function useManagedResources(name: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: applicationKeys.managedResources(name),
+    queryFn: () => applicationsApi.getManagedResources(name),
+    enabled: enabled && !!name,
+    staleTime: 5 * 1000, // 5 seconds
+  })
+}
+
+// Get individual resource manifest
+export function useResource(params: {
+  appName: string
+  appNamespace?: string
+  resourceName: string
+  kind: string
+  namespace?: string
+  group?: string
+  version?: string
+}, enabled: boolean = true) {
+  return useQuery({
+    queryKey: applicationKeys.resource(params.appName, params.resourceName, params.kind, params.namespace),
+    queryFn: () => applicationsApi.getResource(params),
+    enabled: enabled && !!params.appName && !!params.resourceName && !!params.kind,
+    staleTime: 10 * 1000, // 10 seconds
   })
 }
