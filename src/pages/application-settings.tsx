@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -88,48 +89,48 @@ export function ApplicationSettingsPage() {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
-      project: application?.spec.project || 'default',
-      repoURL: application?.spec.source?.repoURL || '',
-      targetRevision: application?.spec.source?.targetRevision || 'HEAD',
-      path: application?.spec.source?.path || '',
-      destinationServer: application?.spec.destination?.server || '',
-      destinationNamespace: application?.spec.destination?.namespace || '',
-      autoSyncEnabled: !!application?.spec.syncPolicy?.automated,
-      prune: application?.spec.syncPolicy?.automated?.prune || false,
-      selfHeal: application?.spec.syncPolicy?.automated?.selfHeal || false,
-      allowEmpty: application?.spec.syncPolicy?.automated?.allowEmpty || false,
-      // Sync options (check if they exist in syncOptions array)
-      createNamespace: application?.spec.syncPolicy?.syncOptions?.includes('CreateNamespace=true') || false,
-      pruneLast: application?.spec.syncPolicy?.syncOptions?.includes('PruneLast=true') || false,
-      applyOutOfSyncOnly: application?.spec.syncPolicy?.syncOptions?.includes('ApplyOutOfSyncOnly=true') || false,
-      serverSideApply: application?.spec.syncPolicy?.syncOptions?.includes('ServerSideApply=true') || false,
-      // Retry strategy
-      retryEnabled: !!application?.spec.syncPolicy?.retry,
-      retryLimit: application?.spec.syncPolicy?.retry?.limit || 2,
+      project: 'default',
+      repoURL: '',
+      targetRevision: 'HEAD',
+      path: '',
+      destinationServer: '',
+      destinationNamespace: '',
+      autoSyncEnabled: false,
+      prune: false,
+      selfHeal: false,
+      allowEmpty: false,
+      createNamespace: false,
+      pruneLast: false,
+      applyOutOfSyncOnly: false,
+      serverSideApply: false,
+      retryEnabled: false,
+      retryLimit: 2,
     },
   })
 
   // Reset form when application data loads
-  if (application && !form.formState.isDirty) {
-    form.reset({
-      project: application.spec.project || 'default',
-      repoURL: application.spec.source?.repoURL || '',
-      targetRevision: application.spec.source?.targetRevision || 'HEAD',
-      path: application.spec.source?.path || '',
-      destinationServer: application.spec.destination?.server || '',
-      destinationNamespace: application.spec.destination?.namespace || '',
-      autoSyncEnabled: !!application.spec.syncPolicy?.automated,
-      prune: application.spec.syncPolicy?.automated?.prune || false,
-      selfHeal: application.spec.syncPolicy?.automated?.selfHeal || false,
-      allowEmpty: application.spec.syncPolicy?.automated?.allowEmpty || false,
-      createNamespace: application.spec.syncPolicy?.syncOptions?.includes('CreateNamespace=true') || false,
-      pruneLast: application.spec.syncPolicy?.syncOptions?.includes('PruneLast=true') || false,
-      applyOutOfSyncOnly: application.spec.syncPolicy?.syncOptions?.includes('ApplyOutOfSyncOnly=true') || false,
-      serverSideApply: application.spec.syncPolicy?.syncOptions?.includes('ServerSideApply=true') || false,
-      retryEnabled: !!application.spec.syncPolicy?.retry,
-      retryLimit: application.spec.syncPolicy?.retry?.limit || 2,
-    })
-  }
+  useEffect(() => {
+    if (application) {
+      form.reset({
+        project: application.spec.project || 'default',
+        repoURL: application.spec.source?.repoURL || '',
+        targetRevision: application.spec.source?.targetRevision || 'HEAD',
+        path: application.spec.source?.path || '',
+        destinationServer: application.spec.destination?.server || '',
+        destinationNamespace: application.spec.destination?.namespace || '',
+        autoSyncEnabled: !!application.spec.syncPolicy?.automated,
+        prune: application.spec.syncPolicy?.automated?.prune || false,
+        selfHeal: application.spec.syncPolicy?.automated?.selfHeal || false,
+        allowEmpty: application.spec.syncPolicy?.automated?.allowEmpty || false,
+        createNamespace: application.spec.syncPolicy?.syncOptions?.includes('CreateNamespace=true') || false,
+        pruneLast: application.spec.syncPolicy?.syncOptions?.includes('PruneLast=true') || false,
+        applyOutOfSyncOnly: application.spec.syncPolicy?.syncOptions?.includes('ApplyOutOfSyncOnly=true') || false,
+        serverSideApply: application.spec.syncPolicy?.syncOptions?.includes('ServerSideApply=true') || false,
+        retryEnabled: !!application.spec.syncPolicy?.retry,
+        retryLimit: application.spec.syncPolicy?.retry?.limit || 2,
+      })
+    }
+  }, [application, form])
 
   // Watch auto-sync toggle to enable/disable prune and self-heal
   const autoSyncEnabled = form.watch('autoSyncEnabled')
