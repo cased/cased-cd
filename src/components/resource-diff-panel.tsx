@@ -11,7 +11,7 @@ interface ResourceDiffPanelProps {
     name: string;
     namespace?: string;
     group?: string;
-    status: string; // "Synced" or "OutOfSync"
+    status?: string; // "Synced" or "OutOfSync"
   }>;
   isLoading?: boolean;
 }
