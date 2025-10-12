@@ -1,14 +1,8 @@
+import { useParams, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet'
+import { IconArrowLeft } from 'obra-icons-react'
 import {
   Accordion,
   AccordionContent,
@@ -39,8 +33,7 @@ import { Separator } from '@/components/ui/separator'
 import { useProjects } from '@/services/projects'
 import { useRepositories } from '@/services/repositories'
 import { useClusters } from '@/services/clusters'
-import { useUpdateApplicationSpec } from '@/services/applications'
-import type { Application } from '@/types/api'
+import { useApplication, useUpdateApplicationSpec } from '@/services/applications'
 import { toast } from 'sonner'
 
 // Validation schema for high-priority settings
@@ -76,17 +69,13 @@ const settingsFormSchema = z.object({
 
 type SettingsFormValues = z.infer<typeof settingsFormSchema>
 
-interface ApplicationSettingsProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  application: Application
-}
+export function ApplicationSettingsPage() {
+  const { name } = useParams<{ name: string }>()
+  const navigate = useNavigate()
 
-export function ApplicationSettings({
-  open,
-  onOpenChange,
-  application,
-}: ApplicationSettingsProps) {
+  // Fetch application data
+  const { data: application, isLoading } = useApplication(name || '', !!name)
+
   // Fetch data for dropdowns
   const { data: projectsData } = useProjects()
   const { data: reposData } = useRepositories()
@@ -99,6 +88,30 @@ export function ApplicationSettings({
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsFormSchema),
     defaultValues: {
+      project: application?.spec.project || 'default',
+      repoURL: application?.spec.source?.repoURL || '',
+      targetRevision: application?.spec.source?.targetRevision || 'HEAD',
+      path: application?.spec.source?.path || '',
+      destinationServer: application?.spec.destination?.server || '',
+      destinationNamespace: application?.spec.destination?.namespace || '',
+      autoSyncEnabled: !!application?.spec.syncPolicy?.automated,
+      prune: application?.spec.syncPolicy?.automated?.prune || false,
+      selfHeal: application?.spec.syncPolicy?.automated?.selfHeal || false,
+      allowEmpty: application?.spec.syncPolicy?.automated?.allowEmpty || false,
+      // Sync options (check if they exist in syncOptions array)
+      createNamespace: application?.spec.syncPolicy?.syncOptions?.includes('CreateNamespace=true') || false,
+      pruneLast: application?.spec.syncPolicy?.syncOptions?.includes('PruneLast=true') || false,
+      applyOutOfSyncOnly: application?.spec.syncPolicy?.syncOptions?.includes('ApplyOutOfSyncOnly=true') || false,
+      serverSideApply: application?.spec.syncPolicy?.syncOptions?.includes('ServerSideApply=true') || false,
+      // Retry strategy
+      retryEnabled: !!application?.spec.syncPolicy?.retry,
+      retryLimit: application?.spec.syncPolicy?.retry?.limit || 2,
+    },
+  })
+
+  // Reset form when application data loads
+  if (application && !form.formState.isDirty) {
+    form.reset({
       project: application.spec.project || 'default',
       repoURL: application.spec.source?.repoURL || '',
       targetRevision: application.spec.source?.targetRevision || 'HEAD',
@@ -109,22 +122,22 @@ export function ApplicationSettings({
       prune: application.spec.syncPolicy?.automated?.prune || false,
       selfHeal: application.spec.syncPolicy?.automated?.selfHeal || false,
       allowEmpty: application.spec.syncPolicy?.automated?.allowEmpty || false,
-      // Sync options (check if they exist in syncOptions array)
       createNamespace: application.spec.syncPolicy?.syncOptions?.includes('CreateNamespace=true') || false,
       pruneLast: application.spec.syncPolicy?.syncOptions?.includes('PruneLast=true') || false,
       applyOutOfSyncOnly: application.spec.syncPolicy?.syncOptions?.includes('ApplyOutOfSyncOnly=true') || false,
       serverSideApply: application.spec.syncPolicy?.syncOptions?.includes('ServerSideApply=true') || false,
-      // Retry strategy
       retryEnabled: !!application.spec.syncPolicy?.retry,
       retryLimit: application.spec.syncPolicy?.retry?.limit || 2,
-    },
-  })
+    })
+  }
 
   // Watch auto-sync toggle to enable/disable prune and self-heal
   const autoSyncEnabled = form.watch('autoSyncEnabled')
   const retryEnabled = form.watch('retryEnabled')
 
   const onSubmit = async (values: SettingsFormValues) => {
+    if (!application) return
+
     try {
       // Build sync options array
       const syncOptions: string[] = []
@@ -177,7 +190,7 @@ export function ApplicationSettings({
         description: 'Application settings have been saved successfully',
       })
 
-      onOpenChange(false)
+      navigate(`/applications/${application.metadata.name}`)
     } catch (error) {
       toast.error('Failed to update settings', {
         description: error instanceof Error ? error.message : 'Unknown error',
@@ -186,22 +199,55 @@ export function ApplicationSettings({
   }
 
   const handleCancel = () => {
-    form.reset()
-    onOpenChange(false)
+    navigate(`/applications/${application?.metadata.name}`)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-neutral-500">Loading...</p>
+      </div>
+    )
+  }
+
+  if (!application) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-neutral-500">Application not found</p>
+      </div>
+    )
   }
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto">
-        <SheetHeader className="px-6">
-          <SheetTitle>Application Settings</SheetTitle>
-          <SheetDescription>
-            Configure core settings for {application.metadata.name}
-          </SheetDescription>
-        </SheetHeader>
+    <div className="min-h-screen bg-white dark:bg-black">
+      {/* Header */}
+      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-6 py-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCancel}
+            >
+              <IconArrowLeft size={16} />
+              Back
+            </Button>
+            <div className="flex-1">
+              <h1 className="text-xl font-semibold text-black dark:text-white">
+                Settings: {application.metadata.name}
+              </h1>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">
+                Configure core application settings
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Content */}
+      <div className="max-w-5xl mx-auto px-6 py-8">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-6 px-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* General Settings */}
             <div className="space-y-4">
               <div className="pb-2">
@@ -621,7 +667,11 @@ export function ApplicationSettings({
       </AccordionItem>
     </Accordion>
 
-            <SheetFooter className="gap-2">
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <Button type="submit" disabled={updateSpecMutation.isPending}>
+                {updateSpecMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -630,13 +680,10 @@ export function ApplicationSettings({
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={updateSpecMutation.isPending}>
-                {updateSpecMutation.isPending ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </SheetFooter>
+            </div>
           </form>
         </Form>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   )
 }

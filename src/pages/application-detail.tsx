@@ -40,7 +40,6 @@ import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
 import { ApplicationHistory } from '@/components/application-history'
-import { ApplicationSettings } from '@/components/application-settings'
 
 type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
 
@@ -187,7 +186,6 @@ export function ApplicationDetailPage() {
     health: 'all',
   })
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
@@ -370,7 +368,7 @@ export function ApplicationDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setSettingsOpen(true)}
+                onClick={() => navigate(`/applications/${name}/settings`)}
               >
                 <IconSettings size={16} />
                 Settings
@@ -538,15 +536,6 @@ export function ApplicationDetailPage() {
         onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
       />
-
-      {/* Application Settings Panel */}
-      {app && (
-        <ApplicationSettings
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          application={app}
-        />
-      )}
     </div>
   )
 }

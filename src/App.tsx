@@ -7,6 +7,7 @@ import { Toaster } from './components/ui/sonner'
 import { LoginPage } from './pages/login'
 import { ApplicationsPage } from './pages/applications'
 import { ApplicationDetailPage } from './pages/application-detail'
+import { ApplicationSettingsPage } from './pages/application-settings'
 import { SettingsPage } from './pages/settings'
 import { AccountsPage } from './pages/accounts'
 import { CertificatesPage } from './pages/certificates'
@@ -39,6 +40,7 @@ function App() {
                 <Route index element={<Navigate to="/applications" replace />} />
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:name" element={<ApplicationDetailPage />} />
+                <Route path="applications/:name/settings" element={<ApplicationSettingsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="accounts" element={<AccountsPage />} />
                 <Route path="certificates" element={<CertificatesPage />} />
