@@ -22,6 +22,8 @@ export const applicationKeys = {
   detail: (name: string) => [...applicationKeys.details(), name] as const,
   resourceTree: (name: string) => [...applicationKeys.all, 'resourceTree', name] as const,
   managedResources: (name: string) => [...applicationKeys.all, 'managedResources', name] as const,
+  resource: (appName: string, resourceName: string, kind: string, namespace?: string) =>
+    [...applicationKeys.all, 'resource', appName, kind, namespace || '', resourceName] as const,
 }
 
 // Types
@@ -110,6 +112,35 @@ export const applicationsApi = {
   getManagedResources: async (name: string): Promise<ManagedResourcesResponse> => {
     const response = await api.get<ManagedResourcesResponse>(ENDPOINTS.managedResources(name))
     return response.data
+  },
+
+  // Get individual resource manifest
+  getResource: async (params: {
+    appName: string
+    resourceName: string
+    kind: string
+    namespace?: string
+    group?: string
+    version?: string
+  }): Promise<Record<string, unknown>> => {
+    const queryParams = new URLSearchParams({
+      name: params.appName,
+      resourceName: params.resourceName,
+      kind: params.kind,
+    })
+    if (params.namespace) queryParams.append('namespace', params.namespace)
+    if (params.group) queryParams.append('group', params.group)
+    if (params.version) queryParams.append('version', params.version)
+
+    const response = await api.get<{ manifest: unknown }>(
+      `${ENDPOINTS.resource(params.appName)}?${queryParams.toString()}`
+    )
+    // ArgoCD returns manifest as JSON string sometimes, so parse if needed
+    const manifest = response.data.manifest
+    if (typeof manifest === 'string') {
+      return JSON.parse(manifest)
+    }
+    return manifest as Record<string, unknown>
   },
 }
 
@@ -302,5 +333,22 @@ export function useManagedResources(name: string, enabled: boolean = true) {
     queryFn: () => applicationsApi.getManagedResources(name),
     enabled: enabled && !!name,
     staleTime: 5 * 1000, // 5 seconds
+  })
+}
+
+// Get individual resource manifest
+export function useResource(params: {
+  appName: string
+  resourceName: string
+  kind: string
+  namespace?: string
+  group?: string
+  version?: string
+}, enabled: boolean = true) {
+  return useQuery({
+    queryKey: applicationKeys.resource(params.appName, params.resourceName, params.kind, params.namespace),
+    queryFn: () => applicationsApi.getResource(params),
+    enabled: enabled && !!params.appName && !!params.resourceName && !!params.kind,
+    staleTime: 10 * 1000, // 10 seconds
   })
 }

@@ -464,6 +464,167 @@ app.delete('/api/v1/projects/:name', (req, res) => {
   res.json({ status: 'success', message: `Project ${name} deleted` })
 })
 
+// Mock resource endpoint (get individual resource manifest)
+app.get('/api/v1/applications/:name/resource', (req, res) => {
+  const { resourceName, kind, namespace } = req.query
+
+  // Mock manifests for different resource types
+  const manifests = {
+    Service: {
+      apiVersion: 'v1',
+      kind: 'Service',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook'
+        }
+      },
+      spec: {
+        type: 'ClusterIP',
+        ports: [
+          {
+            port: 80,
+            targetPort: 80,
+            protocol: 'TCP'
+          }
+        ],
+        selector: {
+          app: 'guestbook-ui'
+        }
+      }
+    },
+    Deployment: {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook'
+        }
+      },
+      spec: {
+        replicas: 1,
+        selector: {
+          matchLabels: {
+            app: 'guestbook-ui'
+          }
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'guestbook-ui'
+            }
+          },
+          spec: {
+            containers: [
+              {
+                name: 'guestbook-ui',
+                image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+                ports: [
+                  {
+                    containerPort: 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    ReplicaSet: {
+      apiVersion: 'apps/v1',
+      kind: 'ReplicaSet',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook-ui'
+        }
+      },
+      spec: {
+        replicas: 1,
+        selector: {
+          matchLabels: {
+            app: 'guestbook-ui'
+          }
+        },
+        template: {
+          metadata: {
+            labels: {
+              app: 'guestbook-ui'
+            }
+          },
+          spec: {
+            containers: [
+              {
+                name: 'guestbook-ui',
+                image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+                ports: [
+                  {
+                    containerPort: 80
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      status: {
+        replicas: 1,
+        fullyLabeledReplicas: 1,
+        readyReplicas: 1,
+        availableReplicas: 1
+      }
+    },
+    Pod: {
+      apiVersion: 'v1',
+      kind: 'Pod',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook-ui'
+        }
+      },
+      spec: {
+        containers: [
+          {
+            name: 'guestbook-ui',
+            image: 'gcr.io/heptio-images/ks-guestbook-demo:0.1',
+            ports: [
+              {
+                containerPort: 80
+              }
+            ]
+          }
+        ]
+      },
+      status: {
+        phase: 'Running',
+        conditions: [
+          {
+            type: 'Ready',
+            status: 'True'
+          }
+        ]
+      }
+    }
+  }
+
+  const manifest = manifests[kind] || {
+    apiVersion: 'v1',
+    kind: kind,
+    metadata: {
+      name: resourceName,
+      namespace: namespace || 'default'
+    }
+  }
+
+  res.json({ manifest })
+})
+
 // Mock managed resources endpoint (for diff view)
 app.get('/api/v1/applications/:name/managed-resources', (req, res) => {
   const { name } = req.params

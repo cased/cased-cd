@@ -3,7 +3,6 @@ import {
   ReactFlow,
   Background,
   Controls,
-  MiniMap,
   useNodesState,
   useEdgesState,
 } from '@xyflow/react'
@@ -228,22 +227,6 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
       >
         <Background color="#404040" gap={16} />
         <Controls className="bg-neutral-900 border border-neutral-800 rounded-lg" />
-        <MiniMap
-          className="bg-neutral-900 border border-neutral-800 rounded-lg"
-          nodeColor={(node) => {
-            const resource = node.data.resource as Resource
-            const healthStatus = (resource.health?.status || 'Unknown') as keyof typeof healthIcons
-            const colors: Record<keyof typeof healthIcons, string> = {
-              Healthy: '#46a758',
-              Progressing: '#3b82f6',
-              Degraded: '#f59e0b',
-              Suspended: '#737373',
-              Missing: '#ef4444',
-              Unknown: '#737373',
-            }
-            return colors[healthStatus] || colors.Unknown
-          }}
-        />
       </ReactFlow>
     </div>
   )

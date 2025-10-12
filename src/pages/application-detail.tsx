@@ -33,8 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources } from '@/services/applications'
-import { ResourceTree } from '@/components/resource-tree'
+import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 
@@ -185,6 +184,15 @@ export function ApplicationDetailPage() {
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
   const { data: managedResources, isLoading: isLoadingManagedResources } = useManagedResources(name || '', !!name && view === 'diff')
+  const { data: resourceManifest } = useResource(
+    {
+      appName: name || '',
+      resourceName: selectedResource?.name || '',
+      kind: selectedResource?.kind || '',
+      namespace: selectedResource?.namespace,
+    },
+    !!name && !!selectedResource
+  )
   const syncMutation = useSyncApplication()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
@@ -420,7 +428,7 @@ export function ApplicationDetailPage() {
           />
         ) : (
           <div className="p-4">
-            {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'tree' && <TreeView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
             {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
             {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
           </div>
@@ -431,6 +439,7 @@ export function ApplicationDetailPage() {
       {selectedResource && (
         <ResourceDetailsPanel
           resource={selectedResource}
+          manifest={resourceManifest}
           onClose={() => setSelectedResource(null)}
         />
       )}
@@ -453,14 +462,14 @@ export function ApplicationDetailPage() {
 
 // Placeholder components for different views
 interface TreeViewProps {
-  app: { status?: { resources?: K8sResource[] } }
+  resourceTree?: { nodes?: K8sResource[] }
   filters: ResourceFilters
   onFiltersChange: (filters: ResourceFilters) => void
   onResourceClick: (resource: K8sResource) => void
 }
 
-function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
-  const resources = app.status?.resources || []
+function TreeView({ resourceTree, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
+  const resources = resourceTree?.nodes || []
   const filteredResources = filterResources(resources, filters)
 
   if (resources.length === 0) {
@@ -477,16 +486,75 @@ function TreeView({ app, filters, onFiltersChange, onResourceClick }: TreeViewPr
     <div>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({filteredResources.length} of {resources.length} resources)</h2>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+          <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources including child resources</p>
         </div>
         <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
-      <ResourceTree
-        resources={filteredResources}
-        onResourceClick={onResourceClick}
-      />
+      {filteredResources.length === 0 ? (
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+          <IconUnorderedList size={36} className="text-neutral-600 mx-auto mb-2" />
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">No resources found</p>
+        </div>
+      ) : (
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-neutral-100 dark:bg-neutral-900">
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  Kind
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  Name
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  Namespace
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  Status
+                </TableHead>
+                <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                  Health
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredResources.map((resource, i: number) => (
+                <TableRow
+                  key={i}
+                  className="cursor-pointer"
+                  onClick={() => onResourceClick(resource)}
+                >
+                  <TableCell className="text-sm text-black dark:text-white">{resource.kind}</TableCell>
+                  <TableCell className="text-sm text-black dark:text-white">{resource.name}</TableCell>
+                  <TableCell className="text-sm text-neutral-600 dark:text-neutral-400">{resource.namespace || '-'}</TableCell>
+                  <TableCell className="text-sm">
+                    <Badge variant="outline" className="gap-1.5">
+                      <IconCircleCheck size={10} className={resource.status === 'Synced' ? 'text-grass-11' : 'text-amber-400'} />
+                      {resource.status || 'Unknown'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {resource.health?.status ? (
+                      <Badge variant="outline" className="gap-1.5">
+                        {resource.health.status === 'Healthy' ? (
+                          <IconCircleCheck size={10} className="text-grass-11" />
+                        ) : (
+                          <IconCircleWarning size={10} className="text-amber-400" />
+                        )}
+                        {resource.health.status}
+                      </Badge>
+                    ) : (
+                      <span className="text-neutral-600 text-xs">-</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   )
 }
