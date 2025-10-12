@@ -117,20 +117,29 @@ export const applicationsApi = {
   // Get individual resource manifest
   getResource: async (params: {
     appName: string
+    appNamespace?: string
     resourceName: string
     kind: string
     namespace?: string
     group?: string
     version?: string
   }): Promise<Record<string, unknown>> => {
+    // ArgoCD requires both 'name' AND 'resourceName' parameters (quirky API design)
     const queryParams = new URLSearchParams({
-      name: params.appName,
-      resourceName: params.resourceName,
+      name: params.resourceName,           // Primary parameter
+      resourceName: params.resourceName,   // Duplicate (required by ArgoCD)
       kind: params.kind,
+      version: params.version || '',       // Send empty string if missing
+      group: params.group || '',           // Send empty string for core API
     })
-    if (params.namespace) queryParams.append('namespace', params.namespace)
-    if (params.group) queryParams.append('group', params.group)
-    if (params.version) queryParams.append('version', params.version)
+
+    if (params.namespace) {
+      queryParams.append('namespace', params.namespace)
+    }
+
+    if (params.appNamespace) {
+      queryParams.append('appNamespace', params.appNamespace)
+    }
 
     const response = await api.get<{ manifest: unknown }>(
       `${ENDPOINTS.resource(params.appName)}?${queryParams.toString()}`
@@ -339,6 +348,7 @@ export function useManagedResources(name: string, enabled: boolean = true) {
 // Get individual resource manifest
 export function useResource(params: {
   appName: string
+  appNamespace?: string
   resourceName: string
   kind: string
   namespace?: string
