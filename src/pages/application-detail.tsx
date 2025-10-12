@@ -16,6 +16,7 @@ import {
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import {
@@ -33,12 +34,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
+import { useApplication, useUpdateApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
+import { ApplicationHistory } from '@/components/application-history'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
 
 interface ResourceFilters {
   kind: string
@@ -201,6 +203,7 @@ export function ApplicationDetailPage() {
   )
 
   const syncMutation = useSyncApplication()
+  const updateMutation = useUpdateApplication()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
 
@@ -229,6 +232,41 @@ export function ApplicationDetailPage() {
       refetch()
     } catch (error) {
       toast.error('Failed to refresh application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  const handleToggleAutoSync = async (checked: boolean) => {
+    if (!name || !app) return
+    try {
+      await updateMutation.mutateAsync({
+        name,
+        app: {
+          spec: {
+            ...app.spec,
+            syncPolicy: checked
+              ? {
+                  ...app.spec.syncPolicy,
+                  automated: {
+                    prune: false,
+                    selfHeal: false,
+                  },
+                }
+              : {
+                  ...app.spec.syncPolicy,
+                  automated: undefined,
+                },
+          },
+        },
+      })
+      toast.success(checked ? 'Auto-sync enabled' : 'Auto-sync disabled', {
+        description: checked
+          ? 'Application will sync automatically on changes'
+          : 'Application will require manual sync',
+      })
+    } catch (error) {
+      toast.error('Failed to toggle auto-sync', {
         description: error instanceof Error ? error.message : 'Unknown error',
       })
     }
@@ -315,7 +353,19 @@ export function ApplicationDetailPage() {
             </Button>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-3 items-center">
+              {/* Auto-sync toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Auto-sync</span>
+                <Switch
+                  checked={!!app.spec?.syncPolicy?.automated}
+                  onCheckedChange={handleToggleAutoSync}
+                  disabled={updateMutation.isPending}
+                />
+              </div>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
               <Button
                 variant="outline"
                 size="sm"
@@ -421,6 +471,15 @@ export function ApplicationDetailPage() {
               <IconCode size={16} />
               Diff
             </Button>
+            <Button
+              variant={view === 'history' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('history')}
+              className="gap-1"
+            >
+              <IconClock3 size={16} />
+              History
+            </Button>
           </div>
         </div>
       </div>
@@ -433,6 +492,10 @@ export function ApplicationDetailPage() {
             resourceStatuses={app?.status?.resources}
             isLoading={isLoadingManagedResources}
           />
+        ) : view === 'history' ? (
+          <div className="p-4">
+            <ApplicationHistory application={app} />
+          </div>
         ) : (
           <div className="p-4">
             {view === 'tree' && <TreeView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}

@@ -22,7 +22,7 @@
 - [ ] Application sync options (prune, dry-run params)
 - [ ] Resource action buttons (restart pod, delete resource, etc.)
 - [ ] Application history/rollback
-- [ ] Diff view (compare desired vs live state) **← Confirmed real ArgoCD feature**
+- [x] Diff view (compare desired vs live state) ✅
 - [ ] SSO/RBAC settings UI
 
 ## Medium Priority
@@ -134,12 +134,12 @@ Making this **real** - AI-assisted rapid development 🚀
 
 ### 1.3 API Service Layer
 - [x] `ApplicationsService` - CRUD operations ✅
-- [ ] `RepositoriesService` - repo operations **← HIGH PRIORITY**
-- [ ] `ClustersService` - cluster management **← HIGH PRIORITY**
-- [ ] `ProjectsService` - project management
-- [ ] `AccountsService` - user/RBAC management
-- [ ] `CertificatesService` - TLS cert management
-- [ ] `GPGKeysService` - GPG key operations
+- [x] `RepositoriesService` - repo operations ✅
+- [x] `ClustersService` - cluster management ✅
+- [x] `ProjectsService` - project management ✅
+- [x] `AccountsService` - user/RBAC management ✅
+- [x] `CertificatesService` - TLS cert management ✅
+- [x] `GPGKeysService` - GPG key operations ✅
 - [ ] `SettingsService` - system configuration
 - [ ] `MetricsService` - health/metrics endpoints
 
@@ -167,7 +167,7 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] Operation history timeline
 - [x] Resource-level actions (sync, delete, refresh) ✅
 - [ ] Live logs viewer with filtering
-- [ ] Diff viewer for out-of-sync resources
+- [x] Diff viewer for out-of-sync resources ✅
 - [ ] Events/notifications panel
 
 ### 2.3 Resource Details ✅ COMPLETE
@@ -185,25 +185,25 @@ Making this **real** - AI-assisted rapid development 🚀
 ## ⚙️ Phase 3: Settings & Configuration
 
 ### 3.1 Repositories Management
-- [ ] List all connected repositories
-- [ ] Add new repository (Git, Helm, OCI)
-- [ ] Edit repository credentials
+- [x] List all connected repositories ✅
+- [x] Add new repository (Git, Helm, OCI) ✅
+- [x] Edit repository credentials ✅
 - [ ] Test repository connection
-- [ ] Delete repositories (with safety checks)
+- [x] Delete repositories (with safety checks) ✅
 - [ ] Show repository usage (apps using it)
 - [ ] Webhook configuration
 
 ### 3.2 Clusters Management
-- [ ] List all connected clusters
-- [ ] Add new cluster (kubeconfig import)
-- [ ] Edit cluster details
+- [x] List all connected clusters ✅
+- [x] Add new cluster (kubeconfig import) ✅
+- [x] Edit cluster details ✅
 - [ ] Test cluster connectivity
 - [ ] Show cluster health/metrics
 - [ ] Namespace management
-- [ ] Delete cluster (with safety checks)
+- [x] Delete cluster (with safety checks) ✅
 
 ### 3.3 Projects
-- [ ] Create/edit/delete projects
+- [x] Create/edit/delete projects ✅
 - [ ] Project roles and permissions
 - [ ] Source repository restrictions
 - [ ] Destination cluster/namespace restrictions
@@ -257,11 +257,11 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] MTTR (mean time to recovery) tracking
 
 ### 4.4 Diff & Sync Management
-- [ ] Live diff viewer (Monaco editor)
+- [x] Live diff viewer ✅
 - [ ] 3-way merge visualization
-- [ ] Manual sync with options
-- [ ] Selective resource sync
-- [ ] Prune resources toggle
+- [x] Manual sync with options ✅
+- [x] Selective resource sync ✅
+- [x] Prune resources toggle ✅
 - [ ] Force sync option
 - [ ] Dry run preview
 
@@ -342,8 +342,8 @@ Making this **real** - AI-assisted rapid development 🚀
 - [ ] Production build optimization
 - [ ] Environment variable management
 - [ ] Docker containerization
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Automated testing in CI
+- [x] CI/CD pipeline (GitHub Actions) ✅
+- [x] Automated testing in CI ✅
 - [ ] Semantic versioning
 - [ ] Changelog generation
 - [ ] Release process automation
