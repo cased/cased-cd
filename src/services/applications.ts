@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api-client'
-import type { Application, ApplicationList, ManagedResourcesResponse, RevisionMetadata, RollbackRequest } from '@/types/api'
+import type { Application, ApplicationList, ApplicationSpec, ManagedResourcesResponse, RevisionMetadata, RollbackRequest } from '@/types/api'
 import { toast } from 'sonner'
 
 // API endpoints
 const ENDPOINTS = {
   applications: '/applications',
   application: (name: string) => `/applications/${name}`,
+  applicationSpec: (name: string) => `/applications/${name}/spec`,
   sync: (name: string) => `/applications/${name}/sync`,
   rollback: (name: string) => `/applications/${name}/rollback`,
   resource: (name: string) => `/applications/${name}/resource`,
@@ -91,6 +92,12 @@ export const applicationsApi = {
   // Update application
   updateApplication: async (name: string, app: Partial<Application>): Promise<Application> => {
     const response = await api.put<Application>(ENDPOINTS.application(name), app)
+    return response.data
+  },
+
+  // Update application spec only
+  updateApplicationSpec: async (name: string, spec: ApplicationSpec): Promise<ApplicationSpec> => {
+    const response = await api.put<ApplicationSpec>(ENDPOINTS.applicationSpec(name), spec)
     return response.data
   },
 
@@ -221,6 +228,20 @@ export function useUpdateApplication() {
   return useMutation({
     mutationFn: ({ name, app }: { name: string; app: Partial<Application> }) =>
       applicationsApi.updateApplication(name, app),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
+      queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+    },
+  })
+}
+
+// Update application spec mutation
+export function useUpdateApplicationSpec() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ name, spec }: { name: string; spec: ApplicationSpec }) =>
+      applicationsApi.updateApplicationSpec(name, spec),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
       queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })

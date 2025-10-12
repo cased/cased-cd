@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useUpdateApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
+import { useApplication, useUpdateApplicationSpec, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
@@ -203,7 +203,7 @@ export function ApplicationDetailPage() {
   )
 
   const syncMutation = useSyncApplication()
-  const updateMutation = useUpdateApplication()
+  const updateSpecMutation = useUpdateApplicationSpec()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
 
@@ -240,24 +240,22 @@ export function ApplicationDetailPage() {
   const handleToggleAutoSync = async (checked: boolean) => {
     if (!name || !app) return
     try {
-      await updateMutation.mutateAsync({
+      await updateSpecMutation.mutateAsync({
         name,
-        app: {
-          spec: {
-            ...app.spec,
-            syncPolicy: checked
-              ? {
-                  ...app.spec.syncPolicy,
-                  automated: {
-                    prune: false,
-                    selfHeal: false,
-                  },
-                }
-              : {
-                  ...app.spec.syncPolicy,
-                  automated: undefined,
+        spec: {
+          ...app.spec,
+          syncPolicy: checked
+            ? {
+                ...app.spec.syncPolicy,
+                automated: {
+                  prune: false,
+                  selfHeal: false,
                 },
-          },
+              }
+            : {
+                ...app.spec.syncPolicy,
+                automated: undefined,
+              },
         },
       })
       toast.success(checked ? 'Auto-sync enabled' : 'Auto-sync disabled', {
@@ -360,7 +358,7 @@ export function ApplicationDetailPage() {
                 <Switch
                   checked={!!app.spec?.syncPolicy?.automated}
                   onCheckedChange={handleToggleAutoSync}
-                  disabled={updateMutation.isPending}
+                  disabled={updateSpecMutation.isPending}
                 />
               </div>
 
