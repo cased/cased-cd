@@ -5,6 +5,8 @@ import {
   Controls,
   useNodesState,
   useEdgesState,
+  Handle,
+  Position,
 } from '@xyflow/react'
 import type { Node, Edge, NodeTypes } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -21,6 +23,12 @@ interface Resource {
   }
   group?: string
   version?: string
+  parentRefs?: Array<{
+    kind: string
+    name: string
+    namespace?: string
+    group?: string
+  }>
 }
 
 interface ResourceTreeProps {
@@ -50,26 +58,34 @@ function ResourceNode({ data }: { data: ResourceNodeData }) {
   const HealthIcon = health.icon
 
   return (
-    <div
-      className={`px-4 py-3 rounded-lg border ${health.border} ${health.bg} bg-neutral-950 min-w-[200px] cursor-pointer hover:border-neutral-600 transition-colors`}
-      onClick={() => data.onClick?.(resource)}
-    >
-      <div className="flex items-center gap-2 mb-2">
-        <HealthIcon className={`h-4 w-4 ${health.color}`} />
-        <span className="text-xs font-medium text-neutral-500 uppercase">{resource.kind}</span>
+    <div className="relative">
+      {/* Input handle (left side) - for incoming edges */}
+      <Handle type="target" position={Position.Left} />
+
+      <div
+        className={`px-4 py-3 rounded-lg border ${health.border} ${health.bg} bg-neutral-950 min-w-[200px] cursor-pointer hover:border-neutral-600 transition-colors`}
+        onClick={() => data.onClick?.(resource)}
+      >
+        <div className="flex items-center gap-2 mb-2">
+          <HealthIcon className={`h-4 w-4 ${health.color}`} />
+          <span className="text-xs font-medium text-neutral-500 uppercase">{resource.kind}</span>
+        </div>
+        <div className="font-medium text-white text-sm mb-1 truncate">{resource.name}</div>
+        {resource.namespace && (
+          <div className="text-xs text-neutral-400">ns: {resource.namespace}</div>
+        )}
+        <div className="mt-2">
+          <Badge
+            variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
+            className="text-xs"
+          >
+            {healthStatus}
+          </Badge>
+        </div>
       </div>
-      <div className="font-medium text-white text-sm mb-1 truncate">{resource.name}</div>
-      {resource.namespace && (
-        <div className="text-xs text-neutral-400">ns: {resource.namespace}</div>
-      )}
-      <div className="mt-2">
-        <Badge
-          variant={healthStatus === 'Healthy' ? 'default' : healthStatus === 'Degraded' ? 'destructive' : 'secondary'}
-          className="text-xs"
-        >
-          {healthStatus}
-        </Badge>
-      </div>
+
+      {/* Output handle (right side) - for outgoing edges */}
+      <Handle type="source" position={Position.Right} />
     </div>
   )
 }
@@ -93,13 +109,11 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
       return acc
     }, {} as Record<string, Resource[]>)
 
-    // Create a hierarchy: Application -> Deployments/StatefulSets -> ReplicaSets -> Pods
+    // Create a hierarchy: Top-level resources -> ReplicaSets -> Pods
     const hierarchy = [
-      ['Application'],
-      ['Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob'],
+      ['Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob', 'Service', 'Ingress', 'ConfigMap', 'Secret'],
       ['ReplicaSet'],
       ['Pod'],
-      ['Service', 'Ingress', 'ConfigMap', 'Secret', 'PersistentVolumeClaim'],
     ]
 
     let yOffset = 0
@@ -160,49 +174,27 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
       }
     })
 
-    // Create edges based on common relationships
-    // Deployment -> ReplicaSet -> Pod
+    // Create edges based on parentRefs from ArgoCD API
     resources.forEach(resource => {
-      const nodeId = `${resource.kind}-${resource.name}-${resource.namespace || 'default'}`
+      const targetNodeId = `${resource.kind}-${resource.name}-${resource.namespace || 'default'}`
 
-      // Simple relationship detection based on naming conventions
-      if (resource.kind === 'Pod') {
-        // Find ReplicaSet that owns this pod (usually pod name starts with RS name)
-        const ownerRS = resources.find(r =>
-          r.kind === 'ReplicaSet' &&
-          resource.name.startsWith(r.name) &&
-          r.namespace === resource.namespace
-        )
-        if (ownerRS) {
-          edges.push({
-            id: `${ownerRS.kind}-${ownerRS.name}-${resource.name}`,
-            source: `${ownerRS.kind}-${ownerRS.name}-${ownerRS.namespace || 'default'}`,
-            target: nodeId,
-            type: 'smoothstep',
-            animated: resource.health?.status === 'Progressing',
-            style: { stroke: '#525252' },
-          })
-        }
-      }
+      // Use parentRefs to create edges
+      resource.parentRefs?.forEach(parent => {
+        const sourceNodeId = `${parent.kind}-${parent.name}-${parent.namespace || 'default'}`
 
-      if (resource.kind === 'ReplicaSet') {
-        // Find Deployment that owns this RS
-        const ownerDeploy = resources.find(r =>
-          r.kind === 'Deployment' &&
-          resource.name.startsWith(r.name) &&
-          r.namespace === resource.namespace
-        )
-        if (ownerDeploy) {
-          edges.push({
-            id: `${ownerDeploy.kind}-${ownerDeploy.name}-${resource.name}`,
-            source: `${ownerDeploy.kind}-${ownerDeploy.name}-${ownerDeploy.namespace || 'default'}`,
-            target: nodeId,
-            type: 'smoothstep',
-            animated: resource.health?.status === 'Progressing',
-            style: { stroke: '#525252' },
-          })
-        }
-      }
+        edges.push({
+          id: `${sourceNodeId}-to-${targetNodeId}`,
+          source: sourceNodeId,
+          target: targetNodeId,
+          type: 'smoothstep',
+          animated: resource.health?.status === 'Progressing',
+          style: { stroke: '#a3a3a3', strokeWidth: 2 },
+          markerEnd: {
+            type: 'arrowclosed',
+            color: '#a3a3a3',
+          },
+        })
+      })
     })
 
     return { nodes, edges }

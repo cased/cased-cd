@@ -45,6 +45,14 @@ export interface ResourceTree {
     health?: {
       status: string
     }
+    group?: string
+    version?: string
+    parentRefs?: Array<{
+      kind: string
+      name: string
+      namespace?: string
+      group?: string
+    }>
   }>
 }
 
