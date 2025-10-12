@@ -197,6 +197,8 @@ export function useApplication(name: string, enabled: boolean = true) {
     queryFn: () => applicationsApi.getApplication(name),
     enabled: enabled && !!name,
     staleTime: 5 * 1000, // 5 seconds
+    refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
+    refetchIntervalInBackground: false, // Only when tab is active
   })
 }
 
