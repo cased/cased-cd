@@ -40,7 +40,7 @@
     "lucide-react": "^0.545.0",
     "obra-icons-react": "^1.23.1",
     "react": "^19.1.1",
-    "react-diff-viewer-continued": "^3.4.0",
+    "react-diff-viewer-continued": "^4.0.6",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.3",
     "react-syntax-highlighter": "^15.6.6",
