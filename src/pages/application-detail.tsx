@@ -11,7 +11,8 @@ import {
   IconClock3,
   IconCircle,
   IconUnorderedList,
-  IconBox
+  IconBox,
+  IconCode
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -32,11 +33,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree } from '@/services/applications'
+import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources } from '@/services/applications'
 import { ResourceTree } from '@/components/resource-tree'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
+import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff'
 
 interface ResourceFilters {
   kind: string
@@ -182,6 +184,7 @@ export function ApplicationDetailPage() {
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
+  const { data: managedResources, isLoading: isLoadingManagedResources } = useManagedResources(name || '', !!name && view === 'diff')
   const syncMutation = useSyncApplication()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
@@ -394,17 +397,33 @@ export function ApplicationDetailPage() {
               <IconBox size={16} />
               Pods
             </Button>
+            <Button
+              variant={view === 'diff' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('diff')}
+              className="gap-1"
+            >
+              <IconCode size={16} />
+              Diff
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-        </div>
+        {view === 'diff' ? (
+          <ResourceDiffPanel
+            resources={managedResources?.items || []}
+            isLoading={isLoadingManagedResources}
+          />
+        ) : (
+          <div className="p-4">
+            {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          </div>
+        )}
       </div>
 
       {/* Resource Details Panel */}

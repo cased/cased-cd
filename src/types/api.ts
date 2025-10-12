@@ -309,3 +309,25 @@ export interface ApiError {
   code: number
   message: string
 }
+
+// Managed Resources (for diff view)
+export interface ManagedResource {
+  group?: string
+  kind: string
+  namespace?: string
+  name: string
+  version?: string
+  targetState?: string // YAML manifest from Git
+  liveState?: string // YAML manifest from cluster
+  predictedLiveState?: string // Predicted state after apply
+  normalizedLiveState?: string // Normalized live state
+  syncStatus?: SyncStatus
+  health?: {
+    status: HealthStatus
+    message?: string
+  }
+}
+
+export interface ManagedResourcesResponse {
+  items: ManagedResource[]
+}

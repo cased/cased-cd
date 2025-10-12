@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api-client'
-import type { Application, ApplicationList } from '@/types/api'
+import type { Application, ApplicationList, ManagedResourcesResponse } from '@/types/api'
 
 // API endpoints
 const ENDPOINTS = {
@@ -10,6 +10,7 @@ const ENDPOINTS = {
   rollback: (name: string) => `/applications/${name}/rollback`,
   resource: (name: string) => `/applications/${name}/resource`,
   resourceTree: (name: string) => `/applications/${name}/resource-tree`,
+  managedResources: (name: string) => `/applications/${name}/managed-resources`,
 }
 
 // Query Keys
@@ -20,6 +21,7 @@ export const applicationKeys = {
   details: () => [...applicationKeys.all, 'detail'] as const,
   detail: (name: string) => [...applicationKeys.details(), name] as const,
   resourceTree: (name: string) => [...applicationKeys.all, 'resourceTree', name] as const,
+  managedResources: (name: string) => [...applicationKeys.all, 'managedResources', name] as const,
 }
 
 // Types
@@ -101,6 +103,12 @@ export const applicationsApi = {
   // Get resource tree (includes pods and all child resources)
   getResourceTree: async (name: string): Promise<ResourceTree> => {
     const response = await api.get<ResourceTree>(ENDPOINTS.resourceTree(name))
+    return response.data
+  },
+
+  // Get managed resources with diff information
+  getManagedResources: async (name: string): Promise<ManagedResourcesResponse> => {
+    const response = await api.get<ManagedResourcesResponse>(ENDPOINTS.managedResources(name))
     return response.data
   },
 }
@@ -284,5 +292,15 @@ export function useResourceTree(name: string, enabled: boolean = true) {
     enabled: enabled && !!name,
     staleTime: 5 * 1000, // 5 seconds
     refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
+  })
+}
+
+// Get managed resources with diff information
+export function useManagedResources(name: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: applicationKeys.managedResources(name),
+    queryFn: () => applicationsApi.getManagedResources(name),
+    enabled: enabled && !!name,
+    staleTime: 5 * 1000, // 5 seconds
   })
 }

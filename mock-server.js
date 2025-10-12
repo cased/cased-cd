@@ -464,6 +464,122 @@ app.delete('/api/v1/projects/:name', (req, res) => {
   res.json({ status: 'success', message: `Project ${name} deleted` })
 })
 
+// Mock managed resources endpoint (for diff view)
+app.get('/api/v1/applications/:name/managed-resources', (req, res) => {
+  const { name } = req.params
+
+  // Mock YAML manifests
+  const deploymentLive = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook-ui
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: guestbook
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+      - name: guestbook
+        image: gcr.io/heptio-images/ks-guestbook-demo:0.1
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"`
+
+  const deploymentTarget = `apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guestbook-ui
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: guestbook
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+      - name: guestbook
+        image: gcr.io/heptio-images/ks-guestbook-demo:0.2
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "200m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"`
+
+  const serviceLive = `apiVersion: v1
+kind: Service
+metadata:
+  name: guestbook-ui
+  namespace: default
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: guestbook
+    tier: frontend`
+
+  const serviceTarget = serviceLive // Service is in sync
+
+  res.json({
+    items: [
+      {
+        group: 'apps',
+        kind: 'Deployment',
+        namespace: 'default',
+        name: 'guestbook-ui',
+        version: 'v1',
+        liveState: deploymentLive,
+        targetState: deploymentTarget,
+        syncStatus: 'OutOfSync',
+        health: {
+          status: 'Healthy',
+          message: 'Deployment has minimum availability',
+        },
+      },
+      {
+        group: '',
+        kind: 'Service',
+        namespace: 'default',
+        name: 'guestbook-ui',
+        version: 'v1',
+        liveState: serviceLive,
+        targetState: serviceTarget,
+        syncStatus: 'Synced',
+        health: {
+          status: 'Healthy',
+          message: 'Service is healthy',
+        },
+      },
+    ],
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })
