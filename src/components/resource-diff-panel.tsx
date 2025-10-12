@@ -6,13 +6,29 @@ import type { ManagedResource } from "@/types/api";
 
 interface ResourceDiffPanelProps {
   resources: ManagedResource[];
+  resourceStatuses?: Array<{
+    kind: string;
+    name: string;
+    namespace?: string;
+    group?: string;
+    status: string; // "Synced" or "OutOfSync"
+  }>;
   isLoading?: boolean;
 }
 
-export function ResourceDiffPanel({ resources, isLoading }: ResourceDiffPanelProps) {
+export function ResourceDiffPanel({ resources, resourceStatuses, isLoading }: ResourceDiffPanelProps) {
   const [selectedResource, setSelectedResource] = useState<ManagedResource | null>(
     resources.length > 0 ? resources[0] : null
   );
+
+  // Get sync status for selected resource
+  const selectedResourceStatus = selectedResource ? resourceStatuses?.find(
+    (rs) =>
+      rs.kind === selectedResource.kind &&
+      rs.name === selectedResource.name &&
+      (rs.namespace || '') === (selectedResource.namespace || '') &&
+      (rs.group || '') === (selectedResource.group || '')
+  ) : null;
 
   if (isLoading) {
     return (
@@ -58,9 +74,16 @@ export function ResourceDiffPanel({ resources, isLoading }: ResourceDiffPanelPro
               selectedResource.kind === resource.kind &&
               selectedResource.namespace === resource.namespace;
 
-            const hasChanges =
-              resource.liveState !== resource.targetState &&
-              (resource.liveState || resource.targetState);
+            // Get ArgoCD's sync status for this resource
+            const resourceStatus = resourceStatuses?.find(
+              (rs) =>
+                rs.kind === resource.kind &&
+                rs.name === resource.name &&
+                (rs.namespace || '') === (resource.namespace || '') &&
+                (rs.group || '') === (resource.group || '')
+            );
+
+            const hasChanges = resourceStatus?.status === "OutOfSync";
 
             return (
               <button
@@ -109,7 +132,10 @@ export function ResourceDiffPanel({ resources, isLoading }: ResourceDiffPanelPro
       {/* Diff Viewer */}
       <div className="flex-1 min-w-0">
         {selectedResource ? (
-          <DiffViewer resource={selectedResource} />
+          <DiffViewer
+            resource={selectedResource}
+            isSynced={selectedResourceStatus?.status === "Synced"}
+          />
         ) : (
           <div className="flex items-center justify-center h-full text-neutral-600 dark:text-neutral-400">
             Select a resource to view diff

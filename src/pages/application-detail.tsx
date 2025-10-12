@@ -415,6 +415,7 @@ export function ApplicationDetailPage() {
         {view === 'diff' ? (
           <ResourceDiffPanel
             resources={managedResources?.items || []}
+            resourceStatuses={app?.status?.resources}
             isLoading={isLoadingManagedResources}
           />
         ) : (

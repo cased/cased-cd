@@ -499,35 +499,7 @@ spec:
             memory: "128Mi"
             cpu: "200m"`
 
-  const deploymentTarget = `apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: guestbook-ui
-  namespace: default
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: guestbook
-      tier: frontend
-  template:
-    metadata:
-      labels:
-        app: guestbook
-        tier: frontend
-    spec:
-      containers:
-      - name: guestbook
-        image: gcr.io/heptio-images/ks-guestbook-demo:0.2
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "200m"
-          limits:
-            memory: "256Mi"
-            cpu: "500m"`
+  const deploymentTarget = deploymentLive // Make it synced for now
 
   const serviceLive = `apiVersion: v1
 kind: Service
@@ -556,7 +528,7 @@ spec:
         version: 'v1',
         liveState: deploymentLive,
         targetState: deploymentTarget,
-        syncStatus: 'OutOfSync',
+        syncStatus: 'Synced',
         health: {
           status: 'Healthy',
           message: 'Deployment has minimum availability',

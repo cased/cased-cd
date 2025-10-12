@@ -1,22 +1,36 @@
 import { useState } from "react";
 import ReactDiffViewer, { DiffMethod } from "react-diff-viewer-continued";
 import { Button } from "@/components/ui/button";
-import { IconCode, IconMenu } from "obra-icons-react";
+import { IconCode, IconMenu, IconCircleCheck } from "obra-icons-react";
+import yaml from "js-yaml";
 import type { ManagedResource } from "@/types/api";
 
 interface DiffViewerProps {
   resource: ManagedResource;
+  isSynced?: boolean; // ArgoCD's determination of sync status
 }
 
-export function DiffViewer({ resource }: DiffViewerProps) {
+// Helper to convert JSON string to formatted YAML
+function jsonToYaml(jsonString: string): string {
+  try {
+    const parsed = JSON.parse(jsonString);
+    return yaml.dump(parsed, { indent: 2, lineWidth: -1 });
+  } catch {
+    // If it's already YAML or can't parse, return as-is
+    return jsonString;
+  }
+}
+
+export function DiffViewer({ resource, isSynced = false }: DiffViewerProps) {
   const [splitView, setSplitView] = useState(true);
 
-  // Get the old (live) and new (target) states
-  const oldValue = resource.liveState || "";
-  const newValue = resource.targetState || "";
+  // Use normalizedLiveState for diff display (removes K8s runtime metadata)
+  // Fall back to liveState if normalized not available
+  const liveStateRaw = resource.normalizedLiveState || resource.liveState || "";
+  const targetStateRaw = resource.targetState || "";
 
-  // If both are empty or identical, show a message
-  if (!oldValue && !newValue) {
+  // If both are empty, show a message
+  if (!liveStateRaw && !targetStateRaw) {
     return (
       <div className="flex items-center justify-center p-8 text-neutral-600 dark:text-neutral-400">
         No diff available for this resource
@@ -24,13 +38,24 @@ export function DiffViewer({ resource }: DiffViewerProps) {
     );
   }
 
-  if (oldValue === newValue) {
+  // If ArgoCD says it's synced, trust that and don't show a diff
+  if (isSynced) {
     return (
-      <div className="flex items-center justify-center p-8 text-grass-11">
-        Resource is in sync - no differences detected
+      <div className="flex flex-col items-center justify-center p-8 text-center">
+        <IconCircleCheck size={48} className="text-grass-11 mb-4" />
+        <h3 className="text-base font-medium text-black dark:text-white mb-2">
+          Resource is in sync
+        </h3>
+        <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-md">
+          ArgoCD has determined this resource matches the desired state.
+        </p>
       </div>
     );
   }
+
+  // Convert JSON strings to YAML for better readability
+  const oldValue = jsonToYaml(liveStateRaw);
+  const newValue = jsonToYaml(targetStateRaw);
 
   return (
     <div className="flex flex-col h-full">
