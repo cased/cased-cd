@@ -11,6 +11,7 @@ vi.mock('@/lib/api-client', () => ({
   default: {
     post: vi.fn(),
     get: vi.fn(),
+    put: vi.fn(),
   },
 }))
 
@@ -177,5 +178,66 @@ describe('applicationsApi.syncApplication', () => {
       dryRun: undefined,
       strategy: { hook: {} },
     })
+  })
+})
+
+describe('applicationsApi.updateApplicationSpec', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should call the spec endpoint with PUT and correct payload', async () => {
+    const mockSpec = {
+      project: 'production',
+      source: {
+        repoURL: 'https://github.com/example/repo',
+        targetRevision: 'main',
+        path: 'manifests',
+      },
+      destination: {
+        server: 'https://kubernetes.default.svc',
+        namespace: 'prod',
+      },
+      syncPolicy: {
+        automated: {
+          prune: true,
+          selfHeal: true,
+          allowEmpty: false,
+        },
+        syncOptions: ['CreateNamespace=true'],
+      },
+    }
+
+    const mockResponse: AxiosResponse<typeof mockSpec> = {
+      data: mockSpec,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+
+    vi.mocked(api.put).mockResolvedValueOnce(mockResponse)
+
+    const result = await applicationsApi.updateApplicationSpec('my-app', mockSpec)
+
+    expect(api.put).toHaveBeenCalledWith('/applications/my-app/spec', mockSpec)
+    expect(result).toEqual(mockSpec)
+  })
+
+  it('should handle update errors', async () => {
+    const mockSpec = {
+      project: 'default',
+      source: { repoURL: 'https://github.com/test/repo', targetRevision: 'main', path: '.' },
+      destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
+    }
+
+    const error = new Error('Update failed: invalid spec')
+    vi.mocked(api.put).mockRejectedValueOnce(error)
+
+    await expect(
+      applicationsApi.updateApplicationSpec('my-app', mockSpec)
+    ).rejects.toThrow('Update failed: invalid spec')
+
+    expect(api.put).toHaveBeenCalledWith('/applications/my-app/spec', mockSpec)
   })
 })
