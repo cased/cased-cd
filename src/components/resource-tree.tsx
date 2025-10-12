@@ -21,6 +21,12 @@ interface Resource {
   }
   group?: string
   version?: string
+  parentRefs?: Array<{
+    kind: string
+    name: string
+    namespace?: string
+    group?: string
+  }>
 }
 
 interface ResourceTreeProps {
@@ -160,49 +166,27 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
       }
     })
 
-    // Create edges based on common relationships
-    // Deployment -> ReplicaSet -> Pod
+    // Create edges based on parentRefs from ArgoCD API
     resources.forEach(resource => {
-      const nodeId = `${resource.kind}-${resource.name}-${resource.namespace || 'default'}`
+      const targetNodeId = `${resource.kind}-${resource.name}-${resource.namespace || 'default'}`
 
-      // Simple relationship detection based on naming conventions
-      if (resource.kind === 'Pod') {
-        // Find ReplicaSet that owns this pod (usually pod name starts with RS name)
-        const ownerRS = resources.find(r =>
-          r.kind === 'ReplicaSet' &&
-          resource.name.startsWith(r.name) &&
-          r.namespace === resource.namespace
-        )
-        if (ownerRS) {
-          edges.push({
-            id: `${ownerRS.kind}-${ownerRS.name}-${resource.name}`,
-            source: `${ownerRS.kind}-${ownerRS.name}-${ownerRS.namespace || 'default'}`,
-            target: nodeId,
-            type: 'smoothstep',
-            animated: resource.health?.status === 'Progressing',
-            style: { stroke: '#525252' },
-          })
-        }
-      }
+      // Use parentRefs to create edges
+      resource.parentRefs?.forEach(parent => {
+        const sourceNodeId = `${parent.kind}-${parent.name}-${parent.namespace || 'default'}`
 
-      if (resource.kind === 'ReplicaSet') {
-        // Find Deployment that owns this RS
-        const ownerDeploy = resources.find(r =>
-          r.kind === 'Deployment' &&
-          resource.name.startsWith(r.name) &&
-          r.namespace === resource.namespace
-        )
-        if (ownerDeploy) {
-          edges.push({
-            id: `${ownerDeploy.kind}-${ownerDeploy.name}-${resource.name}`,
-            source: `${ownerDeploy.kind}-${ownerDeploy.name}-${ownerDeploy.namespace || 'default'}`,
-            target: nodeId,
-            type: 'smoothstep',
-            animated: resource.health?.status === 'Progressing',
-            style: { stroke: '#525252' },
-          })
-        }
-      }
+        edges.push({
+          id: `${sourceNodeId}-to-${targetNodeId}`,
+          source: sourceNodeId,
+          target: targetNodeId,
+          type: 'smoothstep',
+          animated: resource.health?.status === 'Progressing',
+          style: { stroke: '#737373', strokeWidth: 2 },
+          markerEnd: {
+            type: 'arrowclosed',
+            color: '#737373',
+          },
+        })
+      })
     })
 
     return { nodes, edges }
