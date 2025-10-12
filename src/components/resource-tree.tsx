@@ -109,13 +109,11 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
       return acc
     }, {} as Record<string, Resource[]>)
 
-    // Create a hierarchy: Application -> Deployments/StatefulSets -> ReplicaSets -> Pods
+    // Create a hierarchy: Top-level resources -> ReplicaSets -> Pods
     const hierarchy = [
-      ['Application'],
-      ['Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob'],
+      ['Deployment', 'StatefulSet', 'DaemonSet', 'Job', 'CronJob', 'Service', 'Ingress', 'ConfigMap', 'Secret'],
       ['ReplicaSet'],
       ['Pod'],
-      ['Service', 'Ingress', 'ConfigMap', 'Secret', 'PersistentVolumeClaim'],
     ]
 
     let yOffset = 0
@@ -190,10 +188,10 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
           target: targetNodeId,
           type: 'smoothstep',
           animated: resource.health?.status === 'Progressing',
-          style: { stroke: '#737373', strokeWidth: 2 },
+          style: { stroke: '#a3a3a3', strokeWidth: 2 },
           markerEnd: {
             type: 'arrowclosed',
-            color: '#737373',
+            color: '#a3a3a3',
           },
         })
       })
