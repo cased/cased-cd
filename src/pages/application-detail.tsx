@@ -12,7 +12,8 @@ import {
   IconCircle,
   IconUnorderedList,
   IconBox,
-  IconCode
+  IconCode,
+  IconSettings
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -361,6 +362,17 @@ export function ApplicationDetailPage() {
                   disabled={updateSpecMutation.isPending}
                 />
               </div>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/applications/${name}/settings`)}
+              >
+                <IconSettings size={16} />
+                Settings
+              </Button>
 
               <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
