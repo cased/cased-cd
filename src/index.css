@@ -234,3 +234,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ReactFlow node customization - remove default backgrounds/borders */
+.react-flow__node {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.react-flow__node.selected {
+  background: transparent !important;
+  box-shadow: none !important;
+}

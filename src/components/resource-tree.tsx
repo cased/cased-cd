@@ -185,8 +185,8 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
 
     let yOffset = 0
     const xSpacing = 400
-    const ySpacing = 100
-    const groupSpacing = 80
+    const ySpacing = 140
+    const groupSpacing = 100
 
     hierarchy.forEach((kindGroup, levelIndex) => {
       kindGroup.forEach((kind) => {
@@ -244,7 +244,7 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
           yOffset += resourcesOfKind.length * ySpacing
         }
 
-        yOffset += 20 // Extra spacing between groups
+        yOffset += 10 // Extra spacing between groups
       })
     })
 
@@ -304,7 +304,7 @@ export function ResourceTree({ resources, onResourceClick }: ResourceTreeProps) 
         yOffset += resourcesOfKind.length * ySpacing
       }
 
-      yOffset += 20
+      yOffset += 10
     })
 
     // Create edges based on parentRefs from ArgoCD API
