@@ -98,9 +98,10 @@ interface FilterBarProps {
   resources: K8sResource[]
   filters: ResourceFilters
   onFiltersChange: (filters: ResourceFilters) => void
+  showStatusFilter?: boolean
 }
 
-function FilterBar({ resources, filters, onFiltersChange }: FilterBarProps) {
+function FilterBar({ resources, filters, onFiltersChange, showStatusFilter = false }: FilterBarProps) {
   const kinds = getUniqueValues(resources, 'kind')
   const statuses = getUniqueValues(resources, 'status')
   const namespaces = getUniqueValues(resources, 'namespace')
@@ -123,20 +124,22 @@ function FilterBar({ resources, filters, onFiltersChange }: FilterBarProps) {
         </SelectContent>
       </Select>
 
-      <Select
-        value={filters.status}
-        onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
-      >
-        <SelectTrigger className="w-[140px] h-8 text-xs">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          {statuses.map(status => (
-            <SelectItem key={status} value={status}>{status}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {showStatusFilter && (
+        <Select
+          value={filters.status}
+          onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map(status => (
+              <SelectItem key={status} value={status}>{status}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select
         value={filters.namespace}
@@ -529,7 +532,7 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: ListViewPr
           <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
           <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
         </div>
-        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
+        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} showStatusFilter={true} />
       </div>
 
       {filteredResources.length === 0 ? (
