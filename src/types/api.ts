@@ -92,6 +92,19 @@ export interface ApplicationStatus {
     externalURLs?: string[]
     images?: string[]
   }
+  history?: RevisionHistory[]
+}
+
+export interface RevisionHistory {
+  id: number
+  revision: string
+  deployedAt: string
+  deployStartedAt?: string
+  initiatedBy?: {
+    username: string
+    automated?: boolean
+  }
+  source?: ApplicationSource
 }
 
 export interface ResourceStatus {

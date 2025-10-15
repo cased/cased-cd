@@ -12,7 +12,8 @@ import {
   IconCircle,
   IconUnorderedList,
   IconBox,
-  IconCode
+  IconCode,
+  IconHistory
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,8 +38,9 @@ import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApp
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
+import { ApplicationHistory } from '@/components/application-history'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
 
 interface ResourceFilters {
   kind: string
@@ -424,6 +426,15 @@ export function ApplicationDetailPage() {
               <IconCode size={16} />
               Diff
             </Button>
+            <Button
+              variant={view === 'history' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('history')}
+              className="gap-1"
+            >
+              <IconHistory size={16} />
+              History
+            </Button>
           </div>
         </div>
       </div>
@@ -436,6 +447,10 @@ export function ApplicationDetailPage() {
             resourceStatuses={app?.status?.resources}
             isLoading={isLoadingManagedResources}
           />
+        ) : view === 'history' ? (
+          <div className="p-4">
+            <ApplicationHistory application={app} />
+          </div>
         ) : (
           <div className="p-4">
             {view === 'tree' && <TreeView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
