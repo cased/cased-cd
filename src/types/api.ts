@@ -95,18 +95,6 @@ export interface ApplicationStatus {
   history?: RevisionHistory[]
 }
 
-export interface RevisionHistory {
-  id: number
-  revision: string
-  deployedAt: string
-  deployStartedAt?: string
-  initiatedBy?: {
-    username: string
-    automated?: boolean
-  }
-  source?: ApplicationSource
-}
-
 export interface ResourceStatus {
   group?: string
   kind: string
@@ -343,4 +331,34 @@ export interface ManagedResource {
 
 export interface ManagedResourcesResponse {
   items: ManagedResource[]
+}
+
+// Application History & Rollback
+export interface RevisionHistory {
+  id: number
+  revision: string
+  deployedAt: string
+  deployStartedAt?: string
+  initiatedBy?: {
+    username: string
+    automated?: boolean
+  }
+  source?: ApplicationSource | ApplicationSource[]
+  sources?: ApplicationSource[]
+  revisions?: string[]
+}
+
+export interface RevisionMetadata {
+  author?: string
+  date: string
+  tags?: string[]
+  message: string
+  signatureInfo?: string
+}
+
+export interface RollbackRequest {
+  id: number
+  prune?: boolean
+  dryRun?: boolean
+  appNamespace?: string
 }

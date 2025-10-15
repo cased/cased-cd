@@ -1,16 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/lib/api-client'
-import type { Application, ApplicationList, ManagedResourcesResponse } from '@/types/api'
+import type { Application, ApplicationList, ApplicationSpec, ManagedResourcesResponse, RevisionMetadata, RollbackRequest } from '@/types/api'
+import { toast } from 'sonner'
 
 // API endpoints
 const ENDPOINTS = {
   applications: '/applications',
   application: (name: string) => `/applications/${name}`,
+  applicationSpec: (name: string) => `/applications/${name}/spec`,
   sync: (name: string) => `/applications/${name}/sync`,
   rollback: (name: string) => `/applications/${name}/rollback`,
   resource: (name: string) => `/applications/${name}/resource`,
   resourceTree: (name: string) => `/applications/${name}/resource-tree`,
   managedResources: (name: string) => `/applications/${name}/managed-resources`,
+  revisionMetadata: (name: string, revision: string) => `/applications/${name}/revisions/${revision}/metadata`,
 }
 
 // Query Keys
@@ -24,6 +27,8 @@ export const applicationKeys = {
   managedResources: (name: string) => [...applicationKeys.all, 'managedResources', name] as const,
   resource: (appName: string, resourceName: string, kind: string, namespace?: string) =>
     [...applicationKeys.all, 'resource', appName, kind, namespace || '', resourceName] as const,
+  revisionMetadata: (appName: string, revision: string) =>
+    [...applicationKeys.all, 'revisionMetadata', appName, revision] as const,
 }
 
 // Types
@@ -87,6 +92,12 @@ export const applicationsApi = {
   // Update application
   updateApplication: async (name: string, app: Partial<Application>): Promise<Application> => {
     const response = await api.put<Application>(ENDPOINTS.application(name), app)
+    return response.data
+  },
+
+  // Update application spec only
+  updateApplicationSpec: async (name: string, spec: ApplicationSpec): Promise<ApplicationSpec> => {
+    const response = await api.put<ApplicationSpec>(ENDPOINTS.applicationSpec(name), spec)
     return response.data
   },
 
@@ -168,6 +179,18 @@ export const applicationsApi = {
     }
     return manifest as Record<string, unknown>
   },
+
+  // Get revision metadata (commit details)
+  getRevisionMetadata: async (name: string, revision: string): Promise<RevisionMetadata> => {
+    const response = await api.get<RevisionMetadata>(ENDPOINTS.revisionMetadata(name, revision))
+    return response.data
+  },
+
+  // Rollback application to a previous revision
+  rollbackApplication: async (name: string, request: RollbackRequest): Promise<Application> => {
+    const response = await api.post<Application>(ENDPOINTS.rollback(name), request)
+    return response.data
+  },
 }
 
 // React Query Hooks
@@ -190,6 +213,8 @@ export function useApplication(name: string, enabled: boolean = true) {
     queryFn: () => applicationsApi.getApplication(name),
     enabled: enabled && !!name,
     staleTime: 5 * 1000, // 5 seconds
+    refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
+    refetchIntervalInBackground: false, // Only when tab is active
   })
 }
 
@@ -212,6 +237,20 @@ export function useUpdateApplication() {
   return useMutation({
     mutationFn: ({ name, app }: { name: string; app: Partial<Application> }) =>
       applicationsApi.updateApplication(name, app),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
+      queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+    },
+  })
+}
+
+// Update application spec mutation
+export function useUpdateApplicationSpec() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ name, spec }: { name: string; spec: ApplicationSpec }) =>
+      applicationsApi.updateApplicationSpec(name, spec),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
       queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
@@ -405,5 +444,48 @@ export function useResource(params: {
     queryFn: () => applicationsApi.getResource(params),
     enabled: enabled && !!params.appName && !!params.resourceName && !!params.kind,
     staleTime: 10 * 1000, // 10 seconds
+  })
+}
+
+// Get revision metadata (commit details)
+export function useRevisionMetadata(appName: string, revision: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: applicationKeys.revisionMetadata(appName, revision),
+    queryFn: () => applicationsApi.getRevisionMetadata(appName, revision),
+    enabled: enabled && !!appName && !!revision,
+    staleTime: 60 * 1000, // 1 minute (commit metadata doesn't change)
+  })
+}
+
+// Rollback application mutation
+export function useRollbackApplication() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ name, request }: { name: string; request: RollbackRequest }) =>
+      applicationsApi.rollbackApplication(name, request),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
+      queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+      toast.success('Rollback initiated', {
+        description: `Rolling back to revision ID ${variables.request.id}`,
+      })
+
+      // Poll for updates for 30 seconds to catch the rollback completing
+      const pollInterval = setInterval(() => {
+        queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
+        queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+      }, 2000) // Poll every 2 seconds
+
+      // Stop polling after 30 seconds
+      setTimeout(() => {
+        clearInterval(pollInterval)
+      }, 30000)
+    },
+    onError: (error) => {
+      toast.error('Rollback failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    },
   })
 }

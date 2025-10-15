@@ -13,7 +13,7 @@ import {
   IconUnorderedList,
   IconBox,
   IconCode,
-  IconHistory
+  IconSettings
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useUpdateApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
+import { useApplication, useUpdateApplication, useUpdateApplicationSpec, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
@@ -208,6 +208,7 @@ export function ApplicationDetailPage() {
 
   const updateMutation = useUpdateApplication()
   const syncMutation = useSyncApplication()
+  const updateSpecMutation = useUpdateApplicationSpec()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
 
@@ -244,24 +245,22 @@ export function ApplicationDetailPage() {
   const handleToggleAutoSync = async (checked: boolean) => {
     if (!name || !app) return
     try {
-      await updateMutation.mutateAsync({
+      await updateSpecMutation.mutateAsync({
         name,
-        app: {
-          spec: {
-            ...app.spec,
-            syncPolicy: checked
-              ? {
-                  ...app.spec.syncPolicy,
-                  automated: {
-                    prune: false,
-                    selfHeal: false,
-                  },
-                }
-              : {
-                  ...app.spec.syncPolicy,
-                  automated: undefined,
+        spec: {
+          ...app.spec,
+          syncPolicy: checked
+            ? {
+                ...app.spec.syncPolicy,
+                automated: {
+                  prune: false,
+                  selfHeal: false,
                 },
-          },
+              }
+            : {
+                ...app.spec.syncPolicy,
+                automated: undefined,
+              },
         },
       })
       toast.success(checked ? 'Auto-sync enabled' : 'Auto-sync disabled', {
@@ -364,9 +363,20 @@ export function ApplicationDetailPage() {
                 <Switch
                   checked={!!app.spec?.syncPolicy?.automated}
                   onCheckedChange={handleToggleAutoSync}
-                  disabled={updateMutation.isPending}
+                  disabled={updateSpecMutation.isPending}
                 />
               </div>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/applications/${name}/settings`)}
+              >
+                <IconSettings size={16} />
+                Settings
+              </Button>
 
               <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
 
@@ -481,7 +491,7 @@ export function ApplicationDetailPage() {
               onClick={() => setView('history')}
               className="gap-1"
             >
-              <IconHistory size={16} />
+              <IconClock3 size={16} />
               History
             </Button>
           </div>
