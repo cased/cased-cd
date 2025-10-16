@@ -14,6 +14,7 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import type { Application, ResourceStatus } from '@/types/api'
 
 interface SyncProgressSheetProps {
@@ -144,7 +145,7 @@ export function SyncProgressSheet({ application, open, onOpenChange }: SyncProgr
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-sm font-medium text-black dark:text-white">Status</span>
                   <span className={`text-sm font-medium ${getPhaseColor(operationState?.phase)}`}>
-                    {operationState?.phase || 'Unknown'}
+                    {operationState?.phase === 'Succeeded' ? 'Sync succeeded' : operationState?.phase || 'Unknown'}
                   </span>
                 </div>
                 {elapsed && (
@@ -216,6 +217,15 @@ export function SyncProgressSheet({ application, open, onOpenChange }: SyncProgr
             {operationState?.message && (
               <div className="mt-3 text-xs text-neutral-600 dark:text-neutral-400">
                 {operationState.message}
+              </div>
+            )}
+
+            {/* Monitor Button */}
+            {operationState?.phase === 'Succeeded' && (
+              <div className="mt-4">
+                <Button variant="default" size="sm" className="w-full">
+                  Monitor deploy on Cased
+                </Button>
               </div>
             )}
           </div>
