@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   IconArrowLeft,
   IconCircleForward,
@@ -35,11 +35,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useUpdateApplication, useUpdateApplicationSpec, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
+import { useApplication, useUpdateApplicationSpec, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
 import { ApplicationHistory } from '@/components/application-history'
+import { SyncProgressSheet } from '@/components/sync-progress-sheet'
 
 type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
 
@@ -95,6 +96,35 @@ function filterResources(resources: K8sResource[], filters: ResourceFilters): K8
     if (filters.health !== 'all' && resource.health?.status !== filters.health) return false
     return true
   })
+}
+
+// Helper function to parse app versions from Docker images
+interface AppVersion {
+  name: string
+  version: string
+  isCommitSha: boolean
+}
+
+function parseAppVersions(images: string[] | undefined): AppVersion[] {
+  if (!images || images.length === 0) return []
+
+  return images
+    .map(image => {
+      // Extract image name and tag from full image path
+      // e.g., "registry.com/org/app:tag" -> { name: "app", version: "tag" }
+      const parts = image.split('/')
+      const lastPart = parts[parts.length - 1] // "app:tag"
+      const [name, tag] = lastPart.split(':')
+
+      if (!tag || tag === 'latest') return null
+
+      // Check if tag looks like a commit SHA (40 hex chars)
+      const isCommitSha = /^[0-9a-f]{40}$/i.test(tag)
+      const version = isCommitSha ? tag.substring(0, 7) : tag
+
+      return { name, version, isCommitSha }
+    })
+    .filter((v): v is AppVersion => v !== null)
 }
 
 interface FilterBarProps {
@@ -189,6 +219,7 @@ export function ApplicationDetailPage() {
     health: 'all',
   })
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [syncProgressOpen, setSyncProgressOpen] = useState(false)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
@@ -206,15 +237,22 @@ export function ApplicationDetailPage() {
     !!name && !!selectedResource
   )
 
-  const updateMutation = useUpdateApplication()
   const syncMutation = useSyncApplication()
   const updateSpecMutation = useUpdateApplicationSpec()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
 
+  // Auto-open sync progress sheet when operation is running
+  useEffect(() => {
+    if (app?.status?.operationState?.phase === 'Running') {
+      setSyncProgressOpen(true)
+    }
+  }, [app?.status?.operationState?.phase])
+
   const handleSync = async () => {
     if (!name) return
     try {
+      setSyncProgressOpen(true)
       await syncMutation.mutateAsync({ name, prune: false, dryRun: false })
       toast.success('Application synced', {
         description: 'Sync initiated successfully',
@@ -224,6 +262,7 @@ export function ApplicationDetailPage() {
       toast.error('Failed to sync application', {
         description: error instanceof Error ? error.message : 'Unknown error',
       })
+      setSyncProgressOpen(false)
     }
   }
 
@@ -338,6 +377,9 @@ export function ApplicationDetailPage() {
   const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo
   const healthColor = healthIcons[healthStatus]?.color || 'text-neutral-500'
 
+  // Parse app versions from image tags
+  const appVersions = parseAppVersions(app.status?.summary?.images)
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -435,6 +477,20 @@ export function ApplicationDetailPage() {
               </Badge>
             </div>
 
+            {/* App Versions */}
+            {appVersions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">App:</span>
+                <div className="flex items-center gap-1.5">
+                  {appVersions.map((version, i) => (
+                    <Badge key={i} variant="outline" className="gap-1 text-xs font-mono">
+                      {version.name}: {version.version}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
               <IconCodeBranch size={14} />
               <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
@@ -442,7 +498,7 @@ export function ApplicationDetailPage() {
 
             {app.spec.source.targetRevision && (
               <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                <span className="text-neutral-600">Revision:</span> {app.spec.source.targetRevision}
+                <span className="text-neutral-600">Config:</span> {app.spec.source.targetRevision}
               </div>
             )}
           </div>
@@ -539,6 +595,13 @@ export function ApplicationDetailPage() {
         resourceType="application"
         onConfirm={handleDeleteConfirm}
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* Sync Progress Sheet */}
+      <SyncProgressSheet
+        application={app}
+        open={syncProgressOpen}
+        onOpenChange={setSyncProgressOpen}
       />
     </div>
   )

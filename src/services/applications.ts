@@ -121,15 +121,6 @@ export const applicationsApi = {
     await api.get(`${ENDPOINTS.application(name)}?refresh=normal`)
   },
 
-  // Rollback application
-  rollbackApplication: async (name: string, request: {
-    id: number
-    prune?: boolean
-    appNamespace?: string
-  }): Promise<void> => {
-    await api.post(ENDPOINTS.rollback(name), request)
-  },
-
   // Get resource tree (includes pods and all child resources)
   getResourceTree: async (name: string): Promise<ResourceTree> => {
     const response = await api.get<ResourceTree>(ENDPOINTS.resourceTree(name))
@@ -376,34 +367,6 @@ export function useRefreshApplication() {
       setTimeout(() => {
         clearInterval(pollInterval)
       }, 5000)
-    },
-  })
-}
-
-// Rollback application mutation
-export function useRollbackApplication() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationFn: ({ name, request }: {
-      name: string
-      request: { id: number; prune?: boolean; appNamespace?: string }
-    }) => applicationsApi.rollbackApplication(name, request),
-    onSuccess: (_, variables) => {
-      // Immediately refetch to get the latest state
-      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
-      queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
-
-      // Poll for updates for 30 seconds to catch the rollback completing
-      const pollInterval = setInterval(() => {
-        queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.name) })
-        queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
-      }, 2000) // Poll every 2 seconds
-
-      // Stop polling after 30 seconds
-      setTimeout(() => {
-        clearInterval(pollInterval)
-      }, 30000)
     },
   })
 }
