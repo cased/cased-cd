@@ -16,8 +16,8 @@ export function ApplicationHistory({ application }: ApplicationHistoryProps) {
   const [selectedRevision, setSelectedRevision] = useState<RevisionHistory | null>(null)
   const rollbackMutation = useRollbackApplication()
 
-  const history = application.status?.history || []
-  const currentRevisionId = history.length > 0 ? history[0]?.id : undefined
+  const history = [...(application.status?.history || [])].reverse()
+  const currentRevision = application.status?.sync?.revision
 
   const handleRollbackClick = (revision: RevisionHistory) => {
     setSelectedRevision(revision)
@@ -64,7 +64,7 @@ export function ApplicationHistory({ application }: ApplicationHistoryProps) {
     <>
       <div className="space-y-2">
         {history.map((revision) => {
-          const isCurrent = revision.id === currentRevisionId
+          const isCurrent = revision.revision === currentRevision
           const deployedAt = new Date(revision.deployedAt)
           const isAutomated = revision.initiatedBy?.automated
 
@@ -187,13 +187,13 @@ export function ApplicationHistory({ application }: ApplicationHistoryProps) {
         <ConfirmDialog
           open={rollbackDialogOpen}
           onOpenChange={setRollbackDialogOpen}
-          title={selectedRevision.id === currentRevisionId ? 'Redeploy Revision' : 'Rollback Application'}
+          title={selectedRevision.revision === currentRevision ? 'Redeploy Revision' : 'Rollback Application'}
           description={
-            selectedRevision.id === currentRevisionId
+            selectedRevision.revision === currentRevision
               ? `Re-deploy the current revision #${selectedRevision.id} (${selectedRevision.revision.substring(0, 8)})?`
               : `Rollback application "${application.metadata.name}" to revision #${selectedRevision.id} (${selectedRevision.revision.substring(0, 8)})? This will trigger a new sync to the selected revision.`
           }
-          confirmText={selectedRevision.id === currentRevisionId ? 'Redeploy' : 'Rollback'}
+          confirmText={selectedRevision.revision === currentRevision ? 'Redeploy' : 'Rollback'}
           resourceName={`revision-${selectedRevision.id}`}
           resourceType="revision"
           onConfirm={handleRollbackConfirm}

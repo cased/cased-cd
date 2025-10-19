@@ -32,7 +32,6 @@ import { Switch } from '@/components/ui/switch'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { useProjects } from '@/services/projects'
-import { useRepositories } from '@/services/repositories'
 import { useClusters } from '@/services/clusters'
 import { useApplication, useUpdateApplicationSpec } from '@/services/applications'
 import { toast } from 'sonner'
@@ -79,7 +78,6 @@ export function ApplicationSettingsPage() {
 
   // Fetch data for dropdowns
   const { data: projectsData } = useProjects()
-  const { data: reposData } = useRepositories()
   const { data: clustersData } = useClusters()
 
   // Update mutation
@@ -262,7 +260,7 @@ export function ApplicationSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Project</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a project" />
@@ -303,23 +301,9 @@ export function ApplicationSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Repository URL</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a repository" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {reposData?.items?.map((repo) => (
-                          <SelectItem key={repo.repo} value={repo.repo}>
-                            {repo.name || repo.repo}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="https://github.com/example/repo.git" {...field} />
+                    </FormControl>
                     <FormDescription>
                       The Git repository URL containing your application manifests
                     </FormDescription>
@@ -378,7 +362,7 @@ export function ApplicationSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Cluster</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a cluster" />
