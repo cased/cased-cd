@@ -8,6 +8,8 @@ import {
   IconCircleForward,
   IconGrid,
   IconClock3,
+  IconChevronLeft,
+  IconChevronRight,
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +33,14 @@ export function ApplicationsPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreatePanel, setShowCreatePanel] = useState(false);
-  const { data, isLoading, error, refetch } = useApplications();
+  const [pageSize, setPageSize] = useState(20);
+  const [continueToken, setContinueToken] = useState<string | undefined>(undefined);
+  const [pageHistory, setPageHistory] = useState<Array<string | undefined>>([undefined]);
+
+  const { data, isLoading, error, refetch } = useApplications({
+    limit: pageSize,
+    continue: continueToken,
+  });
   const refreshMutation = useRefreshApplication();
   const syncMutation = useSyncApplication();
 
@@ -54,6 +63,33 @@ export function ApplicationsPage() {
       console.error("Sync failed:", error);
     }
   };
+
+  const handleNextPage = () => {
+    const nextToken = data?.metadata?.continue;
+    if (nextToken) {
+      setPageHistory([...pageHistory, continueToken]);
+      setContinueToken(nextToken);
+    }
+  };
+
+  const handlePreviousPage = () => {
+    if (pageHistory.length > 1) {
+      const newHistory = [...pageHistory];
+      newHistory.pop();
+      setPageHistory(newHistory);
+      setContinueToken(newHistory[newHistory.length - 1]);
+    }
+  };
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setContinueToken(undefined);
+    setPageHistory([undefined]);
+  };
+
+  const currentPage = pageHistory.length;
+  const hasNextPage = !!data?.metadata?.continue;
+  const hasPreviousPage = pageHistory.length > 1;
 
   return (
     <div className="flex flex-col h-full">
@@ -166,6 +202,56 @@ export function ApplicationsPage() {
                 <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
                   Deploy a new application to your cluster
                 </p>
+              </div>
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {!isLoading && !error && filteredApps.length > 0 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                  <span>Items per page:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    className="rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-2 py-1 text-xs text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                  </select>
+                </div>
+                <div className="text-xs text-neutral-600 dark:text-neutral-400">
+                  Page {currentPage}
+                  {data?.metadata?.remainingItemCount !== undefined && (
+                    <span className="ml-1">
+                      ({data.metadata.remainingItemCount} more items)
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousPage}
+                  disabled={!hasPreviousPage}
+                >
+                  <IconChevronLeft size={14} />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextPage}
+                  disabled={!hasNextPage}
+                >
+                  Next
+                  <IconChevronRight size={14} />
+                </Button>
               </div>
             </div>
           )}

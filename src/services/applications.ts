@@ -39,6 +39,9 @@ export interface ApplicationFilters {
   name?: string
   health?: string
   sync?: string
+  // Pagination
+  limit?: number
+  continue?: string
 }
 
 export interface ResourceTree {
@@ -70,6 +73,8 @@ export const applicationsApi = {
     if (filters?.cluster) params.append('cluster', filters.cluster)
     if (filters?.namespace) params.append('namespace', filters.namespace)
     if (filters?.name) params.append('name', filters.name)
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    if (filters?.continue) params.append('continue', filters.continue)
 
     const response = await api.get<ApplicationList>(
       `${ENDPOINTS.applications}?${params.toString()}`
