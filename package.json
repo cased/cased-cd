@@ -11,6 +11,7 @@
     "argocd:teardown": "./scripts/teardown-argocd.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "type-check": "tsc --noEmit",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
