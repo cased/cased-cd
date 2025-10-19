@@ -401,3 +401,5 @@ const ApplicationCard = memo(function ApplicationCard({
     </div>
   );
 });
+
+export default ApplicationsPage

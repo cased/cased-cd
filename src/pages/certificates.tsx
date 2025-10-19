@@ -238,3 +238,5 @@ export function CertificatesPage() {
     </div>
   )
 }
+
+export default CertificatesPage

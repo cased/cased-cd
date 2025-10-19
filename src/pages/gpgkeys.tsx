@@ -203,3 +203,5 @@ export function GPGKeysPage() {
     </div>
   )
 }
+
+export default GPGKeysPage

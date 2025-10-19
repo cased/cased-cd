@@ -597,6 +597,8 @@ export function ApplicationDetailPage() {
   )
 }
 
+export default ApplicationDetailPage
+
 // Placeholder components for different views
 interface TreeViewProps {
   resourceTree?: { nodes?: K8sResource[] }

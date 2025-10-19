@@ -150,3 +150,5 @@ export function RepositoriesPage() {
     </div>
   )
 }
+
+export default RepositoriesPage

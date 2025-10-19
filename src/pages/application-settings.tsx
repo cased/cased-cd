@@ -672,3 +672,5 @@ export function ApplicationSettingsPage() {
     </div>
   )
 }
+
+export default ApplicationSettingsPage

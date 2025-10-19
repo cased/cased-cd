@@ -167,3 +167,5 @@ export function ClustersPage() {
     </div>
   )
 }
+
+export default ClustersPage
