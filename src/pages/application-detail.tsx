@@ -5,6 +5,7 @@ import {
   IconCircleForward,
   IconDelete,
   IconCodeBranch,
+  IconCircleInfo,
   IconCircleWarning,
   IconCircleCheck,
   IconClock3,
