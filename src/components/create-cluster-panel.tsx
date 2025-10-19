@@ -1,7 +1,19 @@
 import { IconClose, IconServer } from 'obra-icons-react'
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { useCreateCluster } from '@/services/clusters'
 import type { Cluster } from '@/types/api'
 
@@ -11,54 +23,50 @@ interface CreateClusterPanelProps {
   onSuccess?: () => void
 }
 
+// Validation schema
+const clusterSchema = z.object({
+  name: z.string().min(1, 'Cluster name is required'),
+  server: z.string().min(1, 'Server URL is required'),
+  namespaces: z.string().optional(),
+  bearerToken: z.string().optional(),
+  insecure: z.boolean(),
+  caData: z.string().optional(),
+  certData: z.string().optional(),
+  keyData: z.string().optional(),
+})
+
+type ClusterFormValues = z.infer<typeof clusterSchema>
+
 export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateClusterPanelProps) {
   const createMutation = useCreateCluster()
-  const [formData, setFormData] = useState({
-    name: '',
-    server: '',
-    namespaces: '',
-    config: {
+
+  const form = useForm<ClusterFormValues>({
+    resolver: zodResolver(clusterSchema),
+    defaultValues: {
+      name: '',
+      server: '',
+      namespaces: '',
       bearerToken: '',
-      tlsClientConfig: {
-        insecure: false,
-        caData: '',
-        certData: '',
-        keyData: '',
-      },
+      insecure: false,
+      caData: '',
+      certData: '',
+      keyData: '',
     },
   })
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Validation
-    const newErrors: Record<string, string> = {}
-    if (!formData.name) newErrors.name = 'Cluster name is required'
-    if (!formData.server) newErrors.server = 'Server URL is required'
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-
+  const onSubmit = async (values: ClusterFormValues) => {
     try {
       const cluster: Cluster = {
-        name: formData.name,
-        server: formData.server,
+        name: values.name,
+        server: values.server,
         config: {
-          bearerToken: formData.config.bearerToken || undefined,
+          bearerToken: values.bearerToken || undefined,
           tlsClientConfig: {
-            insecure: formData.config.tlsClientConfig.insecure,
-            caData: formData.config.tlsClientConfig.caData || undefined,
-            certData: formData.config.tlsClientConfig.certData || undefined,
-            keyData: formData.config.tlsClientConfig.keyData || undefined,
+            insecure: values.insecure,
+            caData: values.caData || undefined,
+            certData: values.certData || undefined,
+            keyData: values.keyData || undefined,
           },
-        },
-        connectionState: {
-          status: 'Failed',
-          message: 'Not yet connected',
         },
       }
 
@@ -67,23 +75,10 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
       onClose()
 
       // Reset form
-      setFormData({
-        name: '',
-        server: '',
-        namespaces: '',
-        config: {
-          bearerToken: '',
-          tlsClientConfig: {
-            insecure: false,
-            caData: '',
-            certData: '',
-            keyData: '',
-          },
-        },
-      })
-      setErrors({})
+      form.reset()
     } catch (error) {
-      setErrors({ submit: error instanceof Error ? error.message : 'Failed to create cluster' })
+      // Error is already handled by React Query and displayed via toast
+      console.error('Failed to create cluster:', error)
     }
   }
 
@@ -114,173 +109,165 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Name *
-              </label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="production-cluster"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="production-cluster" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.name && <p className="text-sm text-red-400 mt-1">{errors.name}</p>}
-            </div>
 
-            {/* Server URL */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Server URL *
-              </label>
-              <Input
-                value={formData.server}
-                onChange={(e) => setFormData({ ...formData, server: e.target.value })}
-                placeholder="https://kubernetes.default.svc"
+              {/* Server URL */}
+              <FormField
+                control={form.control}
+                name="server"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Server URL *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://kubernetes.default.svc" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Use "https://kubernetes.default.svc" for in-cluster access
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-neutral-500 dark:text-neutral-600 mt-1">
-                Use "https://kubernetes.default.svc" for in-cluster access
-              </p>
-              {errors.server && <p className="text-sm text-red-400 mt-1">{errors.server}</p>}
-            </div>
 
-            {/* Namespaces */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Namespaces (optional)
-              </label>
-              <Input
-                value={formData.namespaces}
-                onChange={(e) => setFormData({ ...formData, namespaces: e.target.value })}
-                placeholder="default, kube-system, production"
+              {/* Namespaces */}
+              <FormField
+                control={form.control}
+                name="namespaces"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Namespaces (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="default, kube-system, production" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Comma-separated list. Leave empty for all namespaces.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <p className="text-xs text-neutral-500 dark:text-neutral-600 mt-1">
-                Comma-separated list. Leave empty for all namespaces.
-              </p>
-            </div>
 
-            {/* Authentication */}
-            <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Authentication
-              </h3>
+              {/* Authentication */}
+              <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Authentication
+                </h3>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Bearer Token (optional)
-                </label>
-                <Input
-                  type="password"
-                  value={formData.config.bearerToken}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    config: { ...formData.config, bearerToken: e.target.value }
-                  })}
-                  placeholder="eyJhbGciOiJSUzI1NiIsImtpZCI6..."
-                  autoComplete="off"
+                <FormField
+                  control={form.control}
+                  name="bearerToken"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Bearer Token (optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="eyJhbGciOiJSUzI1NiIsImtpZCI6..."
+                          autoComplete="off"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="insecure"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Skip server verification (insecure)</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="insecure"
-                  checked={formData.config.tlsClientConfig.insecure}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    config: {
-                      ...formData.config,
-                      tlsClientConfig: {
-                        ...formData.config.tlsClientConfig,
-                        insecure: e.target.checked
-                      }
-                    }
-                  })}
-                  className="rounded border-neutral-300 dark:border-neutral-700"
+              {/* TLS Configuration */}
+              <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  TLS Configuration (optional)
+                </h3>
+
+                <FormField
+                  control={form.control}
+                  name="caData"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CA Certificate Data</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                          className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                <label htmlFor="insecure" className="text-sm text-neutral-700 dark:text-neutral-300">
-                  Skip server verification (insecure)
-                </label>
-              </div>
-            </div>
 
-            {/* TLS Configuration */}
-            <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                TLS Configuration (optional)
-              </h3>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  CA Certificate Data
-                </label>
-                <textarea
-                  value={formData.config.tlsClientConfig.caData}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    config: {
-                      ...formData.config,
-                      tlsClientConfig: {
-                        ...formData.config.tlsClientConfig,
-                        caData: e.target.value
-                      }
-                    }
-                  })}
-                  placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
-                  className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <FormField
+                  control={form.control}
+                  name="certData"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client Certificate Data</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
+                          className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Client Certificate Data
-                </label>
-                <textarea
-                  value={formData.config.tlsClientConfig.certData}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    config: {
-                      ...formData.config,
-                      tlsClientConfig: {
-                        ...formData.config.tlsClientConfig,
-                        certData: e.target.value
-                      }
-                    }
-                  })}
-                  placeholder="-----BEGIN CERTIFICATE-----&#10;...&#10;-----END CERTIFICATE-----"
-                  className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                <FormField
+                  control={form.control}
+                  name="keyData"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Client Key Data</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
+                          className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Client Key Data
-                </label>
-                <textarea
-                  value={formData.config.tlsClientConfig.keyData}
-                  onChange={(e) => setFormData({
-                    ...formData,
-                    config: {
-                      ...formData.config,
-                      tlsClientConfig: {
-                        ...formData.config.tlsClientConfig,
-                        keyData: e.target.value
-                      }
-                    }
-                  })}
-                  placeholder="-----BEGIN RSA PRIVATE KEY-----&#10;...&#10;-----END RSA PRIVATE KEY-----"
-                  className="w-full h-24 rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            {/* Error message */}
-            {errors.submit && (
-              <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3">
-                <p className="text-sm text-red-400">{errors.submit}</p>
-              </div>
-            )}
-          </form>
+            </form>
+          </Form>
         </div>
 
         {/* Footer */}
@@ -290,7 +277,7 @@ export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateCluster
           </Button>
           <Button
             variant="default"
-            onClick={handleSubmit}
+            onClick={form.handleSubmit(onSubmit)}
             disabled={createMutation.isPending}
           >
             {createMutation.isPending ? 'Adding...' : 'Add Cluster'}
