@@ -1,4 +1,4 @@
-import { IconFolder, IconAdd, IconDelete, IconCircleCheck, IconCircleClose } from 'obra-icons-react'
+import { IconFolder, IconAdd, IconDelete } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
@@ -8,6 +8,7 @@ import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/page-header'
+import { ConnectionStatusBadge } from '@/components/ui/connection-status-badge'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
 import type { Repository } from '@/types/api'
@@ -80,16 +81,7 @@ export function RepositoriesPage() {
                             <Badge variant={repo.type === 'git' ? 'secondary' : repo.type === 'helm' ? 'default' : 'destructive'}>
                               {repo.type || 'git'}
                             </Badge>
-                            {repo.connectionState?.status && (
-                              <Badge variant="outline" className="gap-1.5">
-                                {repo.connectionState.status === 'Successful' ? (
-                                  <IconCircleCheck size={12} className="text-grass-11" />
-                                ) : (
-                                  <IconCircleClose size={12} className="text-red-400" />
-                                )}
-                                {repo.connectionState.status}
-                              </Badge>
-                            )}
+                            <ConnectionStatusBadge status={repo.connectionState?.status} />
                           </div>
                           <p className="text-xs text-neutral-600 dark:text-neutral-400 font-mono truncate max-w-2xl">
                             {repo.repo}

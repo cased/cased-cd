@@ -1,6 +1,5 @@
-import { IconServer, IconAdd, IconDelete, IconCircleCheck, IconCircleClose } from 'obra-icons-react'
+import { IconServer, IconAdd, IconDelete } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
 import { CreateClusterPanel } from '@/components/create-cluster-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
@@ -8,6 +7,7 @@ import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
 import { PageHeader } from '@/components/page-header'
+import { ConnectionStatusBadge } from '@/components/ui/connection-status-badge'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
 import type { Cluster } from '@/types/api'
@@ -75,16 +75,7 @@ export function ClustersPage() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="font-medium text-sm text-black dark:text-white truncate mb-0.5">{cluster.name}</h3>
-                        {cluster.connectionState?.status && (
-                          <Badge variant="outline" className="gap-1.5 mb-1">
-                            {cluster.connectionState.status === 'Successful' ? (
-                              <IconCircleCheck size={12} className="text-grass-11" />
-                            ) : (
-                              <IconCircleClose size={12} className="text-red-400" />
-                            )}
-                            {cluster.connectionState.status}
-                          </Badge>
-                        )}
+                        <ConnectionStatusBadge status={cluster.connectionState?.status} className="mb-1" />
                       </div>
                     </div>
                   </div>
