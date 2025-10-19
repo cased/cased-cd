@@ -12,7 +12,8 @@ import {
   IconUnorderedList,
   IconBox,
   IconCode,
-  IconSettings
+  IconSettings,
+  IconBell
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -41,8 +42,9 @@ import { ResourceDiffPanel } from '@/components/resource-diff-panel'
 import { ResourceTree } from '@/components/resource-tree'
 import { ApplicationHistory } from '@/components/application-history'
 import { SyncProgressSheet } from '@/components/sync-progress-sheet'
+import { NotificationSubscriptions } from '@/components/notification-subscriptions'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history' | 'notifications'
 
 interface ResourceFilters {
   kind: string
@@ -540,6 +542,15 @@ export function ApplicationDetailPage() {
               <IconClock3 size={16} />
               History
             </Button>
+            <Button
+              variant={view === 'notifications' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('notifications')}
+              className="gap-1"
+            >
+              <IconBell size={16} />
+              Notifications
+            </Button>
           </div>
         </div>
       </div>
@@ -555,6 +566,10 @@ export function ApplicationDetailPage() {
         ) : view === 'history' ? (
           <div className="p-4">
             <ApplicationHistory application={app} />
+          </div>
+        ) : view === 'notifications' ? (
+          <div className="p-4 max-w-4xl">
+            <NotificationSubscriptions application={app} onSuccess={() => refetch()} />
           </div>
         ) : (
           <div className="p-4">

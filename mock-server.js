@@ -27,6 +27,10 @@ let applications = [
         metadata: {
           name: 'guestbook',
           namespace: 'argocd',
+          annotations: {
+            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'my-channel',
+            'notifications.argoproj.io/subscribe.on-sync-failed.email': 'team@example.com',
+          },
         },
         spec: {
           project: 'default',
@@ -875,6 +879,47 @@ spec:
           message: 'Service is healthy',
         },
       },
+    ],
+  })
+})
+
+// Mock notifications endpoints
+app.get('/api/v1/notifications/services', (req, res) => {
+  res.json({
+    items: [
+      { name: 'slack' },
+      { name: 'email' },
+      { name: 'teams' },
+      { name: 'webhook' },
+      { name: 'pagerduty' },
+    ],
+  })
+})
+
+app.get('/api/v1/notifications/triggers', (req, res) => {
+  res.json({
+    items: [
+      { name: 'on-created' },
+      { name: 'on-deleted' },
+      { name: 'on-deployed' },
+      { name: 'on-health-degraded' },
+      { name: 'on-sync-failed' },
+      { name: 'on-sync-running' },
+      { name: 'on-sync-status-unknown' },
+      { name: 'on-sync-succeeded' },
+    ],
+  })
+})
+
+app.get('/api/v1/notifications/templates', (req, res) => {
+  res.json({
+    items: [
+      { name: 'app-deployed' },
+      { name: 'app-health-degraded' },
+      { name: 'app-sync-failed' },
+      { name: 'app-sync-running' },
+      { name: 'app-sync-status-unknown' },
+      { name: 'app-sync-succeeded' },
     ],
   })
 })

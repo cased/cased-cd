@@ -362,3 +362,36 @@ export interface RollbackRequest {
   dryRun?: boolean
   appNamespace?: string
 }
+
+// Notifications
+export interface NotificationService {
+  name: string
+}
+
+export interface NotificationTrigger {
+  name: string
+}
+
+export interface NotificationTemplate {
+  name: string
+}
+
+export interface NotificationServicesResponse {
+  items: NotificationService[]
+}
+
+export interface NotificationTriggersResponse {
+  items: NotificationTrigger[]
+}
+
+export interface NotificationTemplatesResponse {
+  items: NotificationTemplate[]
+}
+
+// Notification subscription is stored as an annotation on the Application
+// Format: notifications.argoproj.io/subscribe.<trigger>.<service>: <recipient>
+export interface NotificationSubscription {
+  trigger: string
+  service: string
+  recipients: string[] // Semicolon-separated in annotation, but array in UI
+}
