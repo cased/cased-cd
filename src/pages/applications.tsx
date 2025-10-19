@@ -18,19 +18,24 @@ import {
   useApplications,
   useRefreshApplication,
   useSyncApplication,
+  applicationKeys,
+  applicationsApi,
 } from "@/services/applications";
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PageHeader } from "@/components/page-header";
 import { getHealthIcon } from "@/lib/status-icons";
-import { useState } from "react";
+import { useState, memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const [pageSize, setPageSize] = useState(20);
@@ -44,10 +49,24 @@ export function ApplicationsPage() {
   const refreshMutation = useRefreshApplication();
   const syncMutation = useSyncApplication();
 
-  // Filter applications based on search
+  // Prefetch next page for better UX
+  useEffect(() => {
+    const nextToken = data?.metadata?.continue;
+    if (nextToken && !isLoading) {
+      queryClient.prefetchQuery({
+        queryKey: applicationKeys.list({ limit: pageSize, continue: nextToken }),
+        queryFn: () => applicationsApi.getApplications({ limit: pageSize, continue: nextToken }),
+      });
+    }
+  }, [data?.metadata?.continue, isLoading, pageSize, queryClient]);
+
+  // Debounce search to avoid excessive filtering on every keystroke
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  // Filter applications based on debounced search
   const filteredApps =
     data?.items?.filter((app) =>
-      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase())
+      app.metadata.name.toLowerCase().includes(debouncedSearch.toLowerCase())
     ) || [];
 
   const handleRefresh = async (name: string) => {
@@ -153,16 +172,16 @@ export function ApplicationsPage() {
                   <IconGrid size={24} className="text-neutral-400" />
                 </div>
                 <h3 className="text-sm font-medium text-black dark:text-white mb-1">
-                  {searchQuery
+                  {debouncedSearch
                     ? "No applications found"
                     : "No applications yet"}
                 </h3>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-4">
-                  {searchQuery
+                  {debouncedSearch
                     ? "Try adjusting your search or filters"
                     : "Create your first application to get started with GitOps deployments"}
                 </p>
-                {!searchQuery && (
+                {!debouncedSearch && (
                   <Button
                     variant="default"
                     onClick={() => setShowCreatePanel(true)}
@@ -269,8 +288,8 @@ export function ApplicationsPage() {
   );
 }
 
-// Application Card Component
-function ApplicationCard({
+// Application Card Component (memoized to prevent unnecessary re-renders)
+const ApplicationCard = memo(function ApplicationCard({
   app,
   onRefresh,
   onSync,
@@ -381,4 +400,4 @@ function ApplicationCard({
       </div>
     </div>
   );
-}
+});

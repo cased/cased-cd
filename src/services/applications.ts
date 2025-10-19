@@ -196,7 +196,8 @@ export function useApplications(filters?: ApplicationFilters) {
   return useQuery({
     queryKey: applicationKeys.list(filters),
     queryFn: () => applicationsApi.getApplications(filters),
-    staleTime: 5 * 1000, // 5 seconds
+    staleTime: 30 * 1000, // Consider fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes (formerly cacheTime)
     refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
     refetchIntervalInBackground: false, // Only when tab is active
   })
@@ -208,7 +209,8 @@ export function useApplication(name: string, enabled: boolean = true) {
     queryKey: applicationKeys.detail(name),
     queryFn: () => applicationsApi.getApplication(name),
     enabled: enabled && !!name,
-    staleTime: 5 * 1000, // 5 seconds
+    staleTime: 30 * 1000, // Consider fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
     refetchIntervalInBackground: false, // Only when tab is active
   })
@@ -382,7 +384,8 @@ export function useResourceTree(name: string, enabled: boolean = true) {
     queryKey: applicationKeys.resourceTree(name),
     queryFn: () => applicationsApi.getResourceTree(name),
     enabled: enabled && !!name,
-    staleTime: 5 * 1000, // 5 seconds
+    staleTime: 30 * 1000, // Consider fresh for 30 seconds
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
     refetchInterval: 10 * 1000, // Auto-refetch every 10 seconds
   })
 }
