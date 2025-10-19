@@ -1,7 +1,25 @@
 import { IconClose, IconFolder } from 'obra-icons-react'
-import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCreateRepository } from '@/services/repositories'
 import type { Repository } from '@/types/api'
 
@@ -11,48 +29,73 @@ interface CreateRepositoryPanelProps {
   onSuccess?: () => void
 }
 
+// Validation schema
+const repositorySchema = z.object({
+  type: z.enum(['git', 'helm', 'oci']),
+  name: z.string().optional(),
+  repo: z.string().min(1, 'Repository URL is required'),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  insecure: z.boolean(),
+  project: z.string().optional(),
+}).refine(
+  (data) => {
+    // If type is helm, name is required
+    if (data.type === 'helm' && !data.name) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'Name is required for Helm repositories',
+    path: ['name'],
+  }
+).refine(
+  (data) => {
+    // If username is provided, password must be provided too
+    if (data.username && !data.password) {
+      return false
+    }
+    // If password is provided, username must be provided too
+    if (data.password && !data.username) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'Both username and password are required for authentication',
+    path: ['password'],
+  }
+)
+
+type RepositoryFormValues = z.infer<typeof repositorySchema>
+
 export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepositoryPanelProps) {
   const createMutation = useCreateRepository()
-  const [formData, setFormData] = useState({
-    type: 'git' as 'git' | 'helm' | 'oci',
-    name: '',
-    repo: '',
-    username: '',
-    password: '',
-    insecure: false,
-    project: '',
+
+  const form = useForm<RepositoryFormValues>({
+    resolver: zodResolver(repositorySchema),
+    defaultValues: {
+      type: 'git',
+      name: '',
+      repo: '',
+      username: '',
+      password: '',
+      insecure: false,
+      project: '',
+    },
   })
 
-  const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Validation
-    const newErrors: Record<string, string> = {}
-    if (!formData.repo) newErrors.repo = 'Repository URL is required'
-    if (formData.type === 'helm' && !formData.name) newErrors.name = 'Name is required for Helm repositories'
-    if (formData.username && !formData.password) newErrors.password = 'Password is required if username is given'
-    if (formData.password && !formData.username) newErrors.username = 'Username is required if password is given'
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
-    }
-
+  const onSubmit = async (values: RepositoryFormValues) => {
     try {
       const repository: Repository = {
-        repo: formData.repo,
-        type: formData.type,
-        name: formData.name || undefined,
-        username: formData.username || undefined,
-        password: formData.password || undefined,
-        insecure: formData.insecure,
-        project: formData.project || undefined,
-        connectionState: {
-          status: 'Failed',
-          message: 'Not yet connected',
-        },
+        repo: values.repo,
+        type: values.type,
+        name: values.name || undefined,
+        username: values.username || undefined,
+        password: values.password || undefined,
+        insecure: values.insecure,
+        project: values.project || undefined,
       }
 
       await createMutation.mutateAsync(repository)
@@ -60,18 +103,10 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
       onClose()
 
       // Reset form
-      setFormData({
-        type: 'git',
-        name: '',
-        repo: '',
-        username: '',
-        password: '',
-        insecure: false,
-        project: '',
-      })
-      setErrors({})
+      form.reset()
     } catch (error) {
-      setErrors({ submit: error instanceof Error ? error.message : 'Failed to create repository' })
+      // Error is already handled by React Query and displayed via toast
+      console.error('Failed to create repository:', error)
     }
   }
 
@@ -102,115 +137,138 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Type */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Type
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as 'git' | 'helm' | 'oci' })}
-                className="w-full rounded-md border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="git">Git</option>
-                <option value="helm">Helm</option>
-                <option value="oci">OCI</option>
-              </select>
-            </div>
-
-            {/* Name */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Name {formData.type === 'helm' ? '' : '(optional)'}
-              </label>
-              <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="my-repository"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* Type */}
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Type</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="git">Git</SelectItem>
+                        <SelectItem value="helm">Helm</SelectItem>
+                        <SelectItem value="oci">OCI</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.name && <p className="text-sm text-red-400 mt-1">{errors.name}</p>}
-            </div>
 
-            {/* Repository URL */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Repository URL *
-              </label>
-              <Input
-                value={formData.repo}
-                onChange={(e) => setFormData({ ...formData, repo: e.target.value })}
-                placeholder="https://github.com/org/repo.git"
+              {/* Name */}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Name {form.watch('type') === 'helm' ? '' : '(optional)'}
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="my-repository" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              {errors.repo && <p className="text-sm text-red-400 mt-1">{errors.repo}</p>}
-            </div>
 
-            {/* Project */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Project (optional)
-              </label>
-              <Input
-                value={formData.project}
-                onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                placeholder="default"
+              {/* Repository URL */}
+              <FormField
+                control={form.control}
+                name="repo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Repository URL *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://github.com/org/repo.git" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
 
-            {/* Authentication */}
-            <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                Authentication (optional)
-              </h3>
+              {/* Project */}
+              <FormField
+                control={form.control}
+                name="project"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Project (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="default" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Username
-                </label>
-                <Input
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                  placeholder="username"
-                  autoComplete="off"
+              {/* Authentication */}
+              <div className="space-y-4 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <h3 className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Authentication (optional)
+                </h3>
+
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="username" autoComplete="off" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {errors.username && <p className="text-sm text-red-400 mt-1">{errors.username}</p>}
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="password or token"
-                  autoComplete="off"
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="password or token"
+                          autoComplete="off"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-                {errors.password && <p className="text-sm text-red-400 mt-1">{errors.password}</p>}
-              </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="insecure"
-                  checked={formData.insecure}
-                  onChange={(e) => setFormData({ ...formData, insecure: e.target.checked })}
-                  className="rounded border-neutral-300 dark:border-neutral-700"
+                <FormField
+                  control={form.control}
+                  name="insecure"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Skip server verification (insecure)</FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
                 />
-                <label htmlFor="insecure" className="text-sm text-neutral-700 dark:text-neutral-300">
-                  Skip server verification (insecure)
-                </label>
               </div>
-            </div>
-
-            {/* Error message */}
-            {errors.submit && (
-              <div className="rounded-md border border-red-500/20 bg-red-500/10 p-3">
-                <p className="text-sm text-red-400">{errors.submit}</p>
-              </div>
-            )}
-          </form>
+            </form>
+          </Form>
         </div>
 
         {/* Footer */}
@@ -220,7 +278,7 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
           </Button>
           <Button
             variant="default"
-            onClick={handleSubmit}
+            onClick={form.handleSubmit(onSubmit)}
             disabled={createMutation.isPending}
           >
             {createMutation.isPending ? 'Connecting...' : 'Connect Repository'}
