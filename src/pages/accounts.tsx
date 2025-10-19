@@ -10,6 +10,8 @@ import {
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useUpdatePassword, useCreateToken, useDeleteToken } from '@/services/accounts'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -91,18 +93,16 @@ export function AccountsPage() {
         <div className="p-4">
           {/* Loading State */}
           {isLoading && (
-            <div className="text-center py-12">
-              <p className="text-neutral-600 dark:text-neutral-400">Loading accounts...</p>
-            </div>
+            <LoadingSpinner message="Loading accounts..." containerHeight="py-12" />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <p className="text-sm text-red-400">
-                {error instanceof Error ? error.message : 'Failed to load accounts'}
-              </p>
-            </div>
+            <ErrorAlert
+              error={error}
+              title="Failed to load accounts"
+              size="lg"
+            />
           )}
 
           {/* Accounts List */}

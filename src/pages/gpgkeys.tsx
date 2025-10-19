@@ -3,11 +3,12 @@ import {
   IconKey,
   IconAdd,
   IconDelete,
-  IconCircleForward,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useGPGKeys, useCreateGPGKey, useDeleteGPGKey } from '@/services/gpgkeys'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -124,19 +125,16 @@ export function GPGKeysPage() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="text-center py-12">
-              <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
-              <p className="text-neutral-600 dark:text-neutral-400">Loading GPG keys...</p>
-            </div>
+            <LoadingSpinner message="Loading GPG keys..." size="lg" containerHeight="py-12" />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <p className="text-sm text-red-400">
-                {error instanceof Error ? error.message : 'Failed to load GPG keys'}
-              </p>
-            </div>
+            <ErrorAlert
+              error={error}
+              title="Failed to load GPG keys"
+              size="lg"
+            />
           )}
 
           {/* Empty State */}

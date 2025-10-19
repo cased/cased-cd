@@ -19,6 +19,8 @@ import {
   useSyncApplication,
 } from "@/services/applications";
 import { CreateApplicationPanel } from "@/components/create-application-panel";
+import { ErrorAlert } from "@/components/ui/error-alert";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
@@ -126,42 +128,17 @@ export function ApplicationsPage() {
         <div className="p-4">
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-400">
-                  Loading applications...
-                </p>
-              </div>
-            </div>
+            <LoadingSpinner message="Loading applications..." size="lg" />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <div className="flex items-start gap-3">
-                <IconCircleWarning size={20} className="text-red-400 mt-0.5" />
-                <div>
-                  <h3 className="font-medium text-red-400 mb-1">
-                    Failed to load applications
-                  </h3>
-                  <p className="text-sm text-red-400/80 mb-3">
-                    {error instanceof Error
-                      ? error.message
-                      : "Unable to connect to ArgoCD API"}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => refetch()}
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ErrorAlert
+              error={error}
+              onRetry={() => refetch()}
+              title="Failed to load applications"
+              size="lg"
+            />
           )}
 
           {/* Empty State */}

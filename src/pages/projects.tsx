@@ -4,6 +4,9 @@ import { Badge } from '@/components/ui/badge'
 import { useProjects, useDeleteProject } from '@/services/projects'
 import { CreateProjectPanel } from '@/components/create-project-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
 import type { Project } from '@/types/api'
@@ -60,29 +63,17 @@ export function ProjectsPage() {
         <div className="p-4">
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <IconCircleForward size={24} className="animate-spin text-neutral-400 mx-auto mb-2" />
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">Loading projects...</p>
-              </div>
-            </div>
+            <LoadingSpinner message="Loading projects..." />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded border border-red-500/20 bg-red-500/10 p-3">
-              <div className="flex items-start gap-2">
-                <div>
-                  <h3 className="font-medium text-sm text-red-400 mb-0.5">Failed to load projects</h3>
-                  <p className="text-xs text-red-400/80 mb-2">
-                    {error instanceof Error ? error.message : 'Unable to connect to ArgoCD API'}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={() => refetch()}>
-                    Try Again
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <ErrorAlert
+              error={error}
+              onRetry={() => refetch()}
+              title="Failed to load projects"
+              size="sm"
+            />
           )}
 
           {/* Projects List */}
@@ -191,21 +182,16 @@ export function ProjectsPage() {
 
           {/* Empty State */}
           {!isLoading && !error && (!data?.items || data.items.length === 0) && (
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="h-9 w-9 rounded bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-2">
-                  <IconFolder size={24} className="text-neutral-400" />
-                </div>
-                <h3 className="font-medium text-sm text-black dark:text-white mb-1">No projects yet</h3>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-3">
-                  Create your first project to organize applications and control access
-                </p>
-                <Button variant="default" onClick={() => setShowCreatePanel(true)}>
-                  <IconAdd size={16} />
-                  Create Project
-                </Button>
-              </div>
-            </div>
+            <EmptyState
+              icon={IconFolder}
+              title="No projects yet"
+              description="Create your first project to organize applications and control access"
+              action={{
+                label: 'Create Project',
+                onClick: () => setShowCreatePanel(true),
+                icon: IconAdd,
+              }}
+            />
           )}
         </div>
       </div>
