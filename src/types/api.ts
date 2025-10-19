@@ -395,3 +395,14 @@ export interface NotificationSubscription {
   service: string
   recipients: string[] // Semicolon-separated in annotation, but array in UI
 }
+
+// Global notification subscription from ConfigMap
+// Source: 'global' (from argocd-notifications-cm) or 'project' (from AppProject)
+export interface GlobalNotificationSubscription extends NotificationSubscription {
+  source: 'global' | 'project'
+  description?: string
+}
+
+export interface GlobalNotificationSubscriptionsResponse {
+  items: GlobalNotificationSubscription[]
+}

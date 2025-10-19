@@ -6,6 +6,7 @@ import type {
   NotificationTemplatesResponse,
   NotificationSubscription,
   Application,
+  GlobalNotificationSubscriptionsResponse,
 } from '@/types/api'
 
 /**
@@ -16,6 +17,7 @@ export const notificationKeys = {
   services: () => [...notificationKeys.all, 'services'] as const,
   triggers: () => [...notificationKeys.all, 'triggers'] as const,
   templates: () => [...notificationKeys.all, 'templates'] as const,
+  globalSubscriptions: () => [...notificationKeys.all, 'globalSubscriptions'] as const,
 }
 
 /**
@@ -43,6 +45,15 @@ export const notificationsApi = {
    */
   getTemplates: async (): Promise<NotificationTemplatesResponse> => {
     const response = await api.get<NotificationTemplatesResponse>('/notifications/templates')
+    return response.data
+  },
+
+  /**
+   * Get global notification subscriptions (from ConfigMap)
+   * Note: In production, this requires K8s API access to read argocd-notifications-cm
+   */
+  getGlobalSubscriptions: async (): Promise<GlobalNotificationSubscriptionsResponse> => {
+    const response = await api.get<GlobalNotificationSubscriptionsResponse>('/notifications/subscriptions/global')
     return response.data
   },
 }
@@ -80,6 +91,17 @@ export function useNotificationTemplates() {
   return useQuery({
     queryKey: notificationKeys.templates(),
     queryFn: () => notificationsApi.getTemplates(),
+    staleTime: 5 * 60 * 1000, // 5 minutes - rarely changes
+  })
+}
+
+/**
+ * Hook to fetch global notification subscriptions
+ */
+export function useGlobalNotificationSubscriptions() {
+  return useQuery({
+    queryKey: notificationKeys.globalSubscriptions(),
+    queryFn: () => notificationsApi.getGlobalSubscriptions(),
     staleTime: 5 * 60 * 1000, // 5 minutes - rarely changes
   })
 }

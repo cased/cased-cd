@@ -8,6 +8,7 @@ import { LoginPage } from './pages/login'
 import { ApplicationsPage } from './pages/applications'
 import { ApplicationDetailPage } from './pages/application-detail'
 import { ApplicationSettingsPage } from './pages/application-settings'
+import { NotificationsPage } from './pages/notifications'
 import { SettingsPage } from './pages/settings'
 import { AccountsPage } from './pages/accounts'
 import { CertificatesPage } from './pages/certificates'
@@ -41,6 +42,7 @@ function App() {
                 <Route path="applications" element={<ApplicationsPage />} />
                 <Route path="applications/:name" element={<ApplicationDetailPage />} />
                 <Route path="applications/:name/settings" element={<ApplicationSettingsPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="accounts" element={<AccountsPage />} />
                 <Route path="certificates" element={<CertificatesPage />} />

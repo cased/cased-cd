@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconBell, IconAdd, IconDelete } from 'obra-icons-react'
+import { IconNotification, IconAdd, IconDelete } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -142,7 +142,7 @@ export function NotificationSubscriptions({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <IconBell size={16} className="text-neutral-600 dark:text-neutral-400" />
+          <IconNotification size={16} className="text-neutral-600 dark:text-neutral-400" />
           <h3 className="text-sm font-medium text-black dark:text-white">
             Notification Subscriptions
           </h3>

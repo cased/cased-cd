@@ -8,6 +8,7 @@ import {
   IconFolder,
   IconServer,
   IconBox,
+  IconNotification,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -30,6 +31,11 @@ const navItems = [
     title: "Applications",
     href: "/applications",
     icon: IconGrid,
+  },
+  {
+    title: "Notifications",
+    href: "/notifications",
+    icon: IconNotification,
   },
   {
     title: "Repositories",

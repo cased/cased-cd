@@ -924,6 +924,36 @@ app.get('/api/v1/notifications/templates', (req, res) => {
   })
 })
 
+// Mock global notification subscriptions endpoint
+// Note: In production, this would require K8s API access to read argocd-notifications-cm ConfigMap
+app.get('/api/v1/notifications/subscriptions/global', (req, res) => {
+  res.json({
+    items: [
+      {
+        trigger: 'on-sync-failed',
+        service: 'slack',
+        recipients: ['devops-alerts'],
+        source: 'global',
+        description: 'Global default: All sync failures go to #devops-alerts',
+      },
+      {
+        trigger: 'on-health-degraded',
+        service: 'slack',
+        recipients: ['devops-alerts'],
+        source: 'global',
+        description: 'Global default: All health degradation events go to #devops-alerts',
+      },
+      {
+        trigger: 'on-deployed',
+        service: 'email',
+        recipients: ['team-leads@example.com'],
+        source: 'global',
+        description: 'Global default: All successful deployments emailed to team leads',
+      },
+    ],
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })

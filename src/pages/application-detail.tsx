@@ -13,7 +13,7 @@ import {
   IconBox,
   IconCode,
   IconSettings,
-  IconBell
+  IconNotification
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -548,7 +548,7 @@ export function ApplicationDetailPage() {
               onClick={() => setView('notifications')}
               className="gap-1"
             >
-              <IconBell size={16} />
+              <IconNotification size={16} />
               Notifications
             </Button>
           </div>
