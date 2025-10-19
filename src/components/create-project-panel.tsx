@@ -1,7 +1,6 @@
 import { IconClose, IconFolder } from 'obra-icons-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,25 +15,13 @@ import {
 import { useCreateProject } from '@/services/projects'
 import type { Project } from '@/types/api'
 import { toast } from 'sonner'
+import { projectSchema, type ProjectFormValues } from '@/schemas/project'
 
 interface CreateProjectPanelProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
 }
-
-// Validation schema
-const projectSchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Project name is required')
-    .regex(/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/, 'Name must be lowercase alphanumeric with hyphens (RFC 1123)'),
-  description: z.string().optional(),
-  sourceRepos: z.string().optional(),
-  destinations: z.string().optional(),
-})
-
-type ProjectFormValues = z.infer<typeof projectSchema>
 
 export function CreateProjectPanel({ isOpen, onClose, onSuccess }: CreateProjectPanelProps) {
   const createMutation = useCreateProject()

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { IconClose, IconSpinnerBall, IconDocumentCode, IconText } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,27 +22,12 @@ import {
 import { useCreateApplication } from '@/services/applications'
 import type { Application } from '@/types/api'
 import yaml from 'js-yaml'
+import { applicationSchema, type ApplicationFormValues } from '@/schemas/application'
 
 interface CreateApplicationPanelProps {
   onClose: () => void
   onSuccess?: () => void
 }
-
-// Validation schema for form mode
-const applicationSchema = z.object({
-  name: z.string().min(1, 'Application name is required'),
-  project: z.string().min(1, 'Project is required'),
-  repoURL: z.string().min(1, 'Repository URL is required'),
-  path: z.string().optional(),
-  targetRevision: z.string().min(1, 'Target revision is required'),
-  destinationServer: z.string().min(1, 'Cluster URL is required'),
-  destinationNamespace: z.string().min(1, 'Namespace is required'),
-  createNamespace: z.boolean(),
-  prune: z.boolean(),
-  selfHeal: z.boolean(),
-})
-
-type ApplicationFormValues = z.infer<typeof applicationSchema>
 
 export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplicationPanelProps) {
   const createMutation = useCreateApplication()

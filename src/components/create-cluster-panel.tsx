@@ -1,7 +1,6 @@
 import { IconClose, IconServer } from 'obra-icons-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -16,26 +15,13 @@ import {
 } from '@/components/ui/form'
 import { useCreateCluster } from '@/services/clusters'
 import type { Cluster } from '@/types/api'
+import { clusterSchema, type ClusterFormValues } from '@/schemas/cluster'
 
 interface CreateClusterPanelProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
 }
-
-// Validation schema
-const clusterSchema = z.object({
-  name: z.string().min(1, 'Cluster name is required'),
-  server: z.string().min(1, 'Server URL is required'),
-  namespaces: z.string().optional(),
-  bearerToken: z.string().optional(),
-  insecure: z.boolean(),
-  caData: z.string().optional(),
-  certData: z.string().optional(),
-  keyData: z.string().optional(),
-})
-
-type ClusterFormValues = z.infer<typeof clusterSchema>
 
 export function CreateClusterPanel({ isOpen, onClose, onSuccess }: CreateClusterPanelProps) {
   const createMutation = useCreateCluster()

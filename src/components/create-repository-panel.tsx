@@ -1,7 +1,6 @@
 import { IconClose, IconFolder } from 'obra-icons-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,53 +21,13 @@ import {
 } from '@/components/ui/select'
 import { useCreateRepository } from '@/services/repositories'
 import type { Repository } from '@/types/api'
+import { repositorySchema, type RepositoryFormValues } from '@/schemas/repository'
 
 interface CreateRepositoryPanelProps {
   isOpen: boolean
   onClose: () => void
   onSuccess?: () => void
 }
-
-// Validation schema
-const repositorySchema = z.object({
-  type: z.enum(['git', 'helm', 'oci']),
-  name: z.string().optional(),
-  repo: z.string().min(1, 'Repository URL is required'),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  insecure: z.boolean(),
-  project: z.string().optional(),
-}).refine(
-  (data) => {
-    // If type is helm, name is required
-    if (data.type === 'helm' && !data.name) {
-      return false
-    }
-    return true
-  },
-  {
-    message: 'Name is required for Helm repositories',
-    path: ['name'],
-  }
-).refine(
-  (data) => {
-    // If username is provided, password must be provided too
-    if (data.username && !data.password) {
-      return false
-    }
-    // If password is provided, username must be provided too
-    if (data.password && !data.username) {
-      return false
-    }
-    return true
-  },
-  {
-    message: 'Both username and password are required for authentication',
-    path: ['password'],
-  }
-)
-
-type RepositoryFormValues = z.infer<typeof repositorySchema>
 
 export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepositoryPanelProps) {
   const createMutation = useCreateRepository()

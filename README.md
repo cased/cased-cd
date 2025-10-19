@@ -1,6 +1,6 @@
 # Cased CD
 
-A modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and Radix UI.
+A modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and shadcn/ui.
 
 ## Development
 
@@ -135,6 +135,7 @@ mock-server.js        # Express mock API server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build
 - `npm run lint` - Run ESLint
+- `npm run type-check` - Run TypeScript type checking (for CI)
 - `npm run test` - Run tests in watch mode
 - `npm run test:run` - Run tests once (for CI)
 - `npm run test:ui` - Run tests with Vitest UI
