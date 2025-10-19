@@ -1,4 +1,4 @@
-import { IconServer, IconAdd, IconDelete, IconCircleCheck, IconCircleClose, IconCircleForward } from 'obra-icons-react'
+import { IconServer, IconAdd, IconDelete, IconCircleCheck, IconCircleClose } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
@@ -7,6 +7,7 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/page-header'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
 import type { Cluster } from '@/types/api'
@@ -27,36 +28,17 @@ export function ClustersPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Clusters</h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Manage Kubernetes cluster connections
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
-                Refresh
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => setShowCreatePanel(true)}
-              >
-                <IconAdd size={16} />
-                Add Cluster
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Clusters"
+        description="Manage Kubernetes cluster connections"
+        onRefresh={() => refetch()}
+        isRefreshing={isLoading}
+        action={{
+          label: 'Add Cluster',
+          onClick: () => setShowCreatePanel(true),
+          icon: IconAdd,
+        }}
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">

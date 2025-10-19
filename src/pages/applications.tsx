@@ -20,6 +20,7 @@ import {
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { PageHeader } from "@/components/page-header";
 import { getHealthIcon } from "@/lib/status-icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -56,63 +57,39 @@ export function ApplicationsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white">
-                Applications
-              </h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Manage and monitor your deployments across all clusters
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <IconCircleForward
-                  size={16}
-                  className={isLoading ? "animate-spin" : ""}
-                />
-                Refresh
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => setShowCreatePanel(true)}
-              >
-                <IconAdd size={16} />
-                New Application
-              </Button>
-            </div>
+      <PageHeader
+        title="Applications"
+        description="Manage and monitor your deployments across all clusters"
+        onRefresh={() => refetch()}
+        isRefreshing={isLoading}
+        action={{
+          label: 'New Application',
+          onClick: () => setShowCreatePanel(true),
+          icon: IconAdd,
+        }}
+      >
+        {/* Search and Filters */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+            <Input
+              placeholder="Search applications..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
-
-          {/* Search and Filters */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1 max-w-md">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
-              <Input
-                placeholder="Search applications..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline" size="sm">
-              All Clusters
-            </Button>
-            <Button variant="outline" size="sm">
-              All Namespaces
-            </Button>
-            <Button variant="outline" size="sm">
-              All States
-            </Button>
-          </div>
+          <Button variant="outline" size="sm">
+            All Clusters
+          </Button>
+          <Button variant="outline" size="sm">
+            All Namespaces
+          </Button>
+          <Button variant="outline" size="sm">
+            All States
+          </Button>
         </div>
-      </div>
+      </PageHeader>
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
