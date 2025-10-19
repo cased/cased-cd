@@ -4,47 +4,23 @@ import { Badge } from '@/components/ui/badge'
 import { useClusters, useDeleteCluster } from '@/services/clusters'
 import { CreateClusterPanel } from '@/components/create-cluster-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { toast } from 'sonner'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
+import type { Cluster } from '@/types/api'
 
 export function ClustersPage() {
   const { data, isLoading, error, refetch } = useClusters()
   const deleteMutation = useDeleteCluster()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [clusterToDelete, setClusterToDelete] = useState<{ server: string; name: string } | null>(null)
 
-  const handleDeleteClick = (server: string, name: string) => {
-    setClusterToDelete({ server, name })
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!clusterToDelete) return
-
-    try {
-      await deleteMutation.mutateAsync(clusterToDelete.server)
-      toast.success('Cluster deleted', {
-        description: `Successfully deleted cluster "${clusterToDelete.name}"`,
-      })
-      setDeleteDialogOpen(false)
-      setClusterToDelete(null)
-      refetch()
-    } catch (error) {
-      console.error('Delete failed:', error)
-      if (error instanceof Error && 'response' in error) {
-        const response = error.response as { data?: { message?: string; error?: string }; status?: number }
-        const errorMsg = response?.data?.message || response?.data?.error || error.message || JSON.stringify(response?.data) || 'Unknown error'
-        toast.error('Failed to delete cluster', {
-          description: errorMsg,
-        })
-      } else {
-        toast.error('Failed to delete cluster', {
-          description: error instanceof Error ? error.message : 'Unknown error',
-        })
-      }
-    }
-  }
+  const deleteHandler = useDeleteHandler<Cluster>({
+    deleteFn: deleteMutation.mutateAsync,
+    resourceType: 'Cluster',
+    getId: (cluster) => cluster.server,
+    getDisplayName: (cluster) => cluster.name,
+    onSuccess: () => refetch(),
+    isDeleting: deleteMutation.isPending,
+  })
 
   return (
     <div className="flex flex-col h-full">
@@ -177,7 +153,7 @@ export function ClustersPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteClick(cluster.server, cluster.name)}
+                      onClick={() => deleteHandler.handleDeleteClick(cluster)}
                       className="w-full text-red-400 hover:text-red-300"
                     >
                       <IconDelete size={16} />
@@ -219,15 +195,15 @@ export function ClustersPage() {
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
         title="Delete Cluster"
-        description={`Are you sure you want to delete the cluster "${clusterToDelete?.name}"? This action cannot be undone and may affect deployed applications.`}
+        description={`Are you sure you want to delete the cluster "${deleteHandler.resourceToDelete?.name}"? This action cannot be undone and may affect deployed applications.`}
         confirmText="Delete"
-        resourceName={clusterToDelete?.name || ''}
+        resourceName={deleteHandler.resourceToDelete?.name || ''}
         resourceType="cluster"
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteMutation.isPending}
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )

@@ -7,6 +7,7 @@ import {
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useGPGKeys, useCreateGPGKey, useDeleteGPGKey } from '@/services/gpgkeys'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import {
@@ -17,6 +18,12 @@ import {
 } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
+interface GPGKey {
+  keyID: string
+  fingerprint?: string
+  owner?: string
+}
+
 export function GPGKeysPage() {
   const { data, isLoading, error } = useGPGKeys()
   const createMutation = useCreateGPGKey()
@@ -24,8 +31,14 @@ export function GPGKeysPage() {
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [keyData, setKeyData] = useState('')
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [keyToDelete, setKeyToDelete] = useState<{ keyID: string } | null>(null)
+
+  const deleteHandler = useDeleteHandler<GPGKey>({
+    deleteFn: deleteMutation.mutateAsync,
+    resourceType: 'GPG key',
+    getId: (key) => key.keyID,
+    getDisplayName: (key) => key.keyID,
+    isDeleting: deleteMutation.isPending,
+  })
 
   const handleCreate = async () => {
     try {
@@ -34,23 +47,6 @@ export function GPGKeysPage() {
       setShowAddForm(false)
     } catch (error) {
       console.error('Failed to create GPG key:', error)
-    }
-  }
-
-  const handleDeleteClick = (keyID: string) => {
-    setKeyToDelete({ keyID })
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!keyToDelete) return
-
-    try {
-      await deleteMutation.mutateAsync(keyToDelete.keyID)
-      setDeleteDialogOpen(false)
-      setKeyToDelete(null)
-    } catch (error) {
-      console.error('Failed to delete GPG key:', error)
     }
   }
 
@@ -181,7 +177,7 @@ export function GPGKeysPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteClick(key.keyID)}
+                        onClick={() => deleteHandler.handleDeleteClick(key)}
                       >
                         <IconDelete size={14} className="text-red-500" />
                       </Button>
@@ -196,15 +192,15 @@ export function GPGKeysPage() {
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
         title="Delete GPG Key"
-        description={`Are you sure you want to delete the GPG key "${keyToDelete?.keyID}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the GPG key "${deleteHandler.resourceToDelete?.keyID}"? This action cannot be undone.`}
         confirmText="Delete"
-        resourceName={keyToDelete?.keyID || ''}
+        resourceName={deleteHandler.resourceToDelete?.keyID || ''}
         resourceType="GPG key"
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteMutation.isPending}
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )

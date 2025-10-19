@@ -4,39 +4,23 @@ import { Badge } from '@/components/ui/badge'
 import { useProjects, useDeleteProject } from '@/services/projects'
 import { CreateProjectPanel } from '@/components/create-project-panel'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
-import { toast } from 'sonner'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
+import type { Project } from '@/types/api'
 
 export function ProjectsPage() {
   const { data, isLoading, error, refetch } = useProjects()
   const deleteMutation = useDeleteProject()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [projectToDelete, setProjectToDelete] = useState<{ name: string } | null>(null)
 
-  const handleDeleteClick = (name: string) => {
-    setProjectToDelete({ name })
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!projectToDelete) return
-
-    try {
-      await deleteMutation.mutateAsync(projectToDelete.name)
-      toast.success('Project deleted', {
-        description: `Successfully deleted project "${projectToDelete.name}"`,
-      })
-      setDeleteDialogOpen(false)
-      setProjectToDelete(null)
-      refetch()
-    } catch (error) {
-      console.error('Delete failed:', error)
-      toast.error('Failed to delete project', {
-        description: error instanceof Error ? error.message : 'Unknown error',
-      })
-    }
-  }
+  const deleteHandler = useDeleteHandler<Project>({
+    deleteFn: deleteMutation.mutateAsync,
+    resourceType: 'Project',
+    getId: (project) => project.metadata.name,
+    getDisplayName: (project) => project.metadata.name,
+    onSuccess: () => refetch(),
+    isDeleting: deleteMutation.isPending,
+  })
 
   return (
     <div className="flex flex-col h-full">
@@ -192,7 +176,7 @@ export function ProjectsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteClick(project.metadata.name)}
+                          onClick={() => deleteHandler.handleDeleteClick(project)}
                           className="text-red-400 hover:text-red-300"
                         >
                           <IconDelete size={16} />
@@ -235,15 +219,15 @@ export function ProjectsPage() {
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
         title="Delete Project"
-        description={`Are you sure you want to delete the project "${projectToDelete?.name}"? This action cannot be undone and may affect applications in this project.`}
+        description={`Are you sure you want to delete the project "${deleteHandler.resourceToDelete?.metadata.name}"? This action cannot be undone and may affect applications in this project.`}
         confirmText="Delete"
-        resourceName={projectToDelete?.name || ''}
+        resourceName={deleteHandler.resourceToDelete?.metadata.name || ''}
         resourceType="project"
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteMutation.isPending}
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )

@@ -9,6 +9,7 @@ import {
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useUpdatePassword, useCreateToken, useDeleteToken } from '@/services/accounts'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,6 +23,11 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
+interface TokenToDelete {
+  accountName: string
+  tokenId: string
+}
+
 export function AccountsPage() {
   const { data, isLoading, error } = useAccounts()
   const updatePasswordMutation = useUpdatePassword()
@@ -33,8 +39,14 @@ export function AccountsPage() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [generatedToken, setGeneratedToken] = useState<string | null>(null)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [tokenToDelete, setTokenToDelete] = useState<{ accountName: string; tokenId: string } | null>(null)
+
+  const deleteHandler = useDeleteHandler<TokenToDelete, { name: string; tokenId: string }>({
+    deleteFn: deleteTokenMutation.mutateAsync,
+    resourceType: 'API token',
+    getId: (token) => ({ name: token.accountName, tokenId: token.tokenId }),
+    getDisplayName: (token) => token.tokenId.substring(0, 8),
+    isDeleting: deleteTokenMutation.isPending,
+  })
 
   const handleUpdatePassword = async () => {
     try {
@@ -63,26 +75,6 @@ export function AccountsPage() {
         ? (error.response as { data?: { message?: string } })?.data?.message
         : undefined
       alert(message || 'Failed to create token. Account may not have apiKey capability.')
-    }
-  }
-
-  const handleDeleteClick = (accountName: string, tokenId: string) => {
-    setTokenToDelete({ accountName, tokenId })
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!tokenToDelete) return
-
-    try {
-      await deleteTokenMutation.mutateAsync({
-        name: tokenToDelete.accountName,
-        tokenId: tokenToDelete.tokenId,
-      })
-      setDeleteDialogOpen(false)
-      setTokenToDelete(null)
-    } catch (error) {
-      console.error('Failed to delete token:', error)
     }
   }
 
@@ -315,7 +307,7 @@ export function AccountsPage() {
                                   <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => handleDeleteClick(account.name, token.id)}
+                                    onClick={() => deleteHandler.handleDeleteClick({ accountName: account.name, tokenId: token.id })}
                                   >
                                     <IconDelete size={14} className="text-red-500" />
                                   </Button>
@@ -341,15 +333,15 @@ export function AccountsPage() {
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
         title="Delete API Token"
         description={`Are you sure you want to delete this API token? This action cannot be undone and may break integrations using this token.`}
         confirmText="Delete"
-        resourceName={tokenToDelete?.tokenId.substring(0, 8) || ''}
+        resourceName={deleteHandler.resourceToDelete?.tokenId.substring(0, 8) || ''}
         resourceType="API token"
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteTokenMutation.isPending}
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )
