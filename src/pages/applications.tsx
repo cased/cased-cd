@@ -3,12 +3,11 @@ import {
   IconAdd,
   IconCodeBranch,
   IconCircleInfo,
-  IconCircleWarning,
   IconCircleCheck,
-  IconClock3,
   IconArrowRightUp,
   IconCircleForward,
   IconGrid,
+  IconClock3,
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,19 +20,11 @@ import {
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { getHealthIcon } from "@/lib/status-icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
-
-const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: "text-grass-11" },
-  Progressing: { icon: IconClock3, color: "text-blue-400" },
-  Degraded: { icon: IconCircleWarning, color: "text-amber-400" },
-  Suspended: { icon: IconCircleWarning, color: "text-neutral-400" },
-  Missing: { icon: IconCircleWarning, color: "text-red-400" },
-  Unknown: { icon: IconCircleInfo, color: "text-neutral-500" },
-};
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
@@ -231,8 +222,7 @@ function ApplicationCard({
   const syncStatus = app.status?.sync?.status || "Unknown";
   const operationPhase = app.status?.operationState?.phase;
   const isSyncing = operationPhase === "Running" || operationPhase === "Terminating";
-  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo;
-  const healthColor = healthIcons[healthStatus]?.color || "text-neutral-500";
+  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus);
 
   return (
     <div

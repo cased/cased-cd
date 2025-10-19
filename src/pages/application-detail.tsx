@@ -5,7 +5,6 @@ import {
   IconCircleForward,
   IconDelete,
   IconCodeBranch,
-  IconCircleInfo,
   IconCircleWarning,
   IconCircleCheck,
   IconClock3,
@@ -20,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
+import { getHealthIcon } from '@/lib/status-icons'
 import {
   Table,
   TableBody,
@@ -61,15 +61,6 @@ interface K8sResource {
   }
   group?: string
   version?: string
-}
-
-const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
-  Progressing: { icon: IconClock3, color: 'text-blue-400' },
-  Degraded: { icon: IconCircleWarning, color: 'text-amber-400' },
-  Suspended: { icon: IconCircleWarning, color: 'text-neutral-400' },
-  Missing: { icon: IconCircleWarning, color: 'text-red-400' },
-  Unknown: { icon: IconCircleInfo, color: 'text-neutral-500' },
 }
 
 // Helper function to extract unique values from resources
@@ -374,8 +365,7 @@ export function ApplicationDetailPage() {
 
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
-  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo
-  const healthColor = healthIcons[healthStatus]?.color || 'text-neutral-500'
+  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus)
 
   // Parse app versions from image tags
   const appVersions = parseAppVersions(app.status?.summary?.images)
