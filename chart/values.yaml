@@ -1,0 +1,133 @@
+# Default values for cased-cd
+# This is a YAML-formatted file.
+
+# Number of replicas
+replicaCount: 1
+
+image:
+  # Docker image repository
+  repository: ghcr.io/cased/cased-cd
+  # Image pull policy
+  pullPolicy: IfNotPresent
+  # Overrides the image tag (defaults to chart appVersion)
+  tag: ""
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Override the chart name
+nameOverride: ""
+# Override the full name
+fullnameOverride: ""
+
+# ArgoCD server configuration
+argocd:
+  # URL of the ArgoCD server API
+  # Default assumes ArgoCD is installed in the 'argocd' namespace
+  server: "http://argocd-server.argocd.svc.cluster.local:80"
+
+service:
+  # Service type (ClusterIP, NodePort, LoadBalancer)
+  type: ClusterIP
+  # Service port
+  port: 80
+  # Target port on the container
+  targetPort: 80
+  # Annotations to add to the service
+  annotations: {}
+
+ingress:
+  # Enable ingress
+  enabled: false
+  # Ingress class name
+  className: ""
+  # Ingress annotations
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  # Ingress hosts
+  hosts:
+    - host: cased-cd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  # TLS configuration
+  tls: []
+  #  - secretName: cased-cd-tls
+  #    hosts:
+  #      - cased-cd.example.com
+
+# Resource limits and requests
+resources:
+  limits:
+    cpu: 100m
+    memory: 128Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity rules
+affinity: {}
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101  # nginx user
+  fsGroup: 101
+
+# Container security context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
+
+# Liveness probe
+livenessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Readiness probe
+readinessProbe:
+  httpGet:
+    path: /health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 5
+  timeoutSeconds: 3
+  successThreshold: 1
+  failureThreshold: 3
+
+# Service account
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+# Autoscaling (optional)
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
