@@ -223,7 +223,12 @@ export function SyncProgressSheet({ application, open, onOpenChange }: SyncProgr
             {/* Monitor Button */}
             {operationState?.phase === 'Succeeded' && (
               <div className="mt-4">
-                <Button variant="default" size="sm" className="w-full">
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => window.open('https://app.cased.com', '_blank')}
+                >
                   Monitor deploy on Cased
                 </Button>
               </div>
