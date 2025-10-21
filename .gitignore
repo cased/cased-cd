@@ -45,5 +45,6 @@ dist-ssr
 *.tmp
 *.temp
 .cache
+.vite
 
 .claude/settings.local.json
