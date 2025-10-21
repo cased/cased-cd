@@ -80,9 +80,74 @@ let applications = [
       },
 ]
 
-// Mock applications list endpoint
+// Add more mock applications to test pagination
+const appStatuses = ['Synced', 'OutOfSync', 'Unknown']
+const healthStatuses = ['Healthy', 'Progressing', 'Degraded', 'Missing']
+const appProjects = ['default', 'production', 'staging']
+const appNamespaces = ['default', 'kube-system', 'prod', 'staging']
+
+for (let i = 3; i <= 50; i++) {
+  applications.push({
+    metadata: {
+      name: `app-${i}`,
+      namespace: 'argocd',
+    },
+    spec: {
+      project: appProjects[i % appProjects.length],
+      source: {
+        repoURL: `https://github.com/example/repo-${i}`,
+        path: `apps/app-${i}`,
+        targetRevision: 'main',
+      },
+      destination: {
+        server: 'https://kubernetes.default.svc',
+        namespace: appNamespaces[i % appNamespaces.length],
+      },
+    },
+    status: {
+      sync: {
+        status: appStatuses[i % appStatuses.length],
+      },
+      health: {
+        status: healthStatuses[i % healthStatuses.length],
+      },
+      reconciledAt: new Date(Date.now() - i * 60 * 60 * 1000).toISOString(),
+    },
+  })
+}
+
+// Mock applications list endpoint with pagination
 app.get('/api/v1/applications', (req, res) => {
-  res.json({ items: applications })
+  const limit = req.query.limit ? parseInt(req.query.limit) : undefined
+  const continueToken = req.query.continue
+
+  // If no limit specified, return all items (backward compatibility)
+  if (!limit) {
+    res.json({ items: applications })
+    return
+  }
+
+  // Parse continue token (in our mock, it's just the offset)
+  const offset = continueToken ? parseInt(continueToken) : 0
+
+  // Get paginated slice
+  const paginatedItems = applications.slice(offset, offset + limit)
+  const remainingCount = Math.max(0, applications.length - offset - limit)
+  const hasMore = offset + limit < applications.length
+
+  // Prepare response with metadata
+  const response = {
+    items: paginatedItems,
+    metadata: {}
+  }
+
+  // Add continue token if there are more items
+  if (hasMore) {
+    response.metadata.continue = (offset + limit).toString()
+    response.metadata.remainingItemCount = remainingCount
+  }
+
+  res.json(response)
 })
 
 // Mock create application endpoint
