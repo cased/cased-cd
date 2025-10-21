@@ -14,8 +14,8 @@ This guide covers deploying Cased CD to your Kubernetes cluster.
 The easiest way to deploy Cased CD is using the Helm chart:
 
 ```bash
-# Add the Cased CD Helm repository (once available)
-helm repo add cased https://charts.cased.com
+# Add the Cased CD Helm repository
+helm repo add cased https://cased.github.io/cased-cd
 helm repo update
 
 # Install Cased CD in the same namespace as ArgoCD
