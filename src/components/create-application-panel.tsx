@@ -1,9 +1,18 @@
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { IconClose, IconSpinnerBall, IconDocumentCode, IconText } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import {
   Accordion,
   AccordionContent,
@@ -13,6 +22,7 @@ import {
 import { useCreateApplication } from '@/services/applications'
 import type { Application } from '@/types/api'
 import yaml from 'js-yaml'
+import { applicationSchema, type ApplicationFormValues } from '@/schemas/application'
 
 interface CreateApplicationPanelProps {
   onClose: () => void
@@ -24,54 +34,55 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
   const [mode, setMode] = useState<'form' | 'yaml'>('form')
   const [yamlContent, setYamlContent] = useState('')
   const [yamlError, setYamlError] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    project: 'default',
-    repoURL: '',
-    path: '',
-    targetRevision: 'HEAD',
-    destinationServer: 'https://kubernetes.default.svc',
-    destinationNamespace: 'default',
-    // Advanced options
-    createNamespace: false,
-    prune: false,
-    selfHeal: false,
+
+  const form = useForm<ApplicationFormValues>({
+    resolver: zodResolver(applicationSchema),
+    defaultValues: {
+      name: '',
+      project: 'default',
+      repoURL: '',
+      path: '',
+      targetRevision: 'HEAD',
+      destinationServer: 'https://kubernetes.default.svc',
+      destinationNamespace: 'default',
+      createNamespace: false,
+      prune: false,
+      selfHeal: false,
+    },
   })
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Build sync options array
-    const syncOptions: string[] = []
-    if (formData.createNamespace) syncOptions.push('CreateNamespace=true')
-
-    const application: Application = {
-      metadata: {
-        name: formData.name,
-        namespace: 'argocd',
-      },
-      spec: {
-        project: formData.project,
-        source: {
-          repoURL: formData.repoURL,
-          path: formData.path,
-          targetRevision: formData.targetRevision,
-        },
-        destination: {
-          server: formData.destinationServer,
-          namespace: formData.destinationNamespace,
-        },
-        syncPolicy: {
-          automated: (formData.prune || formData.selfHeal) ? {
-            prune: formData.prune,
-            selfHeal: formData.selfHeal,
-          } : undefined,
-          syncOptions: syncOptions.length > 0 ? syncOptions : undefined,
-        },
-      },
-    }
-
+  const onSubmit = async (values: ApplicationFormValues) => {
     try {
+      // Build sync options array
+      const syncOptions: string[] = []
+      if (values.createNamespace) syncOptions.push('CreateNamespace=true')
+
+      const application: Application = {
+        metadata: {
+          name: values.name,
+          namespace: 'argocd',
+        },
+        spec: {
+          project: values.project,
+          source: {
+            repoURL: values.repoURL,
+            path: values.path || undefined,
+            targetRevision: values.targetRevision,
+          },
+          destination: {
+            server: values.destinationServer,
+            namespace: values.destinationNamespace,
+          },
+          syncPolicy: {
+            automated: (values.prune || values.selfHeal) ? {
+              prune: values.prune,
+              selfHeal: values.selfHeal,
+            } : undefined,
+            syncOptions: syncOptions.length > 0 ? syncOptions : undefined,
+          },
+        },
+      }
+
       await createMutation.mutateAsync(application)
       onSuccess?.()
       onClose()
@@ -82,31 +93,31 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
 
   const handleModeSwitch = (newMode: 'form' | 'yaml') => {
     if (newMode === 'yaml' && mode === 'form') {
-      // Build sync options array
+      // Convert current form values to YAML
+      const values = form.getValues()
       const syncOptions: string[] = []
-      if (formData.createNamespace) syncOptions.push('CreateNamespace=true')
+      if (values.createNamespace) syncOptions.push('CreateNamespace=true')
 
-      // Convert form to YAML
       const app = {
         metadata: {
-          name: formData.name,
+          name: values.name,
           namespace: 'argocd',
         },
         spec: {
-          project: formData.project,
+          project: values.project,
           source: {
-            repoURL: formData.repoURL,
-            path: formData.path,
-            targetRevision: formData.targetRevision,
+            repoURL: values.repoURL,
+            path: values.path || undefined,
+            targetRevision: values.targetRevision,
           },
           destination: {
-            server: formData.destinationServer,
-            namespace: formData.destinationNamespace,
+            server: values.destinationServer,
+            namespace: values.destinationNamespace,
           },
           syncPolicy: {
-            automated: (formData.prune || formData.selfHeal) ? {
-              prune: formData.prune,
-              selfHeal: formData.selfHeal,
+            automated: (values.prune || values.selfHeal) ? {
+              prune: values.prune,
+              selfHeal: values.selfHeal,
             } : undefined,
             syncOptions: syncOptions.length > 0 ? syncOptions : undefined,
           },
@@ -193,176 +204,228 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
           </div>
         </div>
 
-        {/* Form */}
+        {/* Form Mode */}
         {mode === 'form' ? (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
-            {/* General */}
-            <div>
-              <h3 className="text-sm font-medium text-black dark:text-white mb-4">General</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Application Name *
-                  </label>
-                  <Input
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="my-app"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="p-6 space-y-6">
+              {/* General */}
+              <div>
+                <h3 className="text-sm font-medium text-black dark:text-white mb-4">General</h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Application Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="my-app" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Project
-                  </label>
-                  <Input
-                    value={formData.project}
-                    onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                    placeholder="default"
+
+                  <FormField
+                    control={form.control}
+                    name="project"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Project</FormLabel>
+                        <FormControl>
+                          <Input placeholder="default" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Source */}
-            <div>
-              <h3 className="text-sm font-medium text-black dark:text-white mb-4">Source</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Repository URL *
-                  </label>
-                  <Input
-                    required
-                    value={formData.repoURL}
-                    onChange={(e) => setFormData({ ...formData, repoURL: e.target.value })}
-                    placeholder="https://github.com/argoproj/argocd-example-apps"
+              {/* Source */}
+              <div>
+                <h3 className="text-sm font-medium text-black dark:text-white mb-4">Source</h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="repoURL"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Repository URL *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://github.com/argoproj/argocd-example-apps" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Path
-                  </label>
-                  <Input
-                    value={formData.path}
-                    onChange={(e) => setFormData({ ...formData, path: e.target.value })}
-                    placeholder="guestbook"
+
+                  <FormField
+                    control={form.control}
+                    name="path"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Path</FormLabel>
+                        <FormControl>
+                          <Input placeholder="guestbook" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Revision
-                  </label>
-                  <Input
-                    value={formData.targetRevision}
-                    onChange={(e) => setFormData({ ...formData, targetRevision: e.target.value })}
-                    placeholder="HEAD"
+
+                  <FormField
+                    control={form.control}
+                    name="targetRevision"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Revision</FormLabel>
+                        <FormControl>
+                          <Input placeholder="HEAD" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Destination */}
-            <div>
-              <h3 className="text-sm font-medium text-black dark:text-white mb-4">Destination</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Cluster URL
-                  </label>
-                  <Input
-                    value={formData.destinationServer}
-                    onChange={(e) => setFormData({ ...formData, destinationServer: e.target.value })}
-                    placeholder="https://kubernetes.default.svc"
+              {/* Destination */}
+              <div>
+                <h3 className="text-sm font-medium text-black dark:text-white mb-4">Destination</h3>
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="destinationServer"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cluster URL</FormLabel>
+                        <FormControl>
+                          <Input placeholder="https://kubernetes.default.svc" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Namespace *
-                  </label>
-                  <Input
-                    required
-                    value={formData.destinationNamespace}
-                    onChange={(e) => setFormData({ ...formData, destinationNamespace: e.target.value })}
-                    placeholder="default"
+
+                  <FormField
+                    control={form.control}
+                    name="destinationNamespace"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Namespace *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="default" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
               </div>
-            </div>
 
-            {/* Advanced */}
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="advanced" className="border-none">
-                <AccordionTrigger className="py-0 hover:no-underline">
-                  <h3 className="text-sm font-medium text-black dark:text-white text-left">Advanced</h3>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-4 pt-4">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="prune"
-                        checked={formData.prune}
-                        onCheckedChange={(checked) => setFormData({ ...formData, prune: checked as boolean })}
+              {/* Advanced */}
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="advanced" className="border-none">
+                  <AccordionTrigger className="py-0 hover:no-underline">
+                    <h3 className="text-sm font-medium text-black dark:text-white text-left">Advanced</h3>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4 pt-4">
+                      <FormField
+                        control={form.control}
+                        name="prune"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal cursor-pointer">
+                                Auto-Prune: Delete resources no longer defined in Git
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="prune" className="text-sm font-normal cursor-pointer">
-                        Auto-Prune: Delete resources no longer defined in Git
-                      </Label>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="selfHeal"
-                        checked={formData.selfHeal}
-                        onCheckedChange={(checked) => setFormData({ ...formData, selfHeal: checked as boolean })}
+                      <FormField
+                        control={form.control}
+                        name="selfHeal"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal cursor-pointer">
+                                Self-Heal: Auto-correct drift when cluster state diverges
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="selfHeal" className="text-sm font-normal cursor-pointer">
-                        Self-Heal: Auto-correct drift when cluster state diverges
-                      </Label>
-                    </div>
 
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        id="createNamespace"
-                        checked={formData.createNamespace}
-                        onCheckedChange={(checked) => setFormData({ ...formData, createNamespace: checked as boolean })}
+                      <FormField
+                        control={form.control}
+                        name="createNamespace"
+                        render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
+                            <div className="space-y-1 leading-none">
+                              <FormLabel className="text-sm font-normal cursor-pointer">
+                                Create Namespace: Auto-create destination namespace if it doesn't exist
+                              </FormLabel>
+                            </div>
+                          </FormItem>
+                        )}
                       />
-                      <Label htmlFor="createNamespace" className="text-sm font-normal cursor-pointer">
-                        Create Namespace: Auto-create destination namespace if it doesn't exist
-                      </Label>
                     </div>
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <Button
-                type="submit"
-                variant="default"
-                disabled={createMutation.isPending}
-                className="gap-1"
-              >
-                {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
-                {createMutation.isPending ? 'Creating...' : 'Create Application'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-            </div>
-
-            {/* Error */}
-            {createMutation.isError && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-                <p className="text-sm text-red-400">
-                  {createMutation.error instanceof Error
-                    ? createMutation.error.message
-                    : 'Failed to create application'}
-                </p>
+              {/* Actions */}
+              <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={createMutation.isPending}
+                  className="gap-1"
+                >
+                  {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
+                  {createMutation.isPending ? 'Creating...' : 'Create Application'}
+                </Button>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
               </div>
-            )}
-          </form>
+
+              {/* Error */}
+              {createMutation.isError && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
+                  <p className="text-sm text-red-400">
+                    {createMutation.error instanceof Error
+                      ? createMutation.error.message
+                      : 'Failed to create application'}
+                  </p>
+                </div>
+              )}
+            </form>
+          </Form>
         ) : (
+          /* YAML Mode */
           <form onSubmit={handleYamlSubmit} className="p-6 space-y-6">
             {/* YAML Editor */}
             <div>

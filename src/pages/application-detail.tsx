@@ -428,7 +428,7 @@ export function ApplicationDetailPage() {
                 onClick={handleSync}
                 disabled={syncMutation.isPending}
               >
-                <IconCircleInfo size={16} />
+                <IconCircleForward size={16} className={syncMutation.isPending ? 'animate-spin' : ''} />
                 {syncMutation.isPending ? 'Syncing...' : 'Sync'}
               </Button>
               <Button

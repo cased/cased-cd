@@ -1,4 +1,4 @@
-import { IconFolder, IconAdd, IconDelete, IconCircleCheck, IconCircleClose, IconCircleForward } from 'obra-icons-react'
+import { IconFolder, IconAdd, IconDelete } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
@@ -7,6 +7,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { EmptyState } from '@/components/ui/empty-state'
+import { PageHeader } from '@/components/page-header'
+import { ConnectionStatusBadge } from '@/components/ui/connection-status-badge'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
 import type { Repository } from '@/types/api'
@@ -27,36 +29,17 @@ export function RepositoriesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Repositories</h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Connect and manage Git, Helm, and OCI repositories
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
-                Refresh
-              </Button>
-              <Button
-                variant="default"
-                onClick={() => setShowCreatePanel(true)}
-              >
-                <IconAdd size={16} />
-                Connect Repository
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Repositories"
+        description="Connect and manage Git, Helm, and OCI repositories"
+        onRefresh={() => refetch()}
+        isRefreshing={isLoading}
+        action={{
+          label: 'Connect Repository',
+          onClick: () => setShowCreatePanel(true),
+          icon: IconAdd,
+        }}
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
@@ -98,16 +81,7 @@ export function RepositoriesPage() {
                             <Badge variant={repo.type === 'git' ? 'secondary' : repo.type === 'helm' ? 'default' : 'destructive'}>
                               {repo.type || 'git'}
                             </Badge>
-                            {repo.connectionState?.status && (
-                              <Badge variant="outline" className="gap-1.5">
-                                {repo.connectionState.status === 'Successful' ? (
-                                  <IconCircleCheck size={12} className="text-grass-11" />
-                                ) : (
-                                  <IconCircleClose size={12} className="text-red-400" />
-                                )}
-                                {repo.connectionState.status}
-                              </Badge>
-                            )}
+                            <ConnectionStatusBadge status={repo.connectionState?.status} />
                           </div>
                           <p className="text-xs text-neutral-600 dark:text-neutral-400 font-mono truncate max-w-2xl">
                             {repo.repo}
