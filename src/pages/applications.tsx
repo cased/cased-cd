@@ -26,7 +26,7 @@ import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { PageHeader } from "@/components/page-header";
 import { getHealthIcon } from "@/lib/status-icons";
-import { useState, memo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
@@ -288,8 +288,8 @@ export function ApplicationsPage() {
   );
 }
 
-// Application Card Component (memoized to prevent unnecessary re-renders)
-const ApplicationCard = memo(function ApplicationCard({
+// Application Card Component
+function ApplicationCard({
   app,
   onRefresh,
   onSync,
@@ -400,4 +400,4 @@ const ApplicationCard = memo(function ApplicationCard({
       </div>
     </div>
   );
-});
+}
