@@ -29,7 +29,7 @@ Built by [**Cased**](https://cased.com) - Modern security and compliance infrast
 
 ```bash
 # Add the Cased Helm repository
-helm repo add cased https://cased.github.io/charts
+helm repo add cased https://cased.github.io/cased-cd
 helm repo update
 
 # Install Cased CD in the argocd namespace
