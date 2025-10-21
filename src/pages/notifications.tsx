@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { IconNotification, IconInfoCircle, IconArrowRightUp, IconFilter } from 'obra-icons-react'
+import { IconNotification, IconCircleInfo, IconArrowRightUp, IconFilter } from 'obra-icons-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -163,7 +163,7 @@ export function NotificationsPage() {
       {globalSubs.length > 0 && (
         <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4 mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <IconInfoCircle size={16} className="text-blue-500" />
+            <IconCircleInfo size={16} className="text-blue-500" />
             <h2 className="text-sm font-medium text-black dark:text-white">Global Subscriptions</h2>
             <Badge variant="outline" className="text-[10px]">
               Inherited by all apps
