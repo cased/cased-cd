@@ -54,8 +54,6 @@ LICENSE
 !.env.example
 .eslintrc*
 .prettierrc*
-tsconfig.json
-vite.config.ts
 vitest.config.ts
 
 # Scripts
