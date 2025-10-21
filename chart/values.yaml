@@ -32,7 +32,7 @@ service:
   # Service port
   port: 80
   # Target port on the container
-  targetPort: 80
+  targetPort: 8080
   # Annotations to add to the service
   annotations: {}
 
