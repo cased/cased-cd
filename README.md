@@ -7,7 +7,7 @@ Cased CD is a completely redesigned user interface for ArgoCD, built with modern
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fcased%2Fcased--cd-blue)](https://github.com/cased/cased-cd/pkgs/container/cased-cd)
 
-Built by [**Cased**](https://cased.com) - Modern security and compliance infrastructure.
+Built by [**Cased**](https://cased.com).
 
 ---
 
@@ -241,8 +241,3 @@ Cased CD is built on top of ArgoCD, the declarative GitOps continuous delivery t
 
 **ArgoCD**: [https://argo-cd.readthedocs.io](https://argo-cd.readthedocs.io)
 
----
-
-**Built with ❤️ by [Cased](https://cased.com)**
-
-Learn more about Cased's security and compliance platform at [cased.com](https://cased.com).
