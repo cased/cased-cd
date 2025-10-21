@@ -3,10 +3,12 @@ import {
   IconShieldCheck,
   IconAdd,
   IconDelete,
-  IconCircleForward,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useCertificates, useCreateCertificate, useDeleteCertificate } from '@/services/certificates'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,6 +20,13 @@ import {
 } from '@/components/ui/card'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
+interface Certificate {
+  serverName: string
+  certType: string
+  certSubType: string
+  certInfo?: string
+}
+
 export function CertificatesPage() {
   const { data, isLoading, error } = useCertificates()
   const createMutation = useCreateCertificate()
@@ -27,8 +36,14 @@ export function CertificatesPage() {
   const [serverName, setServerName] = useState('')
   const [certType, setCertType] = useState<'ssh' | 'https'>('ssh')
   const [certData, setCertData] = useState('')
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [certToDelete, setCertToDelete] = useState<{ serverName: string; certType: string; certSubType: string } | null>(null)
+
+  const deleteHandler = useDeleteHandler<Certificate, { serverName: string; certType: string; certSubType: string }>({
+    deleteFn: deleteMutation.mutateAsync,
+    resourceType: 'Certificate',
+    getId: (cert) => ({ serverName: cert.serverName, certType: cert.certType, certSubType: cert.certSubType }),
+    getDisplayName: (cert) => cert.serverName,
+    isDeleting: deleteMutation.isPending,
+  })
 
   const handleCreate = async () => {
     try {
@@ -42,23 +57,6 @@ export function CertificatesPage() {
       setShowAddForm(false)
     } catch (error) {
       console.error('Failed to create certificate:', error)
-    }
-  }
-
-  const handleDeleteClick = (serverName: string, certType: string, certSubType: string) => {
-    setCertToDelete({ serverName, certType, certSubType })
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!certToDelete) return
-
-    try {
-      await deleteMutation.mutateAsync(certToDelete)
-      setDeleteDialogOpen(false)
-      setCertToDelete(null)
-    } catch (error) {
-      console.error('Failed to delete certificate:', error)
     }
   }
 
@@ -162,19 +160,16 @@ export function CertificatesPage() {
 
           {/* Loading State */}
           {isLoading && (
-            <div className="text-center py-12">
-              <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
-              <p className="text-neutral-600 dark:text-neutral-400">Loading certificates...</p>
-            </div>
+            <LoadingSpinner message="Loading certificates..." size="lg" containerHeight="py-12" />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <p className="text-sm text-red-400">
-                {error instanceof Error ? error.message : 'Failed to load certificates'}
-              </p>
-            </div>
+            <ErrorAlert
+              error={error}
+              title="Failed to load certificates"
+              size="lg"
+            />
           )}
 
           {/* Certificates List */}
@@ -215,7 +210,7 @@ export function CertificatesPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteClick(cert.serverName, cert.certType, cert.certSubType)}
+                        onClick={() => deleteHandler.handleDeleteClick(cert)}
                       >
                         <IconDelete size={14} className="text-red-500" />
                       </Button>
@@ -230,15 +225,15 @@ export function CertificatesPage() {
 
       {/* Confirm Delete Dialog */}
       <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
         title="Delete Certificate"
-        description={`Are you sure you want to delete the certificate for "${certToDelete?.serverName}"? This action cannot be undone.`}
+        description={`Are you sure you want to delete the certificate for "${deleteHandler.resourceToDelete?.serverName}"? This action cannot be undone.`}
         confirmText="Delete"
-        resourceName={certToDelete?.serverName || ''}
+        resourceName={deleteHandler.resourceToDelete?.serverName || ''}
         resourceType="certificate"
-        onConfirm={handleDeleteConfirm}
-        isLoading={deleteMutation.isPending}
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )
