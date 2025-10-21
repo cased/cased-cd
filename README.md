@@ -4,7 +4,6 @@
 
 Cased CD is a completely redesigned user interface for ArgoCD, built with modern web technologies for a superior user experience. It works seamlessly with your existing ArgoCD installation - no backend modifications required.
 
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fcased%2Fcased--cd-blue)](https://github.com/cased/cased-cd/pkgs/container/cased-cd)
 
 Built by [**Cased**](https://cased.com).
@@ -119,7 +118,6 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 ## Documentation
 
 - **[Deployment Guide](DEPLOY.md)** - Comprehensive deployment instructions
-- **[Contributing](CONTRIBUTING.md)** - Development setup and guidelines
 - **[Cased Docs](https://docs.cased.com)** - Learn about Cased's platform
 
 ## Architecture
@@ -143,48 +141,6 @@ Cased CD is a React single-page application that communicates directly with the 
 - **State Management**: TanStack Query for server state
 - **Styling**: Tailwind CSS with dark mode support
 
-## Development
-
-Want to contribute or run locally? See our **[Development Guide](DEVELOPMENT.md)**.
-
-Quick start for developers:
-
-```bash
-# Install dependencies
-npm install
-
-# Start mock API server
-npm run dev:mock
-
-# Start dev server (in another terminal)
-npm run dev
-```
-
-Visit `http://localhost:5173` and login with any credentials (mock mode).
-
-### Development Scripts
-
-- `npm run dev` - Start Vite dev server (uses mock API)
-- `npm run dev:mock` - Start mock Express API server
-- `npm run dev:real` - Connect to real ArgoCD instance
-- `npm run build` - Build for production
-- `npm run test` - Run tests
-- `npm run lint` - Lint code
-
-## Project Structure
-
-```
-├── src/
-│   ├── components/      # Reusable UI components
-│   ├── pages/           # Page components
-│   ├── services/        # API service layer
-│   ├── lib/             # Utilities and helpers
-│   └── types/           # TypeScript definitions
-├── chart/               # Helm chart
-├── docker/              # Docker configuration
-├── scripts/             # Development scripts
-└── mock-server.js       # Mock API for development
-```
 
 ## Requirements
 
@@ -216,24 +172,11 @@ The nginx proxy isn't working correctly. Check:
 
 See **[DEPLOY.md](DEPLOY.md)** for more troubleshooting tips.
 
-## Contributing
-
-We welcome contributions! Please see **[CONTRIBUTING.md](CONTRIBUTING.md)** for:
-- Code of Conduct
-- Development setup
-- Pull request process
-- Code style guidelines
-
 ## Support
 
-- **Issues**: [GitHub Issues](https://github.com/cased/cased-cd/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/cased/cased-cd/discussions)
 - **Website**: [cased.com](https://cased.com)
 - **Documentation**: [docs.cased.com](https://docs.cased.com)
-
-## License
-
-Cased CD is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) for details.
+- **Contact**: support@cased.com
 
 ## Acknowledgments
 
@@ -241,3 +184,6 @@ Cased CD is built on top of ArgoCD, the declarative GitOps continuous delivery t
 
 **ArgoCD**: [https://argo-cd.readthedocs.io](https://argo-cd.readthedocs.io)
 
+---
+
+**Built by [Cased](https://cased.com)**
