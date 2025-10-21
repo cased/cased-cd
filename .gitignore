@@ -23,6 +23,8 @@ dist-ssr
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
+.vscode/settings.local.json
 .idea
 .DS_Store
 *.suo
@@ -31,11 +33,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# VS Code settings
-.vscode/settings.local.json
-
-# Claude Code settings
-.claude/settings.local.json
+# Claude Code
+.claude/
 
 # ArgoCD local development
 .argocd-credentials
@@ -47,4 +46,6 @@ dist-ssr
 .cache
 .vite
 
-.claude/settings.local.json
+# Test coverage
+coverage
+.nyc_output
