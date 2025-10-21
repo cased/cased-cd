@@ -11,10 +11,12 @@
     "argocd:teardown": "./scripts/teardown-argocd.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "type-check": "tsc -b --noEmit",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "release": "./scripts/release.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
