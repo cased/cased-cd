@@ -6,81 +6,60 @@ import {
 } from './notifications'
 import type { Application } from '@/types/api'
 
-describe('Notification Services', () => {
+describe('Notification Service', () => {
   describe('parseNotificationSubscriptions', () => {
-    it('should parse single subscription from annotations', () => {
+    it('should parse simple notification subscriptions from annotations', () => {
       const app: Application = {
         metadata: {
           name: 'test-app',
           namespace: 'argocd',
           annotations: {
             'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'my-channel',
+            'notifications.argoproj.io/subscribe.on-sync-failed.email': 'team@example.com',
           },
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      const result = parseNotificationSubscriptions(app)
+      const subscriptions = parseNotificationSubscriptions(app)
 
-      expect(result).toHaveLength(1)
-      expect(result[0]).toEqual({
+      expect(subscriptions).toHaveLength(2)
+      expect(subscriptions).toContainEqual({
         trigger: 'on-sync-succeeded',
         service: 'slack',
         recipients: ['my-channel'],
       })
+      expect(subscriptions).toContainEqual({
+        trigger: 'on-sync-failed',
+        service: 'email',
+        recipients: ['team@example.com'],
+      })
     })
 
-    it('should parse multiple recipients (semicolon-separated)', () => {
+    it('should parse multiple recipients separated by semicolons', () => {
       const app: Application = {
         metadata: {
           name: 'test-app',
           namespace: 'argocd',
           annotations: {
-            'notifications.argoproj.io/subscribe.on-sync-failed.email':
-              'user1@example.com;user2@example.com',
+            'notifications.argoproj.io/subscribe.on-deployed.slack': 'channel1;channel2;channel3',
           },
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      const result = parseNotificationSubscriptions(app)
+      const subscriptions = parseNotificationSubscriptions(app)
 
-      expect(result).toHaveLength(1)
-      expect(result[0].recipients).toEqual(['user1@example.com', 'user2@example.com'])
-    })
-
-    it('should parse multiple subscriptions', () => {
-      const app: Application = {
-        metadata: {
-          name: 'test-app',
-          namespace: 'argocd',
-          annotations: {
-            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'channel1',
-            'notifications.argoproj.io/subscribe.on-sync-failed.email': 'team@example.com',
-            'notifications.argoproj.io/subscribe.on-health-degraded.pagerduty': 'service-key',
-          },
-        },
-        spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
-          project: 'default',
-        },
-      }
-
-      const result = parseNotificationSubscriptions(app)
-
-      expect(result).toHaveLength(3)
-      expect(result.map((s) => s.trigger)).toContain('on-sync-succeeded')
-      expect(result.map((s) => s.trigger)).toContain('on-sync-failed')
-      expect(result.map((s) => s.trigger)).toContain('on-health-degraded')
+      expect(subscriptions).toHaveLength(1)
+      expect(subscriptions[0].recipients).toEqual(['channel1', 'channel2', 'channel3'])
     })
 
     it('should handle service names with dots', () => {
@@ -89,59 +68,20 @@ describe('Notification Services', () => {
           name: 'test-app',
           namespace: 'argocd',
           annotations: {
-            'notifications.argoproj.io/subscribe.on-deployed.slack.custom-service': 'my-channel',
+            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack.custom': 'my-channel',
           },
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      const result = parseNotificationSubscriptions(app)
+      const subscriptions = parseNotificationSubscriptions(app)
 
-      expect(result).toHaveLength(1)
-      expect(result[0].service).toBe('slack.custom-service')
-    })
-
-    it('should return empty array when no notification annotations', () => {
-      const app: Application = {
-        metadata: {
-          name: 'test-app',
-          namespace: 'argocd',
-          annotations: {
-            'some-other-annotation': 'value',
-          },
-        },
-        spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
-          project: 'default',
-        },
-      }
-
-      const result = parseNotificationSubscriptions(app)
-
-      expect(result).toHaveLength(0)
-    })
-
-    it('should return empty array when no annotations at all', () => {
-      const app: Application = {
-        metadata: {
-          name: 'test-app',
-          namespace: 'argocd',
-        },
-        spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
-          project: 'default',
-        },
-      }
-
-      const result = parseNotificationSubscriptions(app)
-
-      expect(result).toHaveLength(0)
+      expect(subscriptions).toHaveLength(1)
+      expect(subscriptions[0].service).toBe('slack.custom')
     })
 
     it('should trim whitespace from recipients', () => {
@@ -150,19 +90,19 @@ describe('Notification Services', () => {
           name: 'test-app',
           namespace: 'argocd',
           annotations: {
-            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': ' channel1 ; channel2 ',
+            'notifications.argoproj.io/subscribe.on-sync-failed.email': '  user1@example.com ; user2@example.com  ',
           },
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      const result = parseNotificationSubscriptions(app)
+      const subscriptions = parseNotificationSubscriptions(app)
 
-      expect(result[0].recipients).toEqual(['channel1', 'channel2'])
+      expect(subscriptions[0].recipients).toEqual(['user1@example.com', 'user2@example.com'])
     })
 
     it('should filter out empty recipients', () => {
@@ -171,62 +111,98 @@ describe('Notification Services', () => {
           name: 'test-app',
           namespace: 'argocd',
           annotations: {
-            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'channel1;;channel2',
+            'notifications.argoproj.io/subscribe.on-deployed.slack': 'channel1;;channel2;',
           },
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      const result = parseNotificationSubscriptions(app)
+      const subscriptions = parseNotificationSubscriptions(app)
 
-      expect(result[0].recipients).toEqual(['channel1', 'channel2'])
+      expect(subscriptions[0].recipients).toEqual(['channel1', 'channel2'])
+    })
+
+    it('should return empty array when no notification annotations exist', () => {
+      const app: Application = {
+        metadata: {
+          name: 'test-app',
+          namespace: 'argocd',
+          annotations: {
+            'other-annotation': 'value',
+          },
+        },
+        spec: {
+          project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
+        },
+      }
+
+      const subscriptions = parseNotificationSubscriptions(app)
+
+      expect(subscriptions).toEqual([])
+    })
+
+    it('should return empty array when annotations is undefined', () => {
+      const app: Application = {
+        metadata: {
+          name: 'test-app',
+          namespace: 'argocd',
+        },
+        spec: {
+          project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
+        },
+      }
+
+      const subscriptions = parseNotificationSubscriptions(app)
+
+      expect(subscriptions).toEqual([])
+    })
+
+    it('should ignore malformed annotation keys', () => {
+      const app: Application = {
+        metadata: {
+          name: 'test-app',
+          namespace: 'argocd',
+          annotations: {
+            'notifications.argoproj.io/subscribe': 'invalid',
+            'notifications.argoproj.io/subscribe.': 'invalid',
+            'notifications.argoproj.io/subscribe.trigger-only': 'invalid',
+            'notifications.argoproj.io/subscribe.valid-trigger.valid-service': 'valid-channel',
+          },
+        },
+        spec: {
+          project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
+        },
+      }
+
+      const subscriptions = parseNotificationSubscriptions(app)
+
+      // Should only parse the valid one
+      expect(subscriptions).toHaveLength(1)
+      expect(subscriptions[0]).toEqual({
+        trigger: 'valid-trigger',
+        service: 'valid-service',
+        recipients: ['valid-channel'],
+      })
     })
   })
 
   describe('subscriptionsToAnnotations', () => {
-    it('should convert single subscription to annotation', () => {
+    it('should convert subscriptions to annotation format', () => {
       const subscriptions = [
         {
           trigger: 'on-sync-succeeded',
           service: 'slack',
           recipients: ['my-channel'],
-        },
-      ]
-
-      const result = subscriptionsToAnnotations(subscriptions)
-
-      expect(result).toEqual({
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'my-channel',
-      })
-    })
-
-    it('should join multiple recipients with semicolons', () => {
-      const subscriptions = [
-        {
-          trigger: 'on-sync-failed',
-          service: 'email',
-          recipients: ['user1@example.com', 'user2@example.com'],
-        },
-      ]
-
-      const result = subscriptionsToAnnotations(subscriptions)
-
-      expect(result).toEqual({
-        'notifications.argoproj.io/subscribe.on-sync-failed.email':
-          'user1@example.com;user2@example.com',
-      })
-    })
-
-    it('should convert multiple subscriptions', () => {
-      const subscriptions = [
-        {
-          trigger: 'on-sync-succeeded',
-          service: 'slack',
-          recipients: ['channel1'],
         },
         {
           trigger: 'on-sync-failed',
@@ -235,70 +211,104 @@ describe('Notification Services', () => {
         },
       ]
 
-      const result = subscriptionsToAnnotations(subscriptions)
+      const annotations = subscriptionsToAnnotations(subscriptions)
 
-      expect(result).toEqual({
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'channel1',
+      expect(annotations).toEqual({
+        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'my-channel',
         'notifications.argoproj.io/subscribe.on-sync-failed.email': 'team@example.com',
       })
     })
 
-    it('should return empty object for empty subscriptions', () => {
-      const result = subscriptionsToAnnotations([])
+    it('should join multiple recipients with semicolons', () => {
+      const subscriptions = [
+        {
+          trigger: 'on-deployed',
+          service: 'slack',
+          recipients: ['channel1', 'channel2', 'channel3'],
+        },
+      ]
 
-      expect(result).toEqual({})
+      const annotations = subscriptionsToAnnotations(subscriptions)
+
+      expect(annotations).toEqual({
+        'notifications.argoproj.io/subscribe.on-deployed.slack': 'channel1;channel2;channel3',
+      })
+    })
+
+    it('should handle empty subscriptions array', () => {
+      const annotations = subscriptionsToAnnotations([])
+
+      expect(annotations).toEqual({})
+    })
+
+    it('should handle service names with dots', () => {
+      const subscriptions = [
+        {
+          trigger: 'on-sync-succeeded',
+          service: 'slack.custom',
+          recipients: ['my-channel'],
+        },
+      ]
+
+      const annotations = subscriptionsToAnnotations(subscriptions)
+
+      expect(annotations).toEqual({
+        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack.custom': 'my-channel',
+      })
     })
   })
 
   describe('mergeSubscriptionsWithAnnotations', () => {
-    it('should preserve non-notification annotations', () => {
+    it('should merge new subscriptions while preserving non-notification annotations', () => {
       const existingAnnotations = {
-        'some-other-annotation': 'value',
         'app.kubernetes.io/name': 'my-app',
+        'app.kubernetes.io/version': '1.0.0',
+        'notifications.argoproj.io/subscribe.old-trigger.slack': 'old-channel',
       }
 
-      const subscriptions = [
+      const newSubscriptions = [
         {
           trigger: 'on-sync-succeeded',
           service: 'slack',
-          recipients: ['my-channel'],
+          recipients: ['new-channel'],
         },
       ]
 
-      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, subscriptions)
+      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, newSubscriptions)
 
-      expect(result['some-other-annotation']).toBe('value')
-      expect(result['app.kubernetes.io/name']).toBe('my-app')
-      expect(result['notifications.argoproj.io/subscribe.on-sync-succeeded.slack']).toBe(
-        'my-channel'
-      )
+      expect(result).toEqual({
+        'app.kubernetes.io/name': 'my-app',
+        'app.kubernetes.io/version': '1.0.0',
+        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'new-channel',
+      })
     })
 
-    it('should remove old notification annotations', () => {
+    it('should remove all old notification subscriptions', () => {
       const existingAnnotations = {
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'old-channel',
-        'notifications.argoproj.io/subscribe.on-sync-failed.email': 'old@example.com',
+        'notifications.argoproj.io/subscribe.trigger1.slack': 'channel1',
+        'notifications.argoproj.io/subscribe.trigger2.email': 'user@example.com',
+        'notifications.argoproj.io/subscribe.trigger3.teams': 'team-channel',
         'other-annotation': 'value',
       }
 
-      const subscriptions = [
+      const newSubscriptions = [
         {
-          trigger: 'on-deployed',
-          service: 'teams',
-          recipients: ['new-team'],
+          trigger: 'new-trigger',
+          service: 'slack',
+          recipients: ['new-channel'],
         },
       ]
 
-      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, subscriptions)
+      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, newSubscriptions)
 
-      expect(result['notifications.argoproj.io/subscribe.on-sync-succeeded.slack']).toBeUndefined()
-      expect(result['notifications.argoproj.io/subscribe.on-sync-failed.email']).toBeUndefined()
-      expect(result['notifications.argoproj.io/subscribe.on-deployed.teams']).toBe('new-team')
-      expect(result['other-annotation']).toBe('value')
+      expect(result).toEqual({
+        'other-annotation': 'value',
+        'notifications.argoproj.io/subscribe.new-trigger.slack': 'new-channel',
+      })
     })
 
     it('should handle undefined existing annotations', () => {
-      const subscriptions = [
+      const newSubscriptions = [
         {
           trigger: 'on-sync-succeeded',
           service: 'slack',
@@ -306,94 +316,87 @@ describe('Notification Services', () => {
         },
       ]
 
-      const result = mergeSubscriptionsWithAnnotations(undefined, subscriptions)
+      const result = mergeSubscriptionsWithAnnotations(undefined, newSubscriptions)
 
       expect(result).toEqual({
         'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'my-channel',
       })
     })
 
-    it('should handle empty subscriptions array', () => {
+    it('should handle empty new subscriptions', () => {
       const existingAnnotations = {
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'channel',
-        'other-annotation': 'value',
+        'app.kubernetes.io/name': 'my-app',
+        'notifications.argoproj.io/subscribe.old-trigger.slack': 'old-channel',
       }
 
       const result = mergeSubscriptionsWithAnnotations(existingAnnotations, [])
 
-      expect(result['notifications.argoproj.io/subscribe.on-sync-succeeded.slack']).toBeUndefined()
-      expect(result['other-annotation']).toBe('value')
+      expect(result).toEqual({
+        'app.kubernetes.io/name': 'my-app',
+      })
     })
 
-    it('should replace all notification subscriptions', () => {
+    it('should preserve all non-notification annotations', () => {
       const existingAnnotations = {
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'old-channel',
-        'notifications.argoproj.io/subscribe.on-sync-failed.email': 'old@example.com',
+        'argocd.argoproj.io/sync-wave': '1',
+        'argocd.argoproj.io/hook': 'PreSync',
+        'kubectl.kubernetes.io/last-applied-configuration': '{}',
+        'notifications.argoproj.io/subscribe.old.slack': 'old',
       }
 
-      const subscriptions = [
+      const newSubscriptions = [
         {
-          trigger: 'on-sync-succeeded',
-          service: 'slack',
-          recipients: ['new-channel'],
-        },
-        {
-          trigger: 'on-health-degraded',
-          service: 'pagerduty',
-          recipients: ['service-key'],
+          trigger: 'new',
+          service: 'email',
+          recipients: ['user@example.com'],
         },
       ]
 
-      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, subscriptions)
+      const result = mergeSubscriptionsWithAnnotations(existingAnnotations, newSubscriptions)
 
       expect(result).toEqual({
-        'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'new-channel',
-        'notifications.argoproj.io/subscribe.on-health-degraded.pagerduty': 'service-key',
+        'argocd.argoproj.io/sync-wave': '1',
+        'argocd.argoproj.io/hook': 'PreSync',
+        'kubectl.kubernetes.io/last-applied-configuration': '{}',
+        'notifications.argoproj.io/subscribe.new.email': 'user@example.com',
       })
     })
   })
 
   describe('Round-trip conversion', () => {
-    it('should maintain data through parse -> convert cycle', () => {
+    it('should preserve data through parse and convert cycle', () => {
+      const originalSubscriptions = [
+        {
+          trigger: 'on-sync-succeeded',
+          service: 'slack',
+          recipients: ['channel1', 'channel2'],
+        },
+        {
+          trigger: 'on-health-degraded',
+          service: 'email',
+          recipients: ['team@example.com'],
+        },
+      ]
+
+      const annotations = subscriptionsToAnnotations(originalSubscriptions)
+
       const app: Application = {
         metadata: {
           name: 'test-app',
           namespace: 'argocd',
-          annotations: {
-            'notifications.argoproj.io/subscribe.on-sync-succeeded.slack': 'channel1;channel2',
-            'notifications.argoproj.io/subscribe.on-sync-failed.email': 'team@example.com',
-            'other-annotation': 'keep-me',
-          },
+          annotations,
         },
         spec: {
-          source: { repoURL: 'https://github.com/test/repo', path: 'app' },
-          destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
           project: 'default',
+          source: { repoURL: 'https://example.com/repo' },
+          destination: { server: 'https://kubernetes.default.svc' },
         },
       }
 
-      // Parse annotations to subscriptions
-      const subscriptions = parseNotificationSubscriptions(app)
+      const parsedSubscriptions = parseNotificationSubscriptions(app)
 
-      // Convert back to annotations
-      const newAnnotations = subscriptionsToAnnotations(subscriptions)
-
-      // Merge with existing annotations
-      const mergedAnnotations = mergeSubscriptionsWithAnnotations(
-        app.metadata.annotations,
-        subscriptions
-      )
-
-      // Check that notification annotations are preserved
-      expect(newAnnotations['notifications.argoproj.io/subscribe.on-sync-succeeded.slack']).toBe(
-        'channel1;channel2'
-      )
-      expect(newAnnotations['notifications.argoproj.io/subscribe.on-sync-failed.email']).toBe(
-        'team@example.com'
-      )
-
-      // Check that non-notification annotations are preserved in merge
-      expect(mergedAnnotations['other-annotation']).toBe('keep-me')
+      expect(parsedSubscriptions).toHaveLength(originalSubscriptions.length)
+      expect(parsedSubscriptions).toEqual(expect.arrayContaining(originalSubscriptions))
     })
   })
 })
