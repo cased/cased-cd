@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import { useApplications } from "@/services/applications";
 import { useCertificates } from "@/services/certificates";
 import { useGPGKeys } from "@/services/gpgkeys";
@@ -198,37 +196,6 @@ export function SettingsPage() {
                   >
                     System
                   </button>
-                </div>
-              </CardContent>
-
-              <Separator className="my-0" />
-
-              <CardHeader className="p-4">
-                <CardTitle className="text-sm">Notifications</CardTitle>
-                <CardDescription className="text-sm">
-                  Configure how you receive alerts and updates
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <Checkbox id="email-notifications" defaultChecked />
-                    <Label
-                      htmlFor="email-notifications"
-                      className="cursor-pointer"
-                    >
-                      Email notifications
-                    </Label>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Checkbox id="slack-notifications" defaultChecked />
-                    <Label
-                      htmlFor="slack-notifications"
-                      className="cursor-pointer"
-                    >
-                      Slack notifications
-                    </Label>
-                  </div>
                 </div>
               </CardContent>
             </Card>
