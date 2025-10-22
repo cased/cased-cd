@@ -940,10 +940,16 @@ app.get('/api/v1/settings/rbac', (req, res) => {
 app.put('/api/v1/settings/rbac', (req, res) => {
   const { policy, policyDefault, scopes } = req.body
 
+  console.log('📝 Updating RBAC config...')
+  console.log('Received policy length:', policy?.length || 0)
+
   // Update the in-memory config
   if (policy !== undefined) rbacConfig.policy = policy
   if (policyDefault !== undefined) rbacConfig.policyDefault = policyDefault
   if (scopes !== undefined) rbacConfig.scopes = scopes
+
+  console.log('✅ RBAC config updated')
+  console.log('New policy length:', rbacConfig.policy?.length || 0)
 
   // Return the updated config
   res.json(rbacConfig)

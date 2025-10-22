@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { IconAdd } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import {
   Card,
   CardContent,
@@ -104,8 +105,12 @@ export function PermissionEditor({
         })
       }
 
+      console.log('Setting permissions:', policies)
+
       // Add all policies in a single batch
       await onAddPermissions(policies)
+
+      toast.success('Permissions updated successfully')
 
       // Reset form
       setForm({
@@ -117,7 +122,8 @@ export function PermissionEditor({
         canDelete: false,
       })
     } catch (error) {
-      console.error('Failed to add permission:', error)
+      console.error('Failed to set permissions:', error)
+      toast.error('Failed to update permissions')
     } finally {
       setIsSubmitting(false)
     }
@@ -128,9 +134,9 @@ export function PermissionEditor({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Grant Permissions</CardTitle>
+        <CardTitle>Set Permissions</CardTitle>
         <CardDescription>
-          Add permissions for users to access applications
+          Configure what users can do with applications
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -241,7 +247,7 @@ export function PermissionEditor({
               disabled={!form.subject || !form.app || !hasSelectedActions || isSubmitting}
             >
               <IconAdd className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Adding...' : 'Add Permission'}
+              {isSubmitting ? 'Setting...' : 'Set Permissions'}
             </Button>
           </div>
         </form>

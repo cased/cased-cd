@@ -133,16 +133,27 @@ export function RBACPage() {
 
   // Handler to add new permissions (batch)
   const handleAddPermissions = async (policies: CasbinPolicy[]) => {
-    if (!rbacData) return
+    if (!rbacData) {
+      console.error('No RBAC data available')
+      return
+    }
+
+    console.log('handleAddPermissions called with:', policies)
+    console.log('Current policies count:', parsedRBAC.policies.length)
 
     // Add all new policies to existing policies
     const updatedPolicies = [...parsedRBAC.policies, ...policies]
     const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
 
+    console.log('Updated policies count:', updatedPolicies.length)
+    console.log('Calling mutation...')
+
     await updateRBACMutation.mutateAsync({
       ...rbacData,
       policy: updatedPolicyCsv,
     })
+
+    console.log('Mutation complete')
   }
 
   // Handler to remove a permission
