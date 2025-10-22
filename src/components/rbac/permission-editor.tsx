@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconAdd, IconTrash } from 'obra-icons-react'
+import { IconAdd } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
