@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconCircleCheck, IconCircle, IconX } from 'obra-icons-react'
+import { IconLock, IconUser, IconCircleCheck, IconCircle, IconClose } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useRBACConfig, useUpdateRBACConfig } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
@@ -329,7 +329,7 @@ export function RBACPage() {
                     onClick={() => setSelectedUser(null)}
                     className="h-8 w-8 p-0"
                   >
-                    <IconX className="h-4 w-4" />
+                    <IconClose className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
