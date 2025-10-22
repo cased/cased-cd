@@ -23,8 +23,7 @@ import type { CasbinPolicy } from '@/types/api'
 interface PermissionEditorProps {
   accounts: Array<{ name: string; enabled: boolean }>
   apps: Array<{ name: string; project: string }>
-  onAddPermission: (policy: CasbinPolicy) => Promise<void>
-  onRemovePermission: (policy: CasbinPolicy) => Promise<void>
+  onAddPermissions: (policies: CasbinPolicy[]) => Promise<void>
 }
 
 interface PermissionForm {
@@ -39,8 +38,7 @@ interface PermissionForm {
 export function PermissionEditor({
   accounts,
   apps,
-  onAddPermission,
-  onRemovePermission,
+  onAddPermissions,
 }: PermissionEditorProps) {
   const [form, setForm] = useState<PermissionForm>({
     subject: '',
@@ -106,10 +104,8 @@ export function PermissionEditor({
         })
       }
 
-      // Add all policies
-      for (const policy of policies) {
-        await onAddPermission(policy)
-      }
+      // Add all policies in a single batch
+      await onAddPermissions(policies)
 
       // Reset form
       setForm({

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconCircleCheck, IconCircle, IconClose } from 'obra-icons-react'
+import { IconLock, IconUser, IconClose } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useRBACConfig, useUpdateRBACConfig } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
@@ -131,12 +131,12 @@ export function RBACPage() {
     ? getPoliciesForSubject(parsedRBAC.policies, selectedUser)
     : []
 
-  // Handler to add a new permission
-  const handleAddPermission = async (policy: CasbinPolicy) => {
+  // Handler to add new permissions (batch)
+  const handleAddPermissions = async (policies: CasbinPolicy[]) => {
     if (!rbacData) return
 
-    // Add the new policy to existing policies
-    const updatedPolicies = [...parsedRBAC.policies, policy]
+    // Add all new policies to existing policies
+    const updatedPolicies = [...parsedRBAC.policies, ...policies]
     const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
 
     await updateRBACMutation.mutateAsync({
@@ -216,8 +216,7 @@ export function RBACPage() {
           <PermissionEditor
             accounts={accounts}
             apps={apps}
-            onAddPermission={handleAddPermission}
-            onRemovePermission={handleRemovePermission}
+            onAddPermissions={handleAddPermissions}
           />
 
           {/* Permission Matrix */}
