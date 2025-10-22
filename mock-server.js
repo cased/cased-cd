@@ -11,8 +11,8 @@ app.use(express.json())
 app.post('/api/v1/session', (req, res) => {
   const { username, password } = req.body
 
-  // Accept admin/password or any credentials for demo
-  if (username && password) {
+  // Only accept specific demo credentials
+  if (username === 'admin' && password === 'demo') {
     res.json({
       token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJhcmdvY2QiLCJzdWIiOiJhZG1pbjpsb2dpbiIsImV4cCI6MTczNjMwNzI5OSwibmJmIjoxNzM2MjIwODk5LCJpYXQiOjE3MzYyMjA4OTksImp0aSI6ImRlbW8ifQ.mock-signature'
     })
