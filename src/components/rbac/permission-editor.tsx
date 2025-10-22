@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconPlus, IconTrash } from 'obra-icons-react'
+import { IconAdd, IconTrash } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -244,7 +244,7 @@ export function PermissionEditor({
               type="submit"
               disabled={!form.subject || !form.app || !hasSelectedActions || isSubmitting}
             >
-              <IconPlus className="h-4 w-4 mr-2" />
+              <IconAdd className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Adding...' : 'Add Permission'}
             </Button>
           </div>
