@@ -7,6 +7,12 @@ const PORT = 8080
 app.use(cors())
 app.use(express.json())
 
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`)
+  next()
+})
+
 // Mock session/login endpoint
 app.post('/api/v1/session', (req, res) => {
   const { username, password } = req.body
