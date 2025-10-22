@@ -5,20 +5,23 @@ set -e
 echo "🛑 Tearing down ArgoCD cluster..."
 
 # Stop nginx
-if pgrep -f "nginx.*nginx-argocd-cors" > /dev/null; then
-    nginx -s stop -c /tmp/nginx-argocd-cors.conf 2>/dev/null || pkill -f "nginx.*nginx-argocd-cors"
-    echo "✅ Nginx CORS proxy stopped"
+if pgrep nginx > /dev/null; then
+    echo "🔄 Stopping nginx..."
+    pkill nginx 2>/dev/null || true
+    echo "✅ nginx stopped"
 fi
 
-# Stop port-forward
-if [ -f ".argocd-portforward.pid" ]; then
-    kill $(cat .argocd-portforward.pid) 2>/dev/null
-    rm .argocd-portforward.pid
-    echo "✅ Port forward stopped"
+# Restore original nginx config if backup exists
+NGINX_CONF="/opt/homebrew/etc/nginx/nginx.conf"
+if [ -f "${NGINX_CONF}.backup" ]; then
+    echo "🔄 Restoring original nginx config..."
+    mv "${NGINX_CONF}.backup" "$NGINX_CONF"
+    echo "✅ nginx config restored"
 fi
 
 # Delete k3d cluster
 if k3d cluster list | grep -q "cased-cd"; then
+    echo "🗑️  Deleting k3d cluster..."
     k3d cluster delete cased-cd
     echo "✅ Cluster 'cased-cd' deleted"
 else
@@ -31,10 +34,9 @@ if [ -f ".argocd-credentials" ]; then
     echo "✅ Credentials file removed"
 fi
 
-# Clean up nginx config
-if [ -f "/tmp/nginx-argocd-cors.conf" ]; then
-    rm /tmp/nginx-argocd-cors.conf
-    echo "✅ Nginx config removed"
-fi
-
-echo "✨ Cleanup complete!"
+echo ""
+echo "✨ Teardown complete!"
+echo ""
+echo "💡 To set up again, run:"
+echo "   ./scripts/setup-argocd.sh"
+echo ""

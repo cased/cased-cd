@@ -3,24 +3,27 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useRepositories, useDeleteRepository } from '@/services/repositories'
 import { CreateRepositoryPanel } from '@/components/create-repository-panel'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { EmptyState } from '@/components/ui/empty-state'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { useState } from 'react'
+import type { Repository } from '@/types/api'
 
 export function RepositoriesPage() {
   const { data, isLoading, error, refetch } = useRepositories()
   const deleteMutation = useDeleteRepository()
   const [showCreatePanel, setShowCreatePanel] = useState(false)
 
-  const handleDelete = async (url: string, name: string, project?: string) => {
-    if (confirm(`Are you sure you want to delete repository "${name || url}"?`)) {
-      try {
-        await deleteMutation.mutateAsync({ url, project })
-        refetch()
-      } catch (error) {
-        console.error('Delete failed:', error)
-        alert(`Failed to delete repository: ${error instanceof Error ? error.message : 'Unknown error'}`)
-      }
-    }
-  }
+  const deleteHandler = useDeleteHandler<Repository>({
+    deleteFn: deleteMutation.mutateAsync,
+    resourceType: 'Repository',
+    getId: (repo) => repo.repo,
+    getDisplayName: (repo) => repo.name || repo.repo,
+    onSuccess: () => refetch(),
+    isDeleting: deleteMutation.isPending,
+  })
 
   return (
     <div className="flex flex-col h-full">
@@ -37,14 +40,16 @@ export function RepositoriesPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
                 <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
                 Refresh
               </Button>
-              <Button variant="default" className="gap-1" onClick={() => setShowCreatePanel(true)}>
+              <Button
+                variant="default"
+                onClick={() => setShowCreatePanel(true)}
+              >
                 <IconAdd size={16} />
                 Connect Repository
               </Button>
@@ -58,30 +63,18 @@ export function RepositoriesPage() {
         <div className="p-4">
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <IconCircleForward size={24} className="animate-spin text-neutral-400 mx-auto mb-2" />
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">Loading repositories...</p>
-              </div>
-            </div>
+            <LoadingSpinner message="Loading repositories..." />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded border border-red-500/20 bg-red-500/10 p-3">
-              <div className="flex items-start gap-2">
-                <IconCircleClose size={16} className="text-red-400 mt-0.5" />
-                <div>
-                  <h3 className="font-medium text-sm text-red-400 mb-0.5">Failed to load repositories</h3>
-                  <p className="text-xs text-red-400/80 mb-2">
-                    {error instanceof Error ? error.message : 'Unable to connect to ArgoCD API'}
-                  </p>
-                  <Button variant="outline" size="sm" onClick={() => refetch()}>
-                    Try Again
-                  </Button>
-                </div>
-              </div>
-            </div>
+            <ErrorAlert
+              error={error}
+              onRetry={() => refetch()}
+              title="Failed to load repositories"
+              icon="close"
+              size="sm"
+            />
           )}
 
           {/* Repositories List */}
@@ -134,8 +127,7 @@ export function RepositoriesPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDelete(repo.repo, repo.name || '', repo.project)}
-                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteHandler.handleDeleteClick(repo)}
                       className="text-red-400 hover:text-red-300"
                     >
                       <IconDelete size={16} />
@@ -148,21 +140,16 @@ export function RepositoriesPage() {
 
           {/* Empty State */}
           {!isLoading && !error && (!data?.items || data.items.length === 0) && (
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
-              <div className="max-w-md mx-auto">
-                <div className="h-9 w-9 rounded bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center mx-auto mb-2">
-                  <IconFolder size={24} className="text-neutral-400" />
-                </div>
-                <h3 className="font-medium text-sm text-black dark:text-white mb-1">No repositories yet</h3>
-                <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-3">
-                  Connect your first Git, Helm, or OCI repository to get started
-                </p>
-                <Button variant="default" onClick={() => setShowCreatePanel(true)}>
-                  <IconAdd size={16} />
-                  Connect Repository
-                </Button>
-              </div>
-            </div>
+            <EmptyState
+              icon={IconFolder}
+              title="No repositories yet"
+              description="Connect your first Git, Helm, or OCI repository to get started"
+              action={{
+                label: 'Connect Repository',
+                onClick: () => setShowCreatePanel(true),
+                icon: IconAdd,
+              }}
+            />
           )}
         </div>
       </div>
@@ -172,6 +159,19 @@ export function RepositoriesPage() {
         isOpen={showCreatePanel}
         onClose={() => setShowCreatePanel(false)}
         onSuccess={() => refetch()}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
+        title="Delete Repository"
+        description={`Are you sure you want to delete the repository "${deleteHandler.resourceToDelete?.name || deleteHandler.resourceToDelete?.repo}"? This action cannot be undone and may affect deployed applications.`}
+        confirmText="Delete"
+        resourceName={deleteHandler.resourceToDelete?.name || deleteHandler.resourceToDelete?.repo || ''}
+        resourceType="repository"
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
       />
     </div>
   )

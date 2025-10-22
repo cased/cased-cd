@@ -7,6 +7,7 @@ import {
   IconLogOut,
   IconFolder,
   IconServer,
+  IconBox,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -39,6 +40,11 @@ const navItems = [
     title: "Clusters",
     href: "/clusters",
     icon: IconServer,
+  },
+  {
+    title: "Projects",
+    href: "/projects",
+    icon: IconBox,
   },
 ];
 
@@ -151,6 +157,17 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
+        <div className="px-4 py-2 border-t border-sidebar-border">
+          <a
+            href="https://cased.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[11px] text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors group"
+          >
+            <span>Powered by</span>
+            <span className="font-semibold group-hover:underline">Cased</span>
+          </a>
+        </div>
         <SidebarRail />
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>

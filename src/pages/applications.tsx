@@ -3,12 +3,11 @@ import {
   IconAdd,
   IconCodeBranch,
   IconCircleInfo,
-  IconCircleWarning,
   IconCircleCheck,
-  IconClock3,
   IconArrowRightUp,
   IconCircleForward,
   IconGrid,
+  IconClock3,
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,18 +18,13 @@ import {
   useSyncApplication,
 } from "@/services/applications";
 import { CreateApplicationPanel } from "@/components/create-application-panel";
+import { ErrorAlert } from "@/components/ui/error-alert";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { getHealthIcon } from "@/lib/status-icons";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
-
-const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: "text-grass-11" },
-  Progressing: { icon: IconClock3, color: "text-blue-400" },
-  Degraded: { icon: IconCircleWarning, color: "text-amber-400" },
-  Suspended: { icon: IconCircleWarning, color: "text-neutral-400" },
-  Missing: { icon: IconCircleWarning, color: "text-red-400" },
-  Unknown: { icon: IconCircleInfo, color: "text-neutral-500" },
-};
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
@@ -77,7 +71,6 @@ export function ApplicationsPage() {
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                size="sm"
                 onClick={() => refetch()}
                 disabled={isLoading}
               >
@@ -89,8 +82,6 @@ export function ApplicationsPage() {
               </Button>
               <Button
                 variant="default"
-                size="sm"
-                className="gap-1"
                 onClick={() => setShowCreatePanel(true)}
               >
                 <IconAdd size={16} />
@@ -128,42 +119,17 @@ export function ApplicationsPage() {
         <div className="p-4">
           {/* Loading State */}
           {isLoading && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <div className="text-center">
-                <IconCircleForward size={32} className="animate-spin text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-600 dark:text-neutral-400">
-                  Loading applications...
-                </p>
-              </div>
-            </div>
+            <LoadingSpinner message="Loading applications..." size="lg" />
           )}
 
           {/* Error State */}
           {error && (
-            <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-6">
-              <div className="flex items-start gap-3">
-                <IconCircleWarning size={20} className="text-red-400 mt-0.5" />
-                <div>
-                  <h3 className="font-medium text-red-400 mb-1">
-                    Failed to load applications
-                  </h3>
-                  <p className="text-sm text-red-400/80 mb-3">
-                    {error instanceof Error
-                      ? error.message
-                      : "Unable to connect to ArgoCD API"}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => refetch()}
-                    >
-                      Try Again
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <ErrorAlert
+              error={error}
+              onRetry={() => refetch()}
+              title="Failed to load applications"
+              size="lg"
+            />
           )}
 
           {/* Empty State */}
@@ -256,8 +222,7 @@ function ApplicationCard({
   const syncStatus = app.status?.sync?.status || "Unknown";
   const operationPhase = app.status?.operationState?.phase;
   const isSyncing = operationPhase === "Running" || operationPhase === "Terminating";
-  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo;
-  const healthColor = healthIcons[healthStatus]?.color || "text-neutral-500";
+  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus);
 
   return (
     <div
@@ -313,11 +278,14 @@ function ApplicationCard({
 
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
-        <span className="text-[11px] text-neutral-500 dark:text-neutral-600">
-          {app.status?.reconciledAt
-            ? `Synced ${new Date(app.status.reconciledAt).toLocaleString()}`
-            : "Never synced"}
-        </span>
+        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-600">
+          <IconClock3 size={11} />
+          <span>
+            {app.status?.reconciledAt
+              ? formatDistanceToNow(new Date(app.status.reconciledAt), { addSuffix: true })
+              : "Never synced"}
+          </span>
+        </div>
         <div className="flex gap-2">
           <button
             onClick={(e) => {

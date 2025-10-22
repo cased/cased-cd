@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   IconArrowLeft,
   IconCircleForward,
@@ -11,10 +11,16 @@ import {
   IconClock3,
   IconCircle,
   IconUnorderedList,
-  IconBox
+  IconBox,
+  IconCode,
+  IconSettings
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { toast } from 'sonner'
+import { getHealthIcon } from '@/lib/status-icons'
 import {
   Table,
   TableBody,
@@ -30,11 +36,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useApplication, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree } from '@/services/applications'
-import { ResourceTree } from '@/components/resource-tree'
+import { useApplication, useUpdateApplicationSpec, useSyncApplication, useDeleteApplication, useRefreshApplication, useResourceTree, useManagedResources, useResource } from '@/services/applications'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
+import { ResourceDiffPanel } from '@/components/resource-diff-panel'
+import { ResourceTree } from '@/components/resource-tree'
+import { ApplicationHistory } from '@/components/application-history'
+import { SyncProgressSheet } from '@/components/sync-progress-sheet'
 
-type ViewType = 'tree' | 'network' | 'list' | 'pods'
+type ViewType = 'tree' | 'network' | 'list' | 'pods' | 'diff' | 'history'
 
 interface ResourceFilters {
   kind: string
@@ -43,24 +52,27 @@ interface ResourceFilters {
   health: string
 }
 
-const healthIcons = {
-  Healthy: { icon: IconCircleCheck, color: 'text-grass-11' },
-  Progressing: { icon: IconClock3, color: 'text-blue-400' },
-  Degraded: { icon: IconCircleWarning, color: 'text-amber-400' },
-  Suspended: { icon: IconCircleWarning, color: 'text-neutral-400' },
-  Missing: { icon: IconCircleWarning, color: 'text-red-400' },
-  Unknown: { icon: IconCircleInfo, color: 'text-neutral-500' },
+interface K8sResource {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status?: string
+  }
+  group?: string
+  version?: string
 }
 
 // Helper function to extract unique values from resources
-function getUniqueValues(resources: any[], key: string): string[] {
+function getUniqueValues(resources: K8sResource[], key: string): string[] {
   const values = new Set<string>()
   resources.forEach(resource => {
     let value: string | undefined
     if (key === 'health') {
       value = resource.health?.status
     } else {
-      value = resource[key]
+      value = resource[key as keyof K8sResource] as string | undefined
     }
     if (value) values.add(value)
   })
@@ -68,7 +80,7 @@ function getUniqueValues(resources: any[], key: string): string[] {
 }
 
 // Helper function to filter resources
-function filterResources(resources: any[], filters: ResourceFilters): any[] {
+function filterResources(resources: K8sResource[], filters: ResourceFilters): K8sResource[] {
   return resources.filter(resource => {
     if (filters.kind !== 'all' && resource.kind !== filters.kind) return false
     if (filters.status !== 'all' && resource.status !== filters.status) return false
@@ -78,13 +90,43 @@ function filterResources(resources: any[], filters: ResourceFilters): any[] {
   })
 }
 
-interface FilterBarProps {
-  resources: any[]
-  filters: ResourceFilters
-  onFiltersChange: (filters: ResourceFilters) => void
+// Helper function to parse app versions from Docker images
+interface AppVersion {
+  name: string
+  version: string
+  isCommitSha: boolean
 }
 
-function FilterBar({ resources, filters, onFiltersChange }: FilterBarProps) {
+function parseAppVersions(images: string[] | undefined): AppVersion[] {
+  if (!images || images.length === 0) return []
+
+  return images
+    .map(image => {
+      // Extract image name and tag from full image path
+      // e.g., "registry.com/org/app:tag" -> { name: "app", version: "tag" }
+      const parts = image.split('/')
+      const lastPart = parts[parts.length - 1] // "app:tag"
+      const [name, tag] = lastPart.split(':')
+
+      if (!tag || tag === 'latest') return null
+
+      // Check if tag looks like a commit SHA (40 hex chars)
+      const isCommitSha = /^[0-9a-f]{40}$/i.test(tag)
+      const version = isCommitSha ? tag.substring(0, 7) : tag
+
+      return { name, version, isCommitSha }
+    })
+    .filter((v): v is AppVersion => v !== null)
+}
+
+interface FilterBarProps {
+  resources: K8sResource[]
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  showStatusFilter?: boolean
+}
+
+function FilterBar({ resources, filters, onFiltersChange, showStatusFilter = false }: FilterBarProps) {
   const kinds = getUniqueValues(resources, 'kind')
   const statuses = getUniqueValues(resources, 'status')
   const namespaces = getUniqueValues(resources, 'namespace')
@@ -107,20 +149,22 @@ function FilterBar({ resources, filters, onFiltersChange }: FilterBarProps) {
         </SelectContent>
       </Select>
 
-      <Select
-        value={filters.status}
-        onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
-      >
-        <SelectTrigger className="w-[140px] h-8 text-xs">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Statuses</SelectItem>
-          {statuses.map(status => (
-            <SelectItem key={status} value={status}>{status}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {showStatusFilter && (
+        <Select
+          value={filters.status}
+          onValueChange={(value) => onFiltersChange({ ...filters, status: value })}
+        >
+          <SelectTrigger className="w-[140px] h-8 text-xs">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {statuses.map(status => (
+              <SelectItem key={status} value={status}>{status}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
 
       <Select
         value={filters.namespace}
@@ -159,37 +203,127 @@ export function ApplicationDetailPage() {
   const { name } = useParams<{ name: string }>()
   const navigate = useNavigate()
   const [view, setView] = useState<ViewType>('tree')
-  const [selectedResource, setSelectedResource] = useState<any>(null)
+  const [selectedResource, setSelectedResource] = useState<K8sResource | null>(null)
   const [filters, setFilters] = useState<ResourceFilters>({
     kind: 'all',
     status: 'all',
     namespace: 'all',
     health: 'all',
   })
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [syncProgressOpen, setSyncProgressOpen] = useState(false)
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
   const { data: resourceTree } = useResourceTree(name || '', !!name)
+  const { data: managedResources, isLoading: isLoadingManagedResources } = useManagedResources(name || '', !!name && view === 'diff')
+  const { data: resourceManifest } = useResource(
+    {
+      appName: name || '',
+      appNamespace: app?.metadata?.namespace,
+      resourceName: selectedResource?.name || '',
+      kind: selectedResource?.kind || '',
+      namespace: selectedResource?.namespace,
+      group: selectedResource?.group,
+      version: selectedResource?.version,
+    },
+    !!name && !!selectedResource
+  )
+
   const syncMutation = useSyncApplication()
+  const updateSpecMutation = useUpdateApplicationSpec()
   const deleteMutation = useDeleteApplication()
   const refreshMutation = useRefreshApplication()
 
+  // Auto-open sync progress sheet when operation is running
+  useEffect(() => {
+    if (app?.status?.operationState?.phase === 'Running') {
+      setSyncProgressOpen(true)
+    }
+  }, [app?.status?.operationState?.phase])
+
   const handleSync = async () => {
     if (!name) return
-    await syncMutation.mutateAsync({ name, prune: false, dryRun: false })
-    refetch()
+    try {
+      setSyncProgressOpen(true)
+      await syncMutation.mutateAsync({ name, prune: false, dryRun: false })
+      toast.success('Application synced', {
+        description: 'Sync initiated successfully',
+      })
+      refetch()
+    } catch (error) {
+      toast.error('Failed to sync application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+      setSyncProgressOpen(false)
+    }
   }
 
   const handleRefresh = async () => {
     if (!name) return
-    await refreshMutation.mutateAsync(name)
-    refetch()
+    try {
+      await refreshMutation.mutateAsync(name)
+      toast.success('Application refreshed', {
+        description: 'Refresh initiated successfully',
+      })
+      refetch()
+    } catch (error) {
+      toast.error('Failed to refresh application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
   }
 
-  const handleDelete = async () => {
+  const handleToggleAutoSync = async (checked: boolean) => {
+    if (!name || !app) return
+    try {
+      await updateSpecMutation.mutateAsync({
+        name,
+        spec: {
+          ...app.spec,
+          syncPolicy: checked
+            ? {
+                ...app.spec.syncPolicy,
+                automated: {
+                  prune: false,
+                  selfHeal: false,
+                },
+              }
+            : {
+                ...app.spec.syncPolicy,
+                automated: undefined,
+              },
+        },
+      })
+      toast.success(checked ? 'Auto-sync enabled' : 'Auto-sync disabled', {
+        description: checked
+          ? 'Application will sync automatically on changes'
+          : 'Application will require manual sync',
+      })
+    } catch (error) {
+      toast.error('Failed to toggle auto-sync', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    }
+  }
+
+  const handleDeleteClick = () => {
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
     if (!name) return
-    if (confirm(`Are you sure you want to delete ${name}?`)) {
+    try {
       await deleteMutation.mutateAsync({ name, cascade: true })
+      toast.success('Application deleted', {
+        description: `Successfully deleted application "${name}" with cascade`,
+      })
+      setDeleteDialogOpen(false)
       navigate('/applications')
+    } catch (error) {
+      console.error('Failed to delete application:', error)
+      toast.error('Failed to delete application', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
     }
   }
 
@@ -232,8 +366,10 @@ export function ApplicationDetailPage() {
 
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
-  const HealthIcon = healthIcons[healthStatus]?.icon || IconCircleInfo
-  const healthColor = healthIcons[healthStatus]?.color || 'text-neutral-500'
+  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus)
+
+  // Parse app versions from image tags
+  const appVersions = parseAppVersions(app.status?.summary?.images)
 
   return (
     <div className="flex flex-col h-full">
@@ -253,7 +389,30 @@ export function ApplicationDetailPage() {
             </Button>
 
             {/* Actions */}
-            <div className="flex gap-2">
+            <div className="flex gap-3 items-center">
+              {/* Auto-sync toggle */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">Auto-sync</span>
+                <Switch
+                  checked={!!app.spec?.syncPolicy?.automated}
+                  onCheckedChange={handleToggleAutoSync}
+                  disabled={updateSpecMutation.isPending}
+                />
+              </div>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/applications/${name}/settings`)}
+              >
+                <IconSettings size={16} />
+                Settings
+              </Button>
+
+              <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800" />
+
               <Button
                 variant="outline"
                 size="sm"
@@ -275,8 +434,7 @@ export function ApplicationDetailPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
+                onClick={handleDeleteClick}
                 className="text-red-400 hover:text-red-300"
               >
                 <IconDelete size={16} />
@@ -310,6 +468,20 @@ export function ApplicationDetailPage() {
               </Badge>
             </div>
 
+            {/* App Versions */}
+            {appVersions.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-neutral-600 dark:text-neutral-400">App:</span>
+                <div className="flex items-center gap-1.5">
+                  {appVersions.map((version, i) => (
+                    <Badge key={i} variant="outline" className="gap-1 text-xs font-mono">
+                      {version.name}: {version.version}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
               <IconCodeBranch size={14} />
               <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
@@ -317,7 +489,7 @@ export function ApplicationDetailPage() {
 
             {app.spec.source.targetRevision && (
               <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                <span className="text-neutral-600">Revision:</span> {app.spec.source.targetRevision}
+                <span className="text-neutral-600">Config:</span> {app.spec.source.targetRevision}
               </div>
             )}
           </div>
@@ -351,33 +523,91 @@ export function ApplicationDetailPage() {
               <IconBox size={16} />
               Pods
             </Button>
+            <Button
+              variant={view === 'diff' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('diff')}
+              className="gap-1"
+            >
+              <IconCode size={16} />
+              Diff
+            </Button>
+            <Button
+              variant={view === 'history' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setView('history')}
+              className="gap-1"
+            >
+              <IconClock3 size={16} />
+              History
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          {view === 'tree' && <TreeView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-          {view === 'pods' && <PodsView app={app} resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
-        </div>
+        {view === 'diff' ? (
+          <ResourceDiffPanel
+            resources={managedResources?.items || []}
+            resourceStatuses={app?.status?.resources}
+            isLoading={isLoadingManagedResources}
+          />
+        ) : view === 'history' ? (
+          <div className="p-4">
+            <ApplicationHistory application={app} />
+          </div>
+        ) : (
+          <div className="p-4">
+            {view === 'tree' && <TreeView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'list' && <ListView app={app} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+            {view === 'pods' && <PodsView resourceTree={resourceTree} filters={filters} onFiltersChange={setFilters} onResourceClick={setSelectedResource} />}
+          </div>
+        )}
       </div>
 
       {/* Resource Details Panel */}
       {selectedResource && (
         <ResourceDetailsPanel
           resource={selectedResource}
+          manifest={resourceManifest}
           onClose={() => setSelectedResource(null)}
         />
       )}
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete Application"
+        description={`Are you sure you want to delete the application "${name}"? This action cannot be undone and will remove all associated resources from the cluster.`}
+        confirmText="Delete"
+        resourceName={name || ''}
+        resourceType="application"
+        onConfirm={handleDeleteConfirm}
+        isLoading={deleteMutation.isPending}
+      />
+
+      {/* Sync Progress Sheet */}
+      <SyncProgressSheet
+        application={app}
+        open={syncProgressOpen}
+        onOpenChange={setSyncProgressOpen}
+      />
     </div>
   )
 }
 
 // Placeholder components for different views
-function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
-  const resources = app.status?.resources || []
+interface TreeViewProps {
+  resourceTree?: { nodes?: K8sResource[] }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function TreeView({ resourceTree, filters, onFiltersChange, onResourceClick }: TreeViewProps) {
+  const resources = resourceTree?.nodes || []
   const filteredResources = filterResources(resources, filters)
 
   if (resources.length === 0) {
@@ -394,21 +624,32 @@ function TreeView({ app, filters, onFiltersChange, onResourceClick }: { app: any
     <div>
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-medium text-black dark:text-white">Resource Tree ({filteredResources.length} of {resources.length} resources)</h2>
-          <p className="text-xs text-neutral-600 dark:text-neutral-400">Visual graph of all Kubernetes resources</p>
+          <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">Resource tree visualization</p>
         </div>
         <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
       </div>
 
-      <ResourceTree
-        resources={filteredResources}
-        onResourceClick={onResourceClick}
-      />
+      {filteredResources.length === 0 ? (
+        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+          <IconUnorderedList size={36} className="text-neutral-600 mx-auto mb-2" />
+          <p className="text-xs text-neutral-600 dark:text-neutral-400">No resources match the filters</p>
+        </div>
+      ) : (
+        <ResourceTree resources={filteredResources} onResourceClick={onResourceClick} />
+      )}
     </div>
   )
 }
 
-function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface ListViewProps {
+  app: { status?: { resources?: K8sResource[] } }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function ListView({ app, filters, onFiltersChange, onResourceClick }: ListViewProps) {
   const resources = app.status?.resources || []
   const filteredResources = filterResources(resources, filters)
 
@@ -419,7 +660,7 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
           <h2 className="text-sm font-medium text-black dark:text-white">Resources ({filteredResources.length} of {resources.length})</h2>
           <p className="text-xs text-neutral-600 dark:text-neutral-400">All Kubernetes resources in this application</p>
         </div>
-        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} />
+        <FilterBar resources={resources} filters={filters} onFiltersChange={onFiltersChange} showStatusFilter={true} />
       </div>
 
       {filteredResources.length === 0 ? (
@@ -450,7 +691,7 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResources.map((resource: any, i: number) => (
+              {filteredResources.map((resource, i: number) => (
                 <TableRow
                   key={i}
                   className="cursor-pointer"
@@ -489,10 +730,17 @@ function ListView({ app, filters, onFiltersChange, onResourceClick }: { app: any
   )
 }
 
-function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick }: { app: any; resourceTree?: any; filters: ResourceFilters; onFiltersChange: (filters: ResourceFilters) => void; onResourceClick: (resource: any) => void }) {
+interface PodsViewProps {
+  resourceTree?: { nodes?: K8sResource[] }
+  filters: ResourceFilters
+  onFiltersChange: (filters: ResourceFilters) => void
+  onResourceClick: (resource: K8sResource) => void
+}
+
+function PodsView({ resourceTree, filters, onFiltersChange, onResourceClick }: PodsViewProps) {
   // Get pods from resource tree (which includes all child resources)
   const allNodes = resourceTree?.nodes || []
-  const pods = allNodes.filter((node: any) => node.kind === 'Pod')
+  const pods = allNodes.filter((node) => node.kind === 'Pod')
   const filteredPods = filterResources(pods, filters)
 
   return (
@@ -512,7 +760,7 @@ function PodsView({ app, resourceTree, filters, onFiltersChange, onResourceClick
         </div>
       ) : (
         <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-          {filteredPods.map((pod: any, i: number) => (
+          {filteredPods.map((pod, i: number) => (
             <div
               key={i}
               className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-colors cursor-pointer"

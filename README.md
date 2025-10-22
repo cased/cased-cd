@@ -1,190 +1,189 @@
 # Cased CD
 
-A modern, redesigned UI for ArgoCD built with React, TypeScript, Tailwind CSS v4, and Radix UI.
+**A modern, beautiful UI for ArgoCD**
+
+Cased CD is a completely redesigned user interface for ArgoCD, built with modern web technologies for a superior user experience. It works seamlessly with your existing ArgoCD installation - no backend modifications required.
+
+[![Docker](https://img.shields.io/badge/docker-ghcr.io%2Fcased%2Fcased--cd-blue)](https://github.com/cased/cased-cd/pkgs/container/cased-cd)
+
+Built by [**Cased**](https://cased.com).
+
+---
 
 ## Features
 
-- 🎨 Modern, flat design aesthetic inspired by Vercel
-- 🌓 Full dark/light mode support
-- ⚡ Built with Vite for lightning-fast development
-- 🎯 Type-safe with TypeScript
-- 🎨 Styled with Tailwind CSS v4
-- ♿ Accessible components with Radix UI
-- 🔄 Real-time data with TanStack Query
+- **Modern UI/UX** - Clean, intuitive interface built with React and Tailwind CSS
+- **Dark Mode** - Full dark mode support
+- **Real-time Updates** - Live sync status and resource health monitoring
+- **Application Management** - Create, sync, refresh, and delete applications
+- **Resource Visualization** - Tree view, network graph, and list views for resources
+- **Deployment History** - Track and rollback to previous versions
+- **Multi-cluster Support** - Manage applications across multiple Kubernetes clusters
+- **Repository Management** - Connect Git repositories and Helm charts
+- **No Backend Changes** - Works with standard ArgoCD API (v2.0+)
 
-## Development
+## Quick Start
 
-### Prerequisites
-
-- Node.js 18+
-- npm or yarn
-
-### Quick Start (Mock API)
+### Install with Helm (Recommended)
 
 ```bash
-# Install dependencies
-npm install
+# Add the Cased Helm repository
+helm repo add cased https://cased.github.io/cased-cd
+helm repo update
 
-# Start mock API server (in one terminal)
-npm run dev:mock
-
-# Start frontend dev server (in another terminal)
-npm run dev
+# Install Cased CD in the argocd namespace
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --create-namespace
 ```
 
-Visit `http://localhost:5173` and login with any credentials.
+That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or configure an Ingress for external access.
 
-### Using Real ArgoCD
-
-#### Prerequisites
-
-- Docker Desktop running
-- k3d and kubectl (will be installed automatically by setup script)
-- nginx (will be installed automatically by setup script)
-
-#### Setup Local ArgoCD Cluster
+### Install with kubectl
 
 ```bash
-# Make sure Docker Desktop is running first!
+# Apply the manifests
+kubectl apply -f https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
 
-# Setup k3d cluster with ArgoCD
-./scripts/setup-argocd.sh
-
-# This will:
-# - Install k3d, kubectl, and nginx if needed
-# - Create a local Kubernetes cluster 'cased-cd'
-# - Install ArgoCD
-# - Configure ArgoCD for local development (insecure mode, CORS)
-# - Setup nginx CORS proxy on port 8090
-# - Start kubectl port-forward to ArgoCD on port 9001
-# - Display admin credentials
-# - Save credentials to .argocd-credentials file
-
-# (Optional) Seed with test data
-./scripts/seed-argocd.sh
-
-# This will add:
-# - 3 test repositories (argocd-examples, kubernetes-examples, bitnami)
-# - 2 test clusters (staging-cluster, production-cluster)
-# - 3 test applications (guestbook, helm-guestbook, kustomize-guestbook)
-
-# (Optional) Clean test data
-./scripts/clean-argocd.sh
-
-# This will remove all seeded test data (apps, clusters, repos)
+# Access via port-forward
+kubectl port-forward -n argocd svc/cased-cd 8080:80
 ```
 
-#### Run Frontend Against Real ArgoCD
+### Run with Docker
 
 ```bash
-# Start frontend with real API mode
-npm run dev:real
+docker run -d \
+  -p 8080:80 \
+  -e ARGOCD_SERVER=http://argocd-server.argocd.svc.cluster.local:80 \
+  ghcr.io/cased/cased-cd:latest
 ```
 
-The setup script will display credentials like:
+## Configuration
+
+### Connecting to ArgoCD
+
+Cased CD needs to know where your ArgoCD server is. Configure this via:
+
+**Helm:**
+```yaml
+# values.yaml
+argocd:
+  server: "http://argocd-server.argocd.svc.cluster.local:80"
 ```
-Username: admin
-Password: <generated-password>
+
+**Docker:**
+```bash
+docker run -e ARGOCD_SERVER=https://argocd.example.com ghcr.io/cased/cased-cd:latest
 ```
 
-Visit the URL shown by Vite (usually `http://localhost:5173-5178`) and login with these credentials.
+### Enabling External Access
 
-**Note:** The setup uses:
-- Port 8090: nginx CORS proxy (frontend connects here)
-- Port 9001: kubectl port-forward to ArgoCD
-- Vite will pick an available port between 5173-5178
+**With Ingress (Helm):**
+```yaml
+# values.yaml
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: cased-cd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: cased-cd-tls
+      hosts:
+        - cased-cd.example.com
+```
 
-#### Teardown
+**With LoadBalancer:**
+```yaml
+# values.yaml
+service:
+  type: LoadBalancer
+```
+
+## Authentication
+
+Cased CD uses the same authentication as ArgoCD. Log in with your ArgoCD credentials:
 
 ```bash
-# Remove the ArgoCD cluster and all resources
-./scripts/teardown-argocd.sh
+# Get the admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
 ```
 
-This will stop nginx, kill port-forward, delete the k3d cluster, and clean up config files.
+- **Username**: `admin`
+- **Password**: (from command above)
 
-## Project Structure
+## Documentation
 
-```
-src/
-├── components/        # Reusable UI components
-│   ├── ui/           # Base UI components (Button, Input, etc.)
-│   └── ...           # Feature components
-├── pages/            # Page components
-├── services/         # API service layer
-├── lib/              # Utilities and helpers
-│   ├── api-client.ts # Axios configuration
-│   └── theme.tsx     # Dark/light mode provider
-└── types/            # TypeScript type definitions
-
-scripts/
-├── setup-argocd.sh    # Setup local ArgoCD
-├── seed-argocd.sh     # Seed with test data
-├── clean-argocd.sh    # Remove test data
-└── teardown-argocd.sh # Teardown cluster
-
-mock-server.js        # Express mock API server
-```
-
-## Scripts
-
-- `npm run dev` - Start Vite dev server (uses mock API by default)
-- `npm run dev:mock` - Start mock Express API server
-- `npm run dev:real` - Start Vite dev server with real ArgoCD API
-- `./scripts/setup-argocd.sh` - Setup local ArgoCD cluster with CORS proxy
-- `./scripts/seed-argocd.sh` - Populate ArgoCD with test data (repositories, clusters, apps)
-- `./scripts/clean-argocd.sh` - Remove all seeded test data
-- `./scripts/teardown-argocd.sh` - Remove ArgoCD cluster and cleanup
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-
-## Environment Variables
-
-Create a `.env` file (see `.env.example`):
-
-```bash
-VITE_API_BASE_URL=http://localhost:8080/api/v1
-```
+- **[Deployment Guide](DEPLOY.md)** - Comprehensive deployment instructions
+- **[Cased Docs](https://docs.cased.com)** - Learn about Cased's platform
 
 ## Architecture
 
-### API Client
+Cased CD is a React single-page application that communicates directly with the ArgoCD API:
 
-The app uses a centralized Axios client (`src/lib/api-client.ts`) with:
-- Automatic JWT token injection
-- Request/response interceptors
-- 401 redirect to login
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│             │  HTTPS  │              │  HTTP   │             │
+│   Browser   ├────────►│   Cased CD   ├────────►│   ArgoCD    │
+│             │         │   (nginx)    │         │   Server    │
+└─────────────┘         └──────────────┘         └─────────────┘
+                             │
+                             ├─ Serves static UI
+                             └─ Proxies /api/* to ArgoCD (adds CORS)
+```
 
-### State Management
+**Key components:**
+- **Frontend**: React 18 + TypeScript + Tailwind CSS v4
+- **Proxy**: nginx with CORS headers for ArgoCD API
+- **State Management**: TanStack Query for server state
+- **Styling**: Tailwind CSS with dark mode support
 
-- TanStack Query for server state
-- React Context for theme/appearance
-- localStorage for auth tokens
 
-### Styling
+## Requirements
 
-- Tailwind CSS v4 with CSS-based configuration
-- Dark mode via `.dark` class on `<body>`
-- Flat design with borders instead of shadows
+- **ArgoCD**: v2.0 or later
+- **Kubernetes**: 1.19+
+- **Browsers**: Modern browsers (Chrome, Firefox, Safari, Edge)
 
-## Backend Requirements
+## Troubleshooting
 
-**You don't need to modify the ArgoCD backend!** The app works with the standard ArgoCD API.
+### Can't connect to ArgoCD
 
-The setup script configures ArgoCD to:
-- Disable TLS for local development (`server.insecure=true`)
-- Enable CORS for allowed origins (localhost:5173-5178)
-- Sets up nginx reverse proxy to add CORS headers (since ArgoCD's CORS support is limited)
+**Check the ArgoCD server URL:**
+```bash
+# Verify connectivity from Cased CD pod
+kubectl exec -n argocd deployment/cased-cd -- \
+  wget -O- http://argocd-server/api/version
+```
 
-For production, you'd need to:
-1. Deploy this as a static site
-2. Configure your ArgoCD server to allow CORS from your domain, OR
-3. Deploy a CORS proxy similar to the nginx setup
+### 401 Unauthorized
 
-## Contributing
+Your ArgoCD session token expired. Log out and log back in.
 
-This is a custom UI replacement for ArgoCD. It implements the ArgoCD API client-side and can be deployed as a static site.
+### CORS errors
 
-## License
+The nginx proxy isn't working correctly. Check:
+1. `ARGOCD_SERVER` environment variable is correct
+2. ArgoCD server is accessible from Cased CD pod
+3. Browser console for specific error messages
 
-Built by Cased
+See **[DEPLOY.md](DEPLOY.md)** for more troubleshooting tips.
+
+## Support
+
+- **Website**: [cased.com](https://cased.com)
+- **Documentation**: [docs.cased.com](https://docs.cased.com)
+- **Contact**: support@cased.com
+
+## Acknowledgments
+
+Cased CD is built on top of ArgoCD, the declarative GitOps continuous delivery tool for Kubernetes. We're grateful to the ArgoCD community for creating such a powerful platform.
+
+**ArgoCD**: [https://argo-cd.readthedocs.io](https://argo-cd.readthedocs.io)
+
+---
+
+**Built by [Cased](https://cased.com)**

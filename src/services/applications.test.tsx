@@ -3,6 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useSyncApplication, applicationsApi } from './applications'
 import api from '@/lib/api-client'
+import type { AxiosResponse } from 'axios'
 import React from 'react'
 
 // Mock the API client
@@ -10,6 +11,7 @@ vi.mock('@/lib/api-client', () => ({
   default: {
     post: vi.fn(),
     get: vi.fn(),
+    put: vi.fn(),
   },
 }))
 
@@ -34,7 +36,14 @@ describe('useSyncApplication', () => {
 
   it('should sync an application successfully', async () => {
     // Mock successful API response
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -76,7 +85,14 @@ describe('useSyncApplication', () => {
   })
 
   it('should sync with dry run option', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const { result } = renderHook(() => useSyncApplication(), { wrapper })
 
@@ -97,7 +113,14 @@ describe('useSyncApplication', () => {
   })
 
   it('should invalidate queries after successful sync', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
@@ -120,7 +143,14 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should call the sync endpoint with correct payload', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     await applicationsApi.syncApplication('my-app', true, false)
 
@@ -132,7 +162,14 @@ describe('applicationsApi.syncApplication', () => {
   })
 
   it('should handle undefined options', async () => {
-    vi.mocked(api.post).mockResolvedValueOnce({ data: {} })
+    const mockResponse: AxiosResponse<unknown> = {
+      data: {},
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+    vi.mocked(api.post).mockResolvedValueOnce(mockResponse)
 
     await applicationsApi.syncApplication('my-app')
 
@@ -141,5 +178,66 @@ describe('applicationsApi.syncApplication', () => {
       dryRun: undefined,
       strategy: { hook: {} },
     })
+  })
+})
+
+describe('applicationsApi.updateApplicationSpec', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it('should call the spec endpoint with PUT and correct payload', async () => {
+    const mockSpec = {
+      project: 'production',
+      source: {
+        repoURL: 'https://github.com/example/repo',
+        targetRevision: 'main',
+        path: 'manifests',
+      },
+      destination: {
+        server: 'https://kubernetes.default.svc',
+        namespace: 'prod',
+      },
+      syncPolicy: {
+        automated: {
+          prune: true,
+          selfHeal: true,
+          allowEmpty: false,
+        },
+        syncOptions: ['CreateNamespace=true'],
+      },
+    }
+
+    const mockResponse: AxiosResponse<typeof mockSpec> = {
+      data: mockSpec,
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: { headers: {} as never },
+    }
+
+    vi.mocked(api.put).mockResolvedValueOnce(mockResponse)
+
+    const result = await applicationsApi.updateApplicationSpec('my-app', mockSpec)
+
+    expect(api.put).toHaveBeenCalledWith('/applications/my-app/spec', mockSpec)
+    expect(result).toEqual(mockSpec)
+  })
+
+  it('should handle update errors', async () => {
+    const mockSpec = {
+      project: 'default',
+      source: { repoURL: 'https://github.com/test/repo', targetRevision: 'main', path: '.' },
+      destination: { server: 'https://kubernetes.default.svc', namespace: 'default' },
+    }
+
+    const error = new Error('Update failed: invalid spec')
+    vi.mocked(api.put).mockRejectedValueOnce(error)
+
+    await expect(
+      applicationsApi.updateApplicationSpec('my-app', mockSpec)
+    ).rejects.toThrow('Update failed: invalid spec')
+
+    expect(api.put).toHaveBeenCalledWith('/applications/my-app/spec', mockSpec)
   })
 })

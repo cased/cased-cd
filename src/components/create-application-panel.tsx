@@ -2,6 +2,14 @@ import { useState } from 'react'
 import { IconClose, IconSpinnerBall, IconDocumentCode, IconText } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion'
 import { useCreateApplication } from '@/services/applications'
 import type { Application } from '@/types/api'
 import yaml from 'js-yaml'
@@ -24,14 +32,23 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
     targetRevision: 'HEAD',
     destinationServer: 'https://kubernetes.default.svc',
     destinationNamespace: 'default',
+    // Advanced options
+    createNamespace: false,
+    prune: false,
+    selfHeal: false,
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Build sync options array
+    const syncOptions: string[] = []
+    if (formData.createNamespace) syncOptions.push('CreateNamespace=true')
+
     const application: Application = {
       metadata: {
         name: formData.name,
+        namespace: 'argocd',
       },
       spec: {
         project: formData.project,
@@ -45,10 +62,11 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
           namespace: formData.destinationNamespace,
         },
         syncPolicy: {
-          automated: {
-            prune: false,
-            selfHeal: false,
-          },
+          automated: (formData.prune || formData.selfHeal) ? {
+            prune: formData.prune,
+            selfHeal: formData.selfHeal,
+          } : undefined,
+          syncOptions: syncOptions.length > 0 ? syncOptions : undefined,
         },
       },
     }
@@ -64,10 +82,15 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
 
   const handleModeSwitch = (newMode: 'form' | 'yaml') => {
     if (newMode === 'yaml' && mode === 'form') {
+      // Build sync options array
+      const syncOptions: string[] = []
+      if (formData.createNamespace) syncOptions.push('CreateNamespace=true')
+
       // Convert form to YAML
       const app = {
         metadata: {
           name: formData.name,
+          namespace: 'argocd',
         },
         spec: {
           project: formData.project,
@@ -81,10 +104,11 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
             namespace: formData.destinationNamespace,
           },
           syncPolicy: {
-            automated: {
-              prune: false,
-              selfHeal: false,
-            },
+            automated: (formData.prune || formData.selfHeal) ? {
+              prune: formData.prune,
+              selfHeal: formData.selfHeal,
+            } : undefined,
+            syncOptions: syncOptions.length > 0 ? syncOptions : undefined,
           },
         },
       }
@@ -265,6 +289,51 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                 </div>
               </div>
             </div>
+
+            {/* Advanced */}
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="advanced" className="border-none">
+                <AccordionTrigger className="py-0 hover:no-underline">
+                  <h3 className="text-sm font-medium text-black dark:text-white text-left">Advanced</h3>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-4 pt-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="prune"
+                        checked={formData.prune}
+                        onCheckedChange={(checked) => setFormData({ ...formData, prune: checked as boolean })}
+                      />
+                      <Label htmlFor="prune" className="text-sm font-normal cursor-pointer">
+                        Auto-Prune: Delete resources no longer defined in Git
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="selfHeal"
+                        checked={formData.selfHeal}
+                        onCheckedChange={(checked) => setFormData({ ...formData, selfHeal: checked as boolean })}
+                      />
+                      <Label htmlFor="selfHeal" className="text-sm font-normal cursor-pointer">
+                        Self-Heal: Auto-correct drift when cluster state diverges
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="createNamespace"
+                        checked={formData.createNamespace}
+                        onCheckedChange={(checked) => setFormData({ ...formData, createNamespace: checked as boolean })}
+                      />
+                      <Label htmlFor="createNamespace" className="text-sm font-normal cursor-pointer">
+                        Create Namespace: Auto-create destination namespace if it doesn't exist
+                      </Label>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
 
             {/* Actions */}
             <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">

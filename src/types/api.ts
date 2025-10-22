@@ -92,6 +92,7 @@ export interface ApplicationStatus {
     externalURLs?: string[]
     images?: string[]
   }
+  history?: RevisionHistory[]
 }
 
 export interface ResourceStatus {
@@ -108,13 +109,13 @@ export interface ResourceStatus {
 }
 
 export interface OperationState {
-  operation: {
+  operation?: {
     sync?: {
       revision?: string
       prune?: boolean
       syncStrategy?: {
-        hook?: any
-        apply?: any
+        hook?: Record<string, unknown>
+        apply?: Record<string, unknown>
       }
     }
   }
@@ -300,7 +301,7 @@ export interface Version {
 // Generic API Response
 export interface ApiResponse<T> {
   data: T
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 // Error Response
@@ -308,4 +309,56 @@ export interface ApiError {
   error: string
   code: number
   message: string
+}
+
+// Managed Resources (for diff view)
+export interface ManagedResource {
+  group?: string
+  kind: string
+  namespace?: string
+  name: string
+  version?: string
+  targetState?: string // YAML manifest from Git
+  liveState?: string // YAML manifest from cluster
+  predictedLiveState?: string // Predicted state after apply
+  normalizedLiveState?: string // Normalized live state
+  syncStatus?: SyncStatus
+  health?: {
+    status: HealthStatus
+    message?: string
+  }
+}
+
+export interface ManagedResourcesResponse {
+  items: ManagedResource[]
+}
+
+// Application History & Rollback
+export interface RevisionHistory {
+  id: number
+  revision: string
+  deployedAt: string
+  deployStartedAt?: string
+  initiatedBy?: {
+    username: string
+    automated?: boolean
+  }
+  source?: ApplicationSource | ApplicationSource[]
+  sources?: ApplicationSource[]
+  revisions?: string[]
+}
+
+export interface RevisionMetadata {
+  author?: string
+  date: string
+  tags?: string[]
+  message: string
+  signatureInfo?: string
+}
+
+export interface RollbackRequest {
+  id: number
+  prune?: boolean
+  dryRun?: boolean
+  appNamespace?: string
 }

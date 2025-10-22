@@ -50,7 +50,8 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
         insecure: formData.insecure,
         project: formData.project || undefined,
         connectionState: {
-          status: 'Unknown',
+          status: 'Failed',
+          message: 'Not yet connected',
         },
       }
 
@@ -218,7 +219,7 @@ export function CreateRepositoryPanel({ isOpen, onClose, onSuccess }: CreateRepo
             Cancel
           </Button>
           <Button
-            variant="primary"
+            variant="default"
             onClick={handleSubmit}
             disabled={createMutation.isPending}
           >

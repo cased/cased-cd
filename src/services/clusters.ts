@@ -53,18 +53,15 @@ export const clustersApi = {
     return response.data
   },
 
-  // Delete cluster - Try using query param instead of path param
+  // Delete cluster
   deleteCluster: async (server: string): Promise<void> => {
-    // Try with query parameter instead
-    const endpoint = `/clusters?server=${encodeURIComponent(server)}`
-    console.log('DELETE endpoint (query param):', endpoint)
-    console.log('DELETE full URL:', `http://localhost:8090/api/v1${endpoint}`)
-    await api.delete(endpoint)
+    // Use path parameter as per ArgoCD API spec: DELETE /clusters/{server}
+    await api.delete(ENDPOINTS.cluster(server))
   },
 
   // Test cluster connection
-  testCluster: async (cluster: Cluster): Promise<{ status: string }> => {
-    const response = await api.post(`${ENDPOINTS.clusters}/validate`, cluster)
+  testCluster: async (cluster: Cluster): Promise<{ status: 'Successful' | 'Failed'; message?: string }> => {
+    const response = await api.post<{ status: 'Successful' | 'Failed'; message?: string }>(`${ENDPOINTS.clusters}/validate`, cluster)
     return response.data
   },
 }

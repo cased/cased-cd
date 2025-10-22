@@ -2,10 +2,13 @@ import axios from 'axios'
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
 
 // API base configuration
-// Use mock server (8080) by default, real ArgoCD (8090) when VITE_USE_REAL_API is set
-const API_BASE_URL = import.meta.env.VITE_USE_REAL_API
-  ? 'http://localhost:8090/api/v1'
-  : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
+// In production, use relative path (nginx proxies /api to ArgoCD)
+// In development, use mock server (8080) by default, or real ArgoCD via nginx CORS proxy (8090) when VITE_USE_REAL_API is set
+const API_BASE_URL = import.meta.env.PROD
+  ? '/api/v1'
+  : import.meta.env.VITE_USE_REAL_API
+    ? 'http://localhost:8090/api/v1'
+    : import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api/v1'
 const API_TIMEOUT = 30000
 
 // Create axios instance
@@ -26,8 +29,6 @@ apiClient.interceptors.request.use(
     config.headers['Content-Type'] = 'application/json'
     config.headers['Accept'] = 'application/json'
 
-    console.log('Request:', config.method, config.url)
-    console.log('Headers after interceptor:', JSON.stringify(config.headers, null, 2))
     return config
   },
   (error) => {
@@ -50,23 +51,23 @@ apiClient.interceptors.response.use(
 
 // API client wrapper methods
 export const api = {
-  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return apiClient.get<T>(url, config)
   },
 
-  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return apiClient.post<T>(url, data, config)
   },
 
-  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return apiClient.put<T>(url, data, config)
   },
 
-  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return apiClient.patch<T>(url, data, config)
   },
 
-  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
     return apiClient.delete<T>(url, config)
   },
 }
