@@ -884,6 +884,27 @@ app.get('/api/v1/account/can-i/:resource/:action', (req, res) => {
   }
 })
 
+// Mock license endpoint
+app.get('/api/v1/license', (req, res) => {
+  // For demo, return enterprise license with all features
+  // In production, this would call app.cased.com to validate
+
+  // Enterprise tier (default for demo)
+  res.json({
+    tier: 'enterprise',
+    features: ['rbac', 'audit', 'sso'],
+    organization: 'Demo Organization',
+    // expiresAt: '2025-12-31T23:59:59Z' // Optional expiration
+  })
+
+  // Uncomment to test free tier (no RBAC access)
+  // res.json({
+  //   tier: 'free',
+  //   features: [], // Free tier has no advanced features
+  //   organization: 'Demo Organization',
+  // })
+})
+
 // Mock RBAC configuration endpoint
 app.get('/api/v1/settings/rbac', (req, res) => {
   // Return mock Casbin policies

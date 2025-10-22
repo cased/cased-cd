@@ -417,3 +417,15 @@ export interface CanIRequest {
 export interface CanIResponse {
   value: string // "yes" or "no"
 }
+
+// Licensing
+export type LicenseTier = 'free' | 'enterprise'
+
+export type FeatureFlag = 'rbac' | 'audit' | 'sso'
+
+export interface License {
+  tier: LicenseTier
+  features: FeatureFlag[]
+  expiresAt?: string // ISO date string
+  organization?: string
+}

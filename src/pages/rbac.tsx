@@ -3,10 +3,12 @@ import { IconLock, IconUser, IconCircleCheck, IconCircle } from 'obra-icons-reac
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useRBACConfig } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
+import { useHasFeature } from '@/services/license'
 import { parseRBACConfig, getPoliciesForSubject, policyMatchesApp } from '@/lib/casbin-parser'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Badge } from '@/components/ui/badge'
+import { UpgradeModal } from '@/components/upgrade-modal'
 import {
   Table,
   TableBody,
@@ -40,11 +42,25 @@ interface AppCapabilities {
 }
 
 export function RBACPage() {
+  const hasRBAC = useHasFeature('rbac')
+  const [showUpgrade, setShowUpgrade] = useState(!hasRBAC)
+  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+
   const { data: accountsData, isLoading: loadingAccounts, error: accountsError } = useAccounts()
   const { data: rbacData, isLoading: loadingRBAC, error: rbacError } = useRBACConfig()
   const { data: appsData, isLoading: loadingApps } = useApplications()
 
-  const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  // If user doesn't have RBAC feature, show upgrade modal
+  if (!hasRBAC) {
+    return (
+      <UpgradeModal
+        open={showUpgrade}
+        onOpenChange={setShowUpgrade}
+        feature="RBAC"
+        featureDescription="Advanced role-based access control is available on the Enterprise plan. Manage per-app permissions, granular access policies, and more."
+      />
+    )
+  }
 
   if (loadingAccounts || loadingRBAC || loadingApps) {
     return <LoadingSpinner />

@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useHasFeature } from "@/services/license";
 import {
   IconGrid,
   IconSettings,
@@ -51,6 +52,7 @@ const navItems = [
     title: "RBAC",
     href: "/rbac",
     icon: IconLock,
+    requiresFeature: 'rbac' as const, // Requires enterprise license
   },
 ];
 
@@ -58,6 +60,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const hasRBAC = useHasFeature('rbac');
+
+  // Filter nav items based on license
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.requiresFeature) return true;
+    if (item.requiresFeature === 'rbac') return hasRBAC;
+    return false;
+  });
 
   const handleLogout = () => {
     logout();
@@ -87,7 +97,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname.startsWith(item.href);
 
