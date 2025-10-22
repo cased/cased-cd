@@ -70,6 +70,12 @@ export const accountsApi = {
     const response = await api.get<RBACConfig>(ENDPOINTS.rbacConfig)
     return response.data
   },
+
+  // Update RBAC configuration (update argocd-rbac-cm)
+  updateRBACConfig: async (config: RBACConfig): Promise<RBACConfig> => {
+    const response = await api.put<RBACConfig>(ENDPOINTS.rbacConfig, config)
+    return response.data
+  },
 }
 
 // React Query Hooks
@@ -149,5 +155,18 @@ export function useRBACConfig() {
     queryKey: accountKeys.rbac(),
     queryFn: () => accountsApi.getRBACConfig(),
     staleTime: 30 * 1000, // 30 seconds
+  })
+}
+
+// Update RBAC configuration mutation
+export function useUpdateRBACConfig() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (config: RBACConfig) => accountsApi.updateRBACConfig(config),
+    onSuccess: () => {
+      // Invalidate RBAC queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: accountKeys.rbac() })
+    },
   })
 }

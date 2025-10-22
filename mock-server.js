@@ -905,10 +905,9 @@ app.get('/api/v1/license', (req, res) => {
   // })
 })
 
-// Mock RBAC configuration endpoint
-app.get('/api/v1/settings/rbac', (req, res) => {
-  // Return mock Casbin policies
-  const policy = `# Admin has full access
+// In-memory RBAC config store
+let rbacConfig = {
+  policy: `# Admin has full access
 p, admin, *, *, */*, allow
 p, role:admin, *, *, */*, allow
 
@@ -927,13 +926,27 @@ p, readonly-user, clusters, get, */*, allow
 p, readonly-user, repositories, get, */*, allow
 
 # Group assignments
-g, admin, role:admin`
+g, admin, role:admin`,
+  policyDefault: 'role:readonly',
+  scopes: '[groups, email]'
+}
 
-  res.json({
-    policy,
-    policyDefault: 'role:readonly',
-    scopes: '[groups, email]'
-  })
+// Mock RBAC configuration endpoint - GET
+app.get('/api/v1/settings/rbac', (req, res) => {
+  res.json(rbacConfig)
+})
+
+// Mock RBAC configuration endpoint - PUT (update)
+app.put('/api/v1/settings/rbac', (req, res) => {
+  const { policy, policyDefault, scopes } = req.body
+
+  // Update the in-memory config
+  if (policy !== undefined) rbacConfig.policy = policy
+  if (policyDefault !== undefined) rbacConfig.policyDefault = policyDefault
+  if (scopes !== undefined) rbacConfig.scopes = scopes
+
+  // Return the updated config
+  res.json(rbacConfig)
 })
 
 app.listen(PORT, () => {

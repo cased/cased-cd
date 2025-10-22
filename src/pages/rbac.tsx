@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconCircleCheck, IconCircle } from 'obra-icons-react'
+import { IconLock, IconUser, IconCircleCheck, IconCircle, IconX } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
-import { useAccounts, useRBACConfig } from '@/services/accounts'
+import { useAccounts, useRBACConfig, useUpdateRBACConfig } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
 import { useHasFeature } from '@/services/license'
-import { parseRBACConfig, getPoliciesForSubject, policyMatchesApp } from '@/lib/casbin-parser'
+import { parseRBACConfig, getPoliciesForSubject, policyMatchesApp, generatePolicyCsv } from '@/lib/casbin-parser'
+import { PermissionEditor } from '@/components/rbac/permission-editor'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import {
   Table,
@@ -49,6 +51,7 @@ export function RBACPage() {
   const { data: accountsData, isLoading: loadingAccounts, error: accountsError } = useAccounts()
   const { data: rbacData, isLoading: loadingRBAC, error: rbacError } = useRBACConfig()
   const { data: appsData, isLoading: loadingApps } = useApplications()
+  const updateRBACMutation = useUpdateRBACConfig()
 
   // If user doesn't have RBAC feature, show upgrade modal
   if (!hasRBAC) {
@@ -128,6 +131,43 @@ export function RBACPage() {
     ? getPoliciesForSubject(parsedRBAC.policies, selectedUser)
     : []
 
+  // Handler to add a new permission
+  const handleAddPermission = async (policy: CasbinPolicy) => {
+    if (!rbacData) return
+
+    // Add the new policy to existing policies
+    const updatedPolicies = [...parsedRBAC.policies, policy]
+    const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
+
+    await updateRBACMutation.mutateAsync({
+      ...rbacData,
+      policy: updatedPolicyCsv,
+    })
+  }
+
+  // Handler to remove a permission
+  const handleRemovePermission = async (policy: CasbinPolicy) => {
+    if (!rbacData) return
+
+    // Filter out the policy to remove
+    const updatedPolicies = parsedRBAC.policies.filter(
+      (p) =>
+        !(
+          p.type === policy.type &&
+          p.subject === policy.subject &&
+          p.resource === policy.resource &&
+          p.action === policy.action &&
+          p.object === policy.object
+        )
+    )
+    const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
+
+    await updateRBACMutation.mutateAsync({
+      ...rbacData,
+      policy: updatedPolicyCsv,
+    })
+  }
+
   return (
     <div className="flex flex-col h-full">
       <PageHeader
@@ -136,10 +176,18 @@ export function RBACPage() {
         subtitle="View role-based access control permissions for users"
       />
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div
+        className="flex-1 overflow-auto p-6"
+        onClick={(e) => {
+          // Deselect user when clicking outside the table
+          if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.deselect-area')) {
+            setSelectedUser(null)
+          }
+        }}
+      >
+        <div className="max-w-7xl mx-auto space-y-6 deselect-area">
           {/* Summary Card */}
-          <Card>
+          <Card onClick={(e) => e.stopPropagation()}>
             <CardHeader>
               <CardTitle>Permission Summary</CardTitle>
               <CardDescription>
@@ -164,12 +212,20 @@ export function RBACPage() {
             </CardContent>
           </Card>
 
+          {/* Permission Editor */}
+          <PermissionEditor
+            accounts={accounts}
+            apps={apps}
+            onAddPermission={handleAddPermission}
+            onRemovePermission={handleRemovePermission}
+          />
+
           {/* Permission Matrix */}
-          <Card>
+          <Card onClick={(e) => e.stopPropagation()}>
             <CardHeader>
               <CardTitle>Permission Matrix</CardTitle>
               <CardDescription>
-                User permissions across applications
+                Click a user to view detailed permissions
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -202,7 +258,10 @@ export function RBACPage() {
                               ? 'bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
                               : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
                           }`}
-                          onClick={() => setSelectedUser(account.name)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedUser(isSelected ? null : account.name)
+                          }}
                         >
                           <TableCell className={`sticky left-0 ${
                             isSelected
@@ -245,7 +304,8 @@ export function RBACPage() {
                           </div>
                         </TableCell>
                       </TableRow>
-                    )})}
+                      )
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -254,12 +314,24 @@ export function RBACPage() {
 
           {/* User Permissions Detail */}
           {selectedUser && (
-            <Card>
+            <Card onClick={(e) => e.stopPropagation()}>
               <CardHeader>
-                <CardTitle>Permissions for {selectedUser}</CardTitle>
-                <CardDescription>
-                  What this user can do across applications
-                </CardDescription>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Permissions for {selectedUser}</CardTitle>
+                    <CardDescription>
+                      What this user can do across applications
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedUser(null)}
+                    className="h-8 w-8 p-0"
+                  >
+                    <IconX className="h-4 w-4" />
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
