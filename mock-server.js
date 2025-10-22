@@ -814,6 +814,107 @@ spec:
   })
 })
 
+// Mock accounts list endpoint
+app.get('/api/v1/account', (req, res) => {
+  res.json({
+    items: [
+      {
+        name: 'admin',
+        enabled: true,
+        capabilities: ['login', 'apiKey'],
+        tokens: []
+      },
+      {
+        name: 'dev-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      },
+      {
+        name: 'ops-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      },
+      {
+        name: 'readonly-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      }
+    ]
+  })
+})
+
+// Mock can-i permission check endpoint (with subresource)
+app.get('/api/v1/account/can-i/:resource/:action/:subresource', (req, res) => {
+  const { resource, action, subresource } = req.params
+  const token = req.headers.authorization
+
+  // Simple mock logic: admin can do everything
+  if (token && token.includes('admin')) {
+    res.json({ value: 'yes' })
+  } else {
+    // Non-admin users have limited permissions
+    if (action === 'get') {
+      res.json({ value: 'yes' })
+    } else if (action === 'sync' && subresource?.includes('dev')) {
+      res.json({ value: 'yes' })
+    } else {
+      res.json({ value: 'no' })
+    }
+  }
+})
+
+// Mock can-i permission check endpoint (without subresource)
+app.get('/api/v1/account/can-i/:resource/:action', (req, res) => {
+  const { resource, action } = req.params
+  const token = req.headers.authorization
+
+  // Simple mock logic: admin can do everything
+  if (token && token.includes('admin')) {
+    res.json({ value: 'yes' })
+  } else {
+    // Non-admin users have limited permissions
+    if (action === 'get') {
+      res.json({ value: 'yes' })
+    } else {
+      res.json({ value: 'no' })
+    }
+  }
+})
+
+// Mock RBAC configuration endpoint
+app.get('/api/v1/settings/rbac', (req, res) => {
+  // Return mock Casbin policies
+  const policy = `# Admin has full access
+p, admin, *, *, */*, allow
+p, role:admin, *, *, */*, allow
+
+# Dev user can sync dev apps
+p, dev-user, applications, get, */*, allow
+p, dev-user, applications, sync, default/guestbook, allow
+p, dev-user, applications, sync, default/helm-guestbook, allow
+
+# Ops user can rollback production apps
+p, ops-user, applications, get, */*, allow
+p, ops-user, applications, action/*, production/*, allow
+
+# Readonly user can only view
+p, readonly-user, applications, get, */*, allow
+p, readonly-user, clusters, get, */*, allow
+p, readonly-user, repositories, get, */*, allow
+
+# Group assignments
+g, admin, role:admin`
+
+  res.json({
+    policy,
+    policyDefault: 'role:readonly',
+    scopes: '[groups, email]'
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })
