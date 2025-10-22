@@ -38,8 +38,8 @@ import {
 } from 'obra-icons-react'
 
 // Then use them directly in JSX:
-<IconSearch className="h-4 w-4" />
-<IconAdd className="h-5 w-5" />
+<IconSearch size={16} />
+<IconAdd size={16} />
 ```
 
 ## Development Commands
