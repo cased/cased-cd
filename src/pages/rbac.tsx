@@ -156,29 +156,6 @@ export function RBACPage() {
     console.log('Mutation complete')
   }
 
-  // Handler to remove a permission
-  const handleRemovePermission = async (policy: CasbinPolicy) => {
-    if (!rbacData) return
-
-    // Filter out the policy to remove
-    const updatedPolicies = parsedRBAC.policies.filter(
-      (p) =>
-        !(
-          p.type === policy.type &&
-          p.subject === policy.subject &&
-          p.resource === policy.resource &&
-          p.action === policy.action &&
-          p.object === policy.object
-        )
-    )
-    const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
-
-    await updateRBACMutation.mutateAsync({
-      ...rbacData,
-      policy: updatedPolicyCsv,
-    })
-  }
-
   return (
     <div className="flex flex-col h-full">
       <PageHeader
