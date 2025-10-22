@@ -24,7 +24,12 @@ describe('License Service', () => {
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
-        queries: { retry: false },
+        queries: {
+          retry: false,
+          // Disable cache time for tests to ensure fresh queries
+          gcTime: 0,
+          staleTime: 0,
+        },
         mutations: { retry: false },
       },
     })
@@ -113,29 +118,41 @@ describe('License Service', () => {
     })
 
     it('should handle error state', async () => {
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('Failed to fetch'))
+      // Mock failures for initial attempt + 3 retries
+      const error = new Error('Failed to fetch')
+      vi.mocked(api.get).mockRejectedValue(error)
 
       const { result } = renderHook(() => useLicense(), { wrapper })
 
-      await waitFor(() => expect(result.current.isError).toBe(true))
+      // Wait for retries with exponential backoff (1s, 2s, 4s)
+      await waitFor(
+        () => expect(result.current.isError).toBe(true),
+        { timeout: 10000 } // Allow time for all retries with backoff
+      )
 
       expect(result.current.error).toBeTruthy()
       expect(result.current.data).toBeUndefined()
-    })
+    }, 15000) // Set test timeout to 15s
 
     it('should retry on failure', async () => {
+      // Mock 4 failures: initial attempt + 3 retries
       vi.mocked(api.get)
         .mockRejectedValueOnce(new Error('Fail 1'))
         .mockRejectedValueOnce(new Error('Fail 2'))
         .mockRejectedValueOnce(new Error('Fail 3'))
+        .mockRejectedValueOnce(new Error('Fail 4'))
 
       const { result } = renderHook(() => useLicense(), { wrapper })
 
-      await waitFor(() => expect(result.current.isError).toBe(true))
+      // Wait for all retries with exponential backoff
+      await waitFor(
+        () => expect(result.current.isError).toBe(true),
+        { timeout: 10000 } // Allow time for all retries with backoff
+      )
 
       // Should retry 3 times as configured
       expect(api.get).toHaveBeenCalledTimes(4) // Initial + 3 retries
-    })
+    }, 15000) // Set test timeout to 15s
   })
 
   describe('useHasFeature', () => {
@@ -154,11 +171,14 @@ describe('License Service', () => {
         config: { headers: {} as never },
       }
 
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
+      vi.mocked(api.get).mockResolvedValue(mockResponse)
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
 
-      await waitFor(() => expect(result.current).toBe(true))
+      await waitFor(
+        () => expect(result.current).toBe(true),
+        { timeout: 3000 }
+      )
     })
 
     it('should return false when feature does not exist', async () => {
@@ -221,11 +241,14 @@ describe('License Service', () => {
       const { result: auditResult } = renderHook(() => useHasFeature('audit'), { wrapper })
       const { result: ssoResult } = renderHook(() => useHasFeature('sso'), { wrapper })
 
-      await waitFor(() => {
-        expect(rbacResult.current).toBe(true)
-        expect(auditResult.current).toBe(false)
-        expect(ssoResult.current).toBe(true)
-      })
+      await waitFor(
+        () => {
+          expect(rbacResult.current).toBe(true)
+          expect(auditResult.current).toBe(false)
+          expect(ssoResult.current).toBe(true)
+        },
+        { timeout: 3000 }
+      )
     })
   })
 
