@@ -5,9 +5,9 @@ import {
   IconSettings,
   IconBookOpen,
   IconLogOut,
+  IconCodeBranch,
+  IconLayers,
   IconFolder,
-  IconServer,
-  IconBox,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -30,21 +30,25 @@ const navItems = [
     title: "Applications",
     href: "/applications",
     icon: IconGrid,
+    color: "#3b82f6", // blue
   },
   {
     title: "Repositories",
     href: "/repositories",
-    icon: IconFolder,
+    icon: IconCodeBranch,
+    color: "#8b5cf6", // purple
   },
   {
     title: "Clusters",
     href: "/clusters",
-    icon: IconServer,
+    icon: IconLayers,
+    color: "#10b981", // green
   },
   {
     title: "Projects",
     href: "/projects",
-    icon: IconBox,
+    icon: IconFolder,
+    color: "#f59e0b", // amber
   },
 ];
 
@@ -60,23 +64,12 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider
-      style={{ "--sidebar-width": "11rem" } as React.CSSProperties}
+      style={{ "--sidebar-width": "13rem" } as React.CSSProperties}
     >
       <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link to="/applications">
-                  <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">Cased CD</span>
-                  </div>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+        <SidebarHeader className="items-start py-3 px-2">
+          <img src="/cased-logo.svg" alt="Cased" className="h-6 ml-2" />
         </SidebarHeader>
-
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
@@ -93,7 +86,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                         tooltip={item.title}
                       >
                         <Link to={item.href}>
-                          <Icon />
+                          <Icon style={{ color: item.color }} />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -157,17 +150,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarFooter>
-        <div className="px-4 py-2 border-t border-sidebar-border">
-          <a
-            href="https://cased.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-[11px] text-sidebar-foreground/70 hover:text-sidebar-foreground transition-colors group"
-          >
-            <span>Powered by</span>
-            <span className="font-semibold group-hover:underline">Cased</span>
-          </a>
-        </div>
+
         <SidebarRail />
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
