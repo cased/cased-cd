@@ -7,10 +7,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 type RBACConfig struct {
@@ -25,10 +28,26 @@ func main() {
 		port = "8081"
 	}
 
-	// Create in-cluster Kubernetes client
+	// Try in-cluster config first, fall back to kubeconfig for local development
 	config, err := rest.InClusterConfig()
 	if err != nil {
-		log.Fatalf("Failed to create in-cluster config: %v", err)
+		log.Println("Not running in cluster, using kubeconfig...")
+
+		// Use KUBECONFIG env var if set, otherwise use default location
+		kubeconfig := os.Getenv("KUBECONFIG")
+		if kubeconfig == "" {
+			if home := homedir.HomeDir(); home != "" {
+				kubeconfig = filepath.Join(home, ".kube", "config")
+			}
+		}
+
+		config, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+		if err != nil {
+			log.Fatalf("Failed to create kubeconfig: %v", err)
+		}
+		log.Printf("Using kubeconfig: %s", kubeconfig)
+	} else {
+		log.Println("Using in-cluster config")
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)

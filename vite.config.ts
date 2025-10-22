@@ -10,4 +10,18 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    proxy: {
+      // Proxy RBAC settings requests to local RBAC proxy (high-fidelity testing)
+      '/api/v1/settings/rbac': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      // All other API requests go to mock server
+      '/api/v1': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
 })
