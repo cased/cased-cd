@@ -1,0 +1,28 @@
+{{- if .Values.rbacProxy.enabled }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  labels:
+    {{- include "cased-cd.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["argocd-rbac-cm"]
+    verbs: ["get", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  labels:
+    {{- include "cased-cd.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "cased-cd.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+{{- end }}
