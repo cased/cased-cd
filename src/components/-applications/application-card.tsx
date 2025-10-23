@@ -32,17 +32,17 @@ export function ApplicationCard({
   return (
     <Link
       to={`/applications/${app.metadata.name}`}
-      className="group rounded- border border-border bg-card p-3 transition-colors hover:bg-accent block"
+      className="group rounded- border border-border bg-card transition-colors hover:bg-accent block"
     >
       {/* Header */}
-      <div className="flex items-start justify-between mb-2">
+      <div className="flex items-start justify-between mb-2 px-3 pt-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <h3 className="text-sm font-medium text-card-foreground truncate">
               {app.metadata.name}
             </h3>
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
             <span className="truncate">
               {app.spec.destination.namespace || "default"}
             </span>
@@ -54,42 +54,42 @@ export function ApplicationCard({
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Status Badges */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <Badge variant="outline" className="gap-1.5">
-          <HealthIcon size={12} className={healthColor} />
-          {healthStatus}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5">
-          <IconCircleCheck
-            size={12}
-            className={
-              syncStatus === "Synced" ? "text-grass-11" : "text-warning"
-            }
-          />
-          {syncStatus}
-        </Badge>
-        {isSyncing && (
+        {/* Status Badges */}
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <Badge variant="outline" className="gap-1.5">
-            <IconCircleForward
-              size={12}
-              className="animate-spin text-blue-400"
-            />
-            Syncing
+            <HealthIcon size={12} className={healthColor} />
+            {healthStatus}
           </Badge>
-        )}
+          <Badge variant="outline" className="gap-1.5">
+            <IconCircleCheck
+              size={12}
+              className={
+                syncStatus === "Synced" ? "text-grass-11" : "text-warning"
+              }
+            />
+            {syncStatus}
+          </Badge>
+          {isSyncing && (
+            <Badge variant="outline" className="gap-1.5">
+              <IconCircleForward
+                size={12}
+                className="animate-spin text-blue-400"
+              />
+              Syncing
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Repository */}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2">
+      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2 px-3">
         <IconCodeBranch size={12} className="text-muted-foreground" />
         <span className="truncate">{app.spec.source.repoURL}</span>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-border">
+      <div className="flex items-center justify-between pt-2 border-t border-border px-3 pb-3">
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <IconClock3 size={14} />
           <span>
