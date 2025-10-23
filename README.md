@@ -283,6 +283,77 @@ The enterprise image requires:
 
 Contact support@cased.com for enterprise access.
 
+## Development
+
+### Quick Start
+
+Get up and running in seconds with the mock API:
+
+```bash
+./scripts/dev-start.sh
+```
+
+This will:
+- ✅ Check Node.js 18+ is installed
+- 📦 Install dependencies if needed
+- 🎭 Start mock API server (port 8080)
+- 🌐 Start Vite dev server (port 5173)
+- 📖 Tail logs from both servers
+
+Open **http://localhost:5173** and login with any credentials.
+
+To stop the servers:
+```bash
+./scripts/dev-stop.sh
+```
+
+### Testing with Real ArgoCD
+
+To test against a real ArgoCD instance:
+
+```bash
+# Prerequisites: Docker Desktop must be running
+./scripts/setup-argocd.sh   # Setup local k3d cluster with ArgoCD
+npm run dev:real            # Start Vite with real ArgoCD API
+./scripts/teardown-argocd.sh # Cleanup when done
+```
+
+### Available Commands
+
+```bash
+npm run dev          # Start dev server (uses mock API)
+npm run dev:mock     # Start mock API server only
+npm run dev:real     # Start dev server (uses real ArgoCD)
+npm run build        # Build for production
+npm run preview      # Preview production build
+npm run lint         # Run ESLint
+npm run type-check   # Run TypeScript compiler check
+```
+
+### Prerequisites
+
+- **Node.js**: 18 or later
+- **npm**: Comes with Node.js
+- **Docker** (optional): Only needed for real ArgoCD testing
+
+### Project Structure
+
+```
+cased-cd/
+├── src/
+│   ├── components/      # React components
+│   ├── pages/          # Page components (routes)
+│   ├── services/       # API services (React Query)
+│   ├── lib/            # Utilities (api-client, auth, theme)
+│   └── types/          # TypeScript types
+├── backend/            # Go backend (enterprise only)
+├── scripts/            # Development & deployment scripts
+├── mock-server.js      # Express mock API server
+└── Dockerfile          # Multi-stage build (standard + enterprise)
+```
+
+See **[CLAUDE.md](CLAUDE.md)** for detailed architecture documentation.
+
 ## Support
 
 - **Website**: [cased.com](https://cased.com)
