@@ -5,12 +5,20 @@ import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
 import { useCreateApplication } from '@/services/applications'
+import { useProjects } from '@/services/projects'
 import type { Application } from '@/types/api'
 import yaml from 'js-yaml'
 
@@ -21,6 +29,7 @@ interface CreateApplicationPanelProps {
 
 export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplicationPanelProps) {
   const createMutation = useCreateApplication()
+  const { data: projectsData } = useProjects()
   const [mode, setMode] = useState<'form' | 'yaml'>('form')
   const [yamlContent, setYamlContent] = useState('')
   const [yamlError, setYamlError] = useState<string | null>(null)
@@ -215,11 +224,21 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                   <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
                     Project
                   </label>
-                  <Input
+                  <Select
                     value={formData.project}
-                    onChange={(e) => setFormData({ ...formData, project: e.target.value })}
-                    placeholder="default"
-                  />
+                    onValueChange={(value) => setFormData({ ...formData, project: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a project" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {projectsData?.items?.map((project) => (
+                        <SelectItem key={project.metadata.name} value={project.metadata.name}>
+                          {project.metadata.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>

@@ -12,6 +12,8 @@ Built by [**Cased**](https://cased.com).
 
 ## Features
 
+### Core Features (All Users)
+
 - **Modern UI/UX** - Clean, intuitive interface built with React and Tailwind CSS
 - **Dark Mode** - Full dark mode support
 - **Real-time Updates** - Live sync status and resource health monitoring
@@ -20,7 +22,34 @@ Built by [**Cased**](https://cased.com).
 - **Deployment History** - Track and rollback to previous versions
 - **Multi-cluster Support** - Manage applications across multiple Kubernetes clusters
 - **Repository Management** - Connect Git repositories and Helm charts
+- **Account Management** - View users, update passwords, manage API tokens
 - **No Backend Changes** - Works with standard ArgoCD API (v2.0+)
+
+### Enterprise Features
+
+Upgrade to Cased CD Enterprise for advanced team management capabilities:
+
+- **🔐 RBAC Management** - Fine-grained role-based access control per application
+- **👥 User Management** - Create and delete users directly from the UI
+- **📊 Advanced Permissions** - Granular control over deploy, rollback, and delete actions
+
+[Contact us](https://cased.com) to learn about Cased CD Enterprise.
+
+### Feature Comparison
+
+| Feature | Standard | Enterprise |
+|---------|----------|------------|
+| Application Management | ✅ | ✅ |
+| Multi-cluster Support | ✅ | ✅ |
+| Repository Management | ✅ | ✅ |
+| Deployment History & Rollback | ✅ | ✅ |
+| Resource Visualization | ✅ | ✅ |
+| View Accounts | ✅ | ✅ |
+| Update Passwords | ✅ | ✅ |
+| Manage API Tokens | ✅ | ✅ |
+| **Create/Delete Users** | ❌ | ✅ |
+| **RBAC Permission Management** | ❌ | ✅ |
+| **Per-App Access Control** | ❌ | ✅ |
 
 ## Quick Start
 
@@ -38,6 +67,10 @@ helm install cased-cd cased/cased-cd \
 ```
 
 That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or configure an Ingress for external access.
+
+### Enterprise Installation
+
+Enterprise customers should contact support@cased.com for access to the RBAC backend component and installation instructions.
 
 ### Install with kubectl
 
@@ -122,6 +155,8 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ## Architecture
 
+### Standard Deployment
+
 Cased CD is a React single-page application that communicates directly with the ArgoCD API:
 
 ```
@@ -135,11 +170,40 @@ Cased CD is a React single-page application that communicates directly with the 
                              └─ Proxies /api/* to ArgoCD (adds CORS)
 ```
 
-**Key components:**
+### Enterprise Deployment (with RBAC Backend)
+
+Enterprise customers receive an additional backend component for advanced features:
+
+```
+┌─────────────┐         ┌──────────────┐         ┌─────────────┐
+│             │  HTTPS  │              │  HTTP   │             │
+│   Browser   ├────────►│   Cased CD   ├────────►│   ArgoCD    │
+│             │         │   (nginx)    │    │    │   Server    │
+└─────────────┘         └──────────────┘    │    └─────────────┘
+                             │               │
+                             │               └───► ┌─────────────────┐
+                             │                     │  RBAC Backend   │
+                             │                     │  (Go service)   │
+                             │                     └─────────────────┘
+                             │                            │
+                             ├─ Serves static UI         │
+                             ├─ /api/v1/* → ArgoCD      │
+                             └─ /api/v1/settings/* ─────┘
+                                /api/v1/license ─────────┘
+                                     │
+                                     └─ Direct Kubernetes API access
+                                        for RBAC ConfigMap management
+```
+
+**Standard Components:**
 - **Frontend**: React 18 + TypeScript + Tailwind CSS v4
 - **Proxy**: nginx with CORS headers for ArgoCD API
 - **State Management**: TanStack Query for server state
-- **Styling**: Tailwind CSS with dark mode support
+
+**Enterprise Components:**
+- **RBAC Backend**: Go service for user/permission management
+- **Kubernetes Access**: Direct ConfigMap/Secret manipulation
+- **License Validation**: Enterprise feature gating
 
 
 ## Requirements
@@ -171,6 +235,53 @@ The nginx proxy isn't working correctly. Check:
 3. Browser console for specific error messages
 
 See **[DEPLOY.md](DEPLOY.md)** for more troubleshooting tips.
+
+## Building from Source
+
+Cased CD uses a unified multi-stage Dockerfile that produces both standard and enterprise images from a single build process.
+
+### Build Standard Image (Free Tier)
+
+```bash
+./scripts/build-standard.sh [version]
+```
+
+This builds the standard image containing:
+- React frontend
+- nginx web server
+- ArgoCD API proxy
+
+**Output**: `ghcr.io/cased/cased-cd:latest`
+
+### Build Enterprise Image
+
+```bash
+./scripts/build-enterprise.sh [version]
+```
+
+This builds the enterprise image containing:
+- React frontend
+- Go backend (RBAC + user management)
+- Static file server
+
+**Output**: `ghcr.io/cased/cased-cd-enterprise:latest`
+
+### Multi-stage Build Architecture
+
+The Dockerfile uses 4 stages:
+
+1. **frontend-builder** - Builds React app (shared by both images)
+2. **standard** - nginx + React (standard tier)
+3. **backend-builder** - Builds Go binary (enterprise only)
+4. **enterprise** - Go + React (enterprise tier)
+
+### Enterprise Requirements
+
+The enterprise image requires:
+- Kubernetes RBAC permissions to read/write ConfigMaps and Secrets in `argocd` namespace
+- Access to private container registry (credentials serve as license validation)
+
+Contact support@cased.com for enterprise access.
 
 ## Support
 

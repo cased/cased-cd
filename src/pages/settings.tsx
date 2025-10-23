@@ -19,6 +19,10 @@ import { PageHeader } from "@/components/page-header";
 import { useApplications } from "@/services/applications";
 import { useCertificates } from "@/services/certificates";
 import { useGPGKeys } from "@/services/gpgkeys";
+import { useLicense, devLicenseOverride } from "@/services/license";
+import { useQueryClient } from "@tanstack/react-query";
+import { licenseKeys } from "@/services/license";
+import type { LicenseTier } from "@/types/api";
 
 export function SettingsPage() {
   const navigate = useNavigate();
@@ -26,6 +30,20 @@ export function SettingsPage() {
   const { data: appsData } = useApplications();
   const { data: certsData } = useCertificates();
   const { data: gpgData } = useGPGKeys();
+  const { data: license } = useLicense();
+  const queryClient = useQueryClient();
+
+  const handleLicenseTierChange = (tier: LicenseTier | 'auto') => {
+    if (tier === 'auto') {
+      devLicenseOverride.set(null);
+    } else {
+      devLicenseOverride.set(tier);
+    }
+    // Invalidate license query to refetch with new override
+    queryClient.invalidateQueries({ queryKey: licenseKeys.all });
+  };
+
+  const currentOverride = devLicenseOverride.get();
 
   // Try to detect cluster info from applications
   const clusterInfo = appsData?.items?.[0]?.spec?.destination?.server ||
@@ -200,6 +218,68 @@ export function SettingsPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Developer Settings Section - Only visible in dev mode */}
+          {import.meta.env.DEV && (
+            <>
+              <Separator className="my-6 -mx-4 w-[calc(100%+2rem)]" />
+              <div>
+                <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                  Developer
+                </h2>
+                <Card className="border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/20">
+                  <CardHeader className="p-4">
+                    <CardTitle className="text-sm">License Tier Override</CardTitle>
+                    <CardDescription className="text-xs">
+                      Current tier: <span className="font-mono font-semibold">{license?.tier || 'loading...'}</span>
+                      {currentOverride && (
+                        <span className="ml-2 text-amber-600 dark:text-amber-400">
+                          (overridden)
+                        </span>
+                      )}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleLicenseTierChange('auto')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                          currentOverride === null
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        Auto
+                      </button>
+                      <button
+                        onClick={() => handleLicenseTierChange('free')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                          currentOverride === 'free'
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        Free
+                      </button>
+                      <button
+                        onClick={() => handleLicenseTierChange('enterprise')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
+                          currentOverride === 'enterprise'
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800"
+                        }`}
+                      >
+                        Enterprise
+                      </button>
+                    </div>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 mt-3">
+                      This setting is only available in development mode and will not appear in production builds.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -8,21 +8,34 @@ import {
   IconDelete,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
-import { useAccounts, useUpdatePassword, useCreateToken, useDeleteToken } from '@/services/accounts'
+import { useAccounts, useUpdatePassword, useCreateToken, useDeleteToken, useCreateAccount, useDeleteAccount } from '@/services/accounts'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
+import { useHasFeature } from '@/services/license'
+import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Card } from '@/components/ui/card'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 
 interface TokenToDelete {
@@ -30,17 +43,42 @@ interface TokenToDelete {
   tokenId: string
 }
 
+// Username validation helper
+const validateUsername = (username: string): string => {
+  if (!username) return 'Username is required'
+  if (username.length < 3) return 'Username must be at least 3 characters'
+  if (username.length > 63) return 'Username must be less than 63 characters'
+
+  const validPattern = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$/
+  if (!validPattern.test(username)) {
+    return 'Username must start and end with alphanumeric, and contain only letters, numbers, hyphens, underscores, or periods'
+  }
+
+  return ''
+}
+
 export function AccountsPage() {
+  const hasUserManagement = useHasFeature('rbac') // User management requires enterprise (same as RBAC)
   const { data, isLoading, error } = useAccounts()
   const updatePasswordMutation = useUpdatePassword()
   const createTokenMutation = useCreateToken()
   const deleteTokenMutation = useDeleteToken()
+  const createAccountMutation = useCreateAccount()
+  const deleteAccountMutation = useDeleteAccount()
 
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null)
   const [newPassword, setNewPassword] = useState('')
   const [currentPassword, setCurrentPassword] = useState('')
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
+  const [showTokenDialog, setShowTokenDialog] = useState(false)
   const [generatedToken, setGeneratedToken] = useState<string | null>(null)
+  const [tokenAccountName, setTokenAccountName] = useState<string | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [userToDelete, setUserToDelete] = useState<string | null>(null)
+  const [newUsername, setNewUsername] = useState('')
+  const [newUserPassword, setNewUserPassword] = useState('')
+  const [usernameError, setUsernameError] = useState('')
 
   const deleteHandler = useDeleteHandler<TokenToDelete, { name: string; tokenId: string }>({
     deleteFn: deleteTokenMutation.mutateAsync,
@@ -51,6 +89,8 @@ export function AccountsPage() {
   })
 
   const handleUpdatePassword = async () => {
+    if (!selectedAccount || !newPassword) return
+
     try {
       await updatePasswordMutation.mutateAsync({
         newPassword,
@@ -58,7 +98,8 @@ export function AccountsPage() {
       })
       setNewPassword('')
       setCurrentPassword('')
-      setShowPasswordForm(false)
+      setShowPasswordDialog(false)
+      setSelectedAccount(null)
     } catch (error) {
       console.error('Failed to update password:', error)
     }
@@ -71,12 +112,91 @@ export function AccountsPage() {
         expiresIn: 2592000, // 30 days in seconds
       })
       setGeneratedToken(result.token)
+      setTokenAccountName(accountName)
     } catch (error) {
       console.error('Failed to create token:', error)
       const message = error instanceof Error && 'response' in error
         ? (error.response as { data?: { message?: string } })?.data?.message
         : undefined
       alert(message || 'Failed to create token. Account may not have apiKey capability.')
+    }
+  }
+
+  const handleUsernameChange = (value: string) => {
+    setNewUsername(value)
+    const error = validateUsername(value)
+    setUsernameError(error)
+  }
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const error = validateUsername(newUsername)
+    if (error) {
+      setUsernameError(error)
+      return
+    }
+
+    try {
+      await createAccountMutation.mutateAsync({
+        name: newUsername,
+        password: newUserPassword,
+        enabled: true,
+      })
+
+      toast.success('User created successfully', {
+        description: `Account "${newUsername}" has been created`,
+      })
+
+      setShowCreateDialog(false)
+      setNewUsername('')
+      setNewUserPassword('')
+      setUsernameError('')
+    } catch (error) {
+      console.error('Failed to create account:', error)
+      let errorMessage = 'Unknown error occurred'
+      if (typeof error === 'object' && error !== null) {
+        if ('response' in error && typeof error.response === 'object' && error.response !== null) {
+          const response = error.response as { data?: unknown }
+          errorMessage = typeof response.data === 'string' ? response.data : 'Failed to create account'
+        } else if ('message' in error) {
+          errorMessage = String(error.message)
+        }
+      }
+
+      toast.error('Failed to create user', {
+        description: errorMessage,
+      })
+    }
+  }
+
+  const handleDeleteUser = async () => {
+    if (!userToDelete) return
+
+    try {
+      await deleteAccountMutation.mutateAsync(userToDelete)
+
+      toast.success('User deleted successfully', {
+        description: `Account "${userToDelete}" has been deleted`,
+      })
+
+      setShowDeleteDialog(false)
+      setUserToDelete(null)
+    } catch (error) {
+      console.error('Failed to delete user:', error)
+      let errorMessage = 'Unknown error occurred'
+      if (typeof error === 'object' && error !== null) {
+        if ('response' in error && typeof error.response === 'object' && error.response !== null) {
+          const response = error.response as { data?: unknown }
+          errorMessage = typeof response.data === 'string' ? response.data : 'Failed to delete user'
+        } else if ('message' in error) {
+          errorMessage = String(error.message)
+        }
+      }
+
+      toast.error('Failed to delete user', {
+        description: errorMessage,
+      })
     }
   }
 
@@ -87,6 +207,74 @@ export function AccountsPage() {
       <PageHeader
         title="Accounts"
         description="Manage user accounts and permissions"
+        action={
+          hasUserManagement ? (
+            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+              <DialogTrigger asChild>
+                <Button>
+                  <IconAdd size={16} />
+                  Create User
+                </Button>
+              </DialogTrigger>
+            <DialogContent>
+              <form onSubmit={handleCreateUser}>
+                <DialogHeader>
+                  <DialogTitle>Create User</DialogTitle>
+                  <DialogDescription>
+                    Create a new user account for ArgoCD
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <div>
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={newUsername}
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      placeholder="Enter username"
+                      className="mt-1"
+                    />
+                    {usernameError && (
+                      <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      placeholder="Enter password"
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateDialog(false)
+                      setNewUsername('')
+                      setNewUserPassword('')
+                      setUsernameError('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={!newUsername || !newUserPassword || !!usernameError || createAccountMutation.isPending}
+                  >
+                    {createAccountMutation.isPending ? 'Creating...' : 'Create User'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+          ) : undefined
+        }
       />
 
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
@@ -105,233 +293,112 @@ export function AccountsPage() {
             />
           )}
 
-          {/* Accounts List */}
+          {/* Accounts Table */}
           {!isLoading && !error && (
-            <div className="space-y-3">
-              {accounts.map((account) => (
-                <Card
-                  key={account.name}
-                  className="border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none"
-                >
-                  <CardHeader className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="h-10 w-10 rounded bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
-                          <IconUsers size={20} className="text-blue-600 dark:text-blue-400" />
+            <Card>
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-neutral-100 dark:bg-neutral-900">
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      User
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      Capabilities
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider text-right">
+                      Actions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accounts.map((account) => (
+                    <TableRow key={account.name}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <IconUsers size={16} className="text-neutral-500" />
+                          <span className="font-medium">{account.name}</span>
                         </div>
-                        <div>
-                          <CardTitle className="text-sm">{account.name}</CardTitle>
-                          <CardDescription className="text-xs mt-0.5 flex items-center gap-2">
-                            {account.enabled ? (
-                              <>
-                                <IconCircleCheck size={12} className="text-grass-11" />
-                                <span>Enabled</span>
-                              </>
-                            ) : (
-                              <>
-                                <IconCircleWarning size={12} className="text-red-400" />
-                                <span>Disabled</span>
-                              </>
-                            )}
-                          </CardDescription>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={account.enabled ? 'default' : 'outline'} className="text-xs">
+                          {account.enabled ? (
+                            <>
+                              <IconCircleCheck size={12} className="mr-1" />
+                              Enabled
+                            </>
+                          ) : (
+                            <>
+                              <IconCircleWarning size={12} className="mr-1" />
+                              Disabled
+                            </>
+                          )}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {account.capabilities?.map((cap) => (
+                            <span
+                              key={cap}
+                              className="px-2 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800"
+                            >
+                              {cap}
+                            </span>
+                          ))}
                         </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {account.capabilities.map((cap) => (
-                          <span
-                            key={cap}
-                            className="px-2 py-0.5 rounded text-[10px] font-medium bg-neutral-100 dark:bg-neutral-900 text-neutral-600 dark:text-neutral-400 border border-neutral-200 dark:border-neutral-800"
-                          >
-                            {cap}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <Separator />
-
-                  <CardContent className="p-4">
-                    <div className="space-y-3">
-                      {/* Password Management */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-medium text-black dark:text-white">
-                            Password
-                          </h4>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               setSelectedAccount(account.name)
-                              setShowPasswordForm(!showPasswordForm)
+                              setShowPasswordDialog(true)
                             }}
                           >
-                            <IconKey size={14} />
-                            Update Password
+                            <IconKey size={14} className="mr-1" />
+                            Password
                           </Button>
-                        </div>
-
-                        {showPasswordForm && selectedAccount === account.name && (
-                          <div className="mt-3 p-3 rounded bg-neutral-50 dark:bg-neutral-900 space-y-3">
-                            <div>
-                              <Label htmlFor="current-password" className="text-xs">
-                                Current Password
-                              </Label>
-                              <Input
-                                id="current-password"
-                                type="password"
-                                value={currentPassword}
-                                onChange={(e) => setCurrentPassword(e.target.value)}
-                                placeholder="Enter current password"
-                                className="mt-1"
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor="new-password" className="text-xs">
-                                New Password
-                              </Label>
-                              <Input
-                                id="new-password"
-                                type="password"
-                                value={newPassword}
-                                onChange={(e) => setNewPassword(e.target.value)}
-                                placeholder="Enter new password"
-                                className="mt-1"
-                              />
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleUpdatePassword()}
-                                disabled={!newPassword || updatePasswordMutation.isPending}
-                              >
-                                {updatePasswordMutation.isPending ? 'Updating...' : 'Update'}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setShowPasswordForm(false)
-                                  setNewPassword('')
-                                  setCurrentPassword('')
-                                }}
-                              >
-                                Cancel
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      <Separator />
-
-                      {/* Token Management */}
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-xs font-medium text-black dark:text-white">
-                            API Tokens
-                          </h4>
                           <Button
-                            variant="outline"
+                            variant="ghost"
                             size="sm"
-                            onClick={() => handleCreateToken(account.name)}
-                            disabled={createTokenMutation.isPending || !account.capabilities.includes('apiKey')}
+                            onClick={() => {
+                              setSelectedAccount(account.name)
+                              setShowTokenDialog(true)
+                            }}
+                            disabled={!account.capabilities?.includes('apiKey')}
                           >
-                            <IconAdd size={14} />
-                            Generate Token
+                            Tokens
                           </Button>
-                        </div>
-
-                        {!account.capabilities.includes('apiKey') && (
-                          <div className="mt-2 p-3 rounded bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50">
-                            <p className="text-xs text-amber-800 dark:text-amber-300 mb-1 font-medium">
-                              API token generation unavailable
-                            </p>
-                            <p className="text-xs text-amber-700 dark:text-amber-400">
-                              This account doesn't have the <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900">apiKey</code> capability.
-                              To enable, add it to your ArgoCD ConfigMap: <code className="px-1 py-0.5 rounded bg-amber-100 dark:bg-amber-900">accounts.{account.name}: apiKey, login</code>
-                            </p>
-                          </div>
-                        )}
-
-                        {account.capabilities.includes('apiKey') && (
-                          <>
-
-                        {generatedToken && (
-                          <div className="mt-3 p-3 rounded bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
-                            <p className="text-xs text-green-700 dark:text-green-400 mb-2 font-medium">
-                              Token generated! Copy it now - it won't be shown again.
-                            </p>
-                            <div className="flex gap-2">
-                              <Input
-                                value={generatedToken}
-                                readOnly
-                                className="font-mono text-xs"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(generatedToken)
-                                }}
-                              >
-                                Copy
-                              </Button>
-                            </div>
+                          {hasUserManagement && account.name !== 'admin' && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setGeneratedToken(null)}
-                              className="mt-2"
+                              onClick={() => {
+                                setUserToDelete(account.name)
+                                setShowDeleteDialog(true)
+                              }}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950"
                             >
-                              Dismiss
+                              <IconDelete size={14} className="mr-1" />
+                              Delete
                             </Button>
-                          </div>
-                        )}
-
-                          {account.tokens && account.tokens.length > 0 ? (
-                            <div className="mt-2 space-y-2">
-                              {account.tokens.map((token) => (
-                                <div
-                                  key={token.id}
-                                  className="flex items-center justify-between p-2 rounded bg-neutral-50 dark:bg-neutral-900"
-                                >
-                                  <div className="text-xs">
-                                    <p className="text-neutral-900 dark:text-neutral-100">
-                                      Token {token.id.substring(0, 8)}...
-                                    </p>
-                                    <p className="text-neutral-500 dark:text-neutral-500 text-[10px]">
-                                      Expires: {new Date(token.expiresAt * 1000).toLocaleDateString()}
-                                    </p>
-                                  </div>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => deleteHandler.handleDeleteClick({ accountName: account.name, tokenId: token.id })}
-                                  >
-                                    <IconDelete size={14} className="text-red-500" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <p className="text-xs text-neutral-500 dark:text-neutral-500 mt-2">
-                              No tokens created yet
-                            </p>
                           )}
-                        </>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </div>
       </div>
 
-      {/* Confirm Delete Dialog */}
+      {/* Confirm Delete Token Dialog */}
       <ConfirmDialog
         open={deleteHandler.dialogOpen}
         onOpenChange={deleteHandler.setDialogOpen}
@@ -342,7 +409,213 @@ export function AccountsPage() {
         resourceType="API token"
         onConfirm={deleteHandler.handleDeleteConfirm}
         isLoading={deleteHandler.isDeleting}
+        requireTyping={false}
       />
+
+      {/* Update Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Password</DialogTitle>
+            <DialogDescription>
+              Update the password for user "{selectedAccount}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="current-password">Current Password (optional)</Label>
+              <Input
+                id="current-password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                placeholder="Enter current password"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowPasswordDialog(false)
+                setNewPassword('')
+                setCurrentPassword('')
+                setSelectedAccount(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdatePassword}
+              disabled={!newPassword || updatePasswordMutation.isPending}
+            >
+              {updatePasswordMutation.isPending ? 'Updating...' : 'Update Password'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Token Management Dialog */}
+      <Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>API Tokens - {selectedAccount}</DialogTitle>
+            <DialogDescription>
+              Manage API tokens for this account
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Generate and manage API tokens for authentication
+              </p>
+              <Button
+                size="sm"
+                onClick={() => selectedAccount && handleCreateToken(selectedAccount)}
+                disabled={createTokenMutation.isPending}
+              >
+                <IconAdd size={14} className="mr-1" />
+                Generate Token
+              </Button>
+            </div>
+
+            {generatedToken && tokenAccountName === selectedAccount && (
+              <div className="p-3 rounded bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+                <p className="text-xs text-green-700 dark:text-green-400 mb-2 font-medium">
+                  Token generated! Copy it now - it won't be shown again.
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    value={generatedToken}
+                    readOnly
+                    className="font-mono text-xs"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedToken)
+                      toast.success('Token copied to clipboard')
+                    }}
+                  >
+                    Copy
+                  </Button>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setGeneratedToken(null)
+                    setTokenAccountName(null)
+                  }}
+                  className="mt-2"
+                >
+                  Dismiss
+                </Button>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">Existing Tokens</h4>
+              {(() => {
+                const account = accounts.find(a => a.name === selectedAccount)
+                const tokens = account?.tokens || []
+
+                if (tokens.length === 0) {
+                  return (
+                    <p className="text-sm text-neutral-500 dark:text-neutral-500 py-4 text-center">
+                      No tokens created yet
+                    </p>
+                  )
+                }
+
+                return tokens.map((token) => (
+                  <div
+                    key={token.id}
+                    className="flex items-center justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800"
+                  >
+                    <div className="text-sm">
+                      <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                        Token {token.id.substring(0, 8)}...
+                      </p>
+                      <p className="text-neutral-500 dark:text-neutral-500 text-xs">
+                        Expires: {token.expiresAt ? new Date(token.expiresAt * 1000).toLocaleDateString() : 'Never'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        if (selectedAccount) {
+                          deleteHandler.handleDeleteClick({ accountName: selectedAccount, tokenId: token.id })
+                        }
+                      }}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950"
+                    >
+                      <IconDelete size={14} className="mr-1" />
+                      Delete
+                    </Button>
+                  </div>
+                ))
+              })()}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowTokenDialog(false)
+                setSelectedAccount(null)
+                setGeneratedToken(null)
+                setTokenAccountName(null)
+              }}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Delete User Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete user "{userToDelete}"? This will permanently remove the user account and all their permissions. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false)
+                setUserToDelete(null)
+              }}
+              disabled={deleteAccountMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteUser}
+              disabled={deleteAccountMutation.isPending}
+            >
+              {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

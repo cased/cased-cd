@@ -61,15 +61,27 @@ jobs:
 
             ### Installation
 
-            **Using Helm:**
+            **Standard (Free) - Using Helm:**
             ```bash
             helm install cased-cd oci://ghcr.io/cased/cased-cd-chart --version ${{ env.CHART_VERSION }}
             ```
 
-            **Using Docker:**
+            **Standard (Free) - Using Docker:**
             ```bash
             docker pull ghcr.io/cased/cased-cd:${{ github.ref_name }}
             ```
+
+            **Enterprise - Contact Us:**
+            Enterprise customers should contact support@cased.com for access to:
+            - Private registry credentials
+            - Enterprise Helm chart
+            - Advanced RBAC and user management features
+
+            **Enterprise Docker Image:**
+            ```bash
+            docker pull ghcr.io/cased/cased-cd-enterprise:${{ github.ref_name }}
+            ```
+            *Requires authentication - see [ENTERPRISE.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/ENTERPRISE.md)*
 
             ### What's Changed
 
@@ -78,6 +90,8 @@ jobs:
             ---
 
             **Full Documentation**: [DEPLOY.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/DEPLOY.md)
+
+            **Enterprise Guide**: [ENTERPRISE.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/ENTERPRISE.md)
 
             **Built by [Cased](https://cased.com)**
           files: |

@@ -22,6 +22,7 @@ export interface ConfirmDialogProps {
   resourceType: string
   onConfirm: () => void
   isLoading?: boolean
+  requireTyping?: boolean // If false, user just needs to click confirm without typing
 }
 
 export function ConfirmDialog({
@@ -34,9 +35,10 @@ export function ConfirmDialog({
   resourceType,
   onConfirm,
   isLoading = false,
+  requireTyping = true,
 }: ConfirmDialogProps) {
   const [inputValue, setInputValue] = useState('')
-  const isValid = inputValue === resourceName
+  const isValid = !requireTyping || inputValue === resourceName
 
   // Reset input when dialog opens/closes
   useEffect(() => {
@@ -72,23 +74,25 @@ export function ConfirmDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          <Label htmlFor="confirm-input" className="text-xs">
-            Type <span className="font-semibold text-black dark:text-white">{resourceName}</span> to confirm
-          </Label>
-          <Input
-            id="confirm-input"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={resourceName}
-            className="mt-2"
-            autoFocus
-          />
-          <p className="text-[10px] text-neutral-500 dark:text-neutral-500 mt-1">
-            This action cannot be undone. This will permanently delete the {resourceType}.
-          </p>
-        </div>
+        {requireTyping && (
+          <div className="py-4">
+            <Label htmlFor="confirm-input" className="text-xs">
+              Type <span className="font-semibold text-black dark:text-white">{resourceName}</span> to confirm
+            </Label>
+            <Input
+              id="confirm-input"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={resourceName}
+              className="mt-2"
+              autoFocus
+            />
+            <p className="text-[10px] text-neutral-500 dark:text-neutral-500 mt-1">
+              This action cannot be undone. This will permanently delete the {resourceType}.
+            </p>
+          </div>
+        )}
 
         <DialogFooter>
           <Button

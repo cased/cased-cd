@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCreateProject } from '@/services/projects'
-import type { Project } from '@/types/api'
 import { toast } from 'sonner'
 
 interface CreateProjectPanelProps {
@@ -52,22 +51,39 @@ export function CreateProjectPanel({ isOpen, onClose, onSuccess }: CreateProject
         .filter(s => s.length > 0)
         .map(dest => {
           const [serverOrName, namespace] = dest.split('/')
-          return {
-            server: serverOrName.startsWith('http') ? serverOrName : undefined,
-            name: !serverOrName.startsWith('http') ? serverOrName : undefined,
-            namespace: namespace || undefined,
+          const destObj: { server?: string; name?: string; namespace?: string } = {}
+
+          if (serverOrName.startsWith('http')) {
+            destObj.server = serverOrName
+          } else {
+            destObj.name = serverOrName
           }
+
+          if (namespace) {
+            destObj.namespace = namespace
+          }
+
+          return destObj
         })
 
-      const project: Project = {
+      // Create minimal project - ArgoCD has very specific requirements
+      const project = {
         metadata: {
           name: formData.name,
         },
         spec: {
-          sourceRepos: sourceRepos.length > 0 ? sourceRepos : ['*'], // Default to all if empty
-          destinations: destinations.length > 0 ? destinations : [{ server: '*', namespace: '*' }], // Default to all if empty
+          sourceRepos: sourceRepos.length > 0 ? sourceRepos : ['*'],
+          destinations: destinations.length > 0 ? destinations : [
+            {
+              server: '*',  // Wildcard to allow all clusters
+              namespace: '*'
+            }
+          ],
+          ...(formData.description ? { description: formData.description } : {}),
         },
       }
+
+      console.log('Creating project with payload:', JSON.stringify(project, null, 2))
 
       await createMutation.mutateAsync(project)
       toast.success('Project created', {
