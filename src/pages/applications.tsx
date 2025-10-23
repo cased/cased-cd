@@ -1,17 +1,11 @@
 import {
   IconSearch,
   IconAdd,
-  IconCodeBranch,
-  IconCircleInfo,
-  IconCircleCheck,
-  IconArrowRightUp,
   IconCircleForward,
   IconGrid,
-  IconClock3,
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   useApplications,
   useRefreshApplication,
@@ -20,11 +14,10 @@ import {
 import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { getHealthIcon } from "@/lib/status-icons";
+import { ApplicationCard } from "@/components/-applications/application-card";
+import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import type { Application } from "@/types/api";
 
 export function ApplicationsPage() {
   const navigate = useNavigate();
@@ -37,7 +30,7 @@ export function ApplicationsPage() {
   // Filter applications based on search
   const filteredApps =
     data?.items?.filter((app) =>
-      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase())
+      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || [];
 
   const handleRefresh = async (name: string) => {
@@ -58,16 +51,9 @@ export function ApplicationsPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white">
-                Applications
-              </h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Manage and monitor your deployments across all clusters
-              </p>
-            </div>
+            <PageTitle>Applications</PageTitle>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -93,7 +79,10 @@ export function ApplicationsPage() {
           {/* Search and Filters */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <IconSearch
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+              />
               <Input
                 placeholder="Search applications..."
                 className="pl-9"
@@ -171,25 +160,28 @@ export function ApplicationsPage() {
                   app={app}
                   onRefresh={handleRefresh}
                   onSync={handleSync}
-                  onClick={() => navigate(`/applications/${app.metadata.name}`)}
                 />
               ))}
 
-              {/* Add New Card */}
-              <div
-                className="rounded border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-3 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
-                onClick={() => setShowCreatePanel(true)}
-              >
-                <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
-                  <IconAdd size={16} className="text-neutral-600 dark:text-neutral-400" />
+              {data?.items?.length === 0 && (
+                <div
+                  className="rounded border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-3 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
+                  onClick={() => setShowCreatePanel(true)}
+                >
+                  <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
+                    <IconAdd
+                      size={16}
+                      className="text-neutral-600 dark:text-neutral-400"
+                    />
+                  </div>
+                  <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
+                    Create an application
+                  </h3>
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
+                    Deploy a new application to your cluster
+                  </p>
                 </div>
-                <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
-                  Create Application
-                </h3>
-                <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
-                  Deploy a new application to your cluster
-                </p>
-              </div>
+              )}
             </div>
           )}
         </div>
@@ -202,120 +194,6 @@ export function ApplicationsPage() {
           onSuccess={() => refetch()}
         />
       )}
-    </div>
-  );
-}
-
-// Application Card Component
-function ApplicationCard({
-  app,
-  onRefresh,
-  onSync,
-  onClick,
-}: {
-  app: Application;
-  onRefresh: (name: string) => void;
-  onSync: (name: string) => void;
-  onClick: () => void;
-}) {
-  const healthStatus = app.status?.health?.status || "Unknown";
-  const syncStatus = app.status?.sync?.status || "Unknown";
-  const operationPhase = app.status?.operationState?.phase;
-  const isSyncing = operationPhase === "Running" || operationPhase === "Terminating";
-  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus);
-
-  return (
-    <div
-      className="group rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
-      onClick={onClick}
-    >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 mb-0.5">
-            <h3 className="text-sm font-medium text-black dark:text-white truncate">
-              {app.metadata.name}
-            </h3>
-            <IconArrowRightUp size={12} className="text-neutral-600 opacity-0 group-hover:opacity-100 transition-opacity" />
-          </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-600">
-            <span className="truncate">
-              {app.spec.destination.namespace || "default"}
-            </span>
-            <span>·</span>
-            <span className="truncate">
-              {app.spec.destination.server ||
-                app.spec.destination.name ||
-                "unknown"}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Status Badges */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <Badge variant="outline" className="gap-1.5">
-          <HealthIcon size={12} className={healthColor} />
-          {healthStatus}
-        </Badge>
-        <Badge variant="outline" className="gap-1.5">
-          <IconCircleCheck size={12} className={syncStatus === "Synced" ? "text-grass-11" : "text-amber-400"} />
-          {syncStatus}
-        </Badge>
-        {isSyncing && (
-          <Badge variant="outline" className="gap-1.5">
-            <IconCircleForward size={12} className="animate-spin text-blue-400" />
-            Syncing
-          </Badge>
-        )}
-      </div>
-
-      {/* Repository */}
-      <div className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400 mb-2">
-        <IconCodeBranch size={12} className="text-neutral-600" />
-        <span className="truncate">{app.spec.source.repoURL}</span>
-      </div>
-
-      {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-neutral-200 dark:border-neutral-800">
-        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 dark:text-neutral-600">
-          <IconClock3 size={11} />
-          <span>
-            {app.status?.reconciledAt
-              ? formatDistanceToNow(new Date(app.status.reconciledAt), { addSuffix: true })
-              : "Never synced"}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isSyncing) {
-                onSync(app.metadata.name);
-              }
-            }}
-            disabled={isSyncing}
-            className={`transition-colors ${
-              isSyncing
-                ? "text-blue-400 cursor-not-allowed"
-                : "text-neutral-600 hover:text-blue-400 dark:hover:text-blue-400"
-            }`}
-            title={isSyncing ? "Syncing in progress..." : "Sync application"}
-          >
-            <IconCircleForward size={14} className={isSyncing ? "animate-spin" : ""} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRefresh(app.metadata.name);
-            }}
-            className="text-neutral-600 hover:text-white dark:hover:text-black transition-colors"
-            title="Refresh application"
-          >
-            <IconCircleInfo size={14} />
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
