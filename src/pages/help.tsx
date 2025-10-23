@@ -11,7 +11,7 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconCheck,
-  IconStarFill,
+  IconShieldCheck,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useIsEnterprise } from '@/services/license'
@@ -369,7 +369,7 @@ export function HelpPage() {
             <div className="mt-4 rounded border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4">
               <div className="flex items-start gap-3">
                 <div className="h-10 w-10 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
-                  <IconStarFill size={20} className="text-white" />
+                  <IconShieldCheck size={20} className="text-white" />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-sm text-black dark:text-white mb-1">
