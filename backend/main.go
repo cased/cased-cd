@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -68,9 +70,49 @@ func main() {
 		namespace: "argocd",
 	}
 
-	// API endpoints
-	http.HandleFunc("/api/v1/settings/rbac", handler.handleRBAC)
-	http.HandleFunc("/api/v1/settings/accounts", handler.handleAccount)
+	// Set up reverse proxy to ArgoCD for all API requests (except /api/v1/settings/*)
+	argoCDServer := os.Getenv("ARGOCD_SERVER")
+	if argoCDServer == "" {
+		argoCDServer = "http://argocd-server.argocd.svc.cluster.local:80"
+	}
+	argoCDURL, err := url.Parse(argoCDServer)
+	if err != nil {
+		log.Fatalf("Invalid ARGOCD_SERVER URL: %v", err)
+	}
+
+	proxy := httputil.NewSingleHostReverseProxy(argoCDURL)
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.Host = argoCDURL.Host
+	}
+
+	// Proxy all /api/* requests (except /api/v1/settings/*) to ArgoCD
+	http.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		// Handle RBAC endpoints directly (don't proxy to ArgoCD)
+		if r.URL.Path == "/api/v1/settings/rbac" {
+			handler.handleRBAC(w, r)
+			return
+		}
+		if r.URL.Path == "/api/v1/settings/accounts" {
+			handler.handleAccount(w, r)
+			return
+		}
+
+		// CORS headers
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		// Handle preflight OPTIONS requests
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		// Proxy everything else to ArgoCD
+		proxy.ServeHTTP(w, r)
+	})
 
 	// Health check
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {

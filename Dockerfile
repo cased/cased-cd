@@ -89,12 +89,6 @@ COPY --from=backend-builder /app/rbac-proxy /app/rbac-proxy
 # Copy React build from frontend builder
 COPY --from=frontend-builder /app/dist /app/dist
 
-# Copy nginx config for the Go proxy to reference
-COPY docker/nginx.conf.template /app/nginx.conf.template
-
-# Set working directory
-WORKDIR /app
-
 # Environment variables for configuration
 ENV PORT=8080
 ENV ARGOCD_SERVER=http://argocd-server.argocd.svc.cluster.local:80
