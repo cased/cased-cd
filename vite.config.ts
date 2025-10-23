@@ -28,7 +28,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       // Proxy notifications requests to local RBAC proxy (reads argocd-notifications-cm)
-      '/api/v1/notifications': {
+      '/api/v1/notifications/config': {
         target: 'http://localhost:8081',
         changeOrigin: true,
       },

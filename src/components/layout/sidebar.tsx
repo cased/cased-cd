@@ -10,7 +10,7 @@ import {
   IconLayers,
   IconFolder,
   IconLock,
-  IconBill,
+  IconMessage,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -63,7 +63,7 @@ const navItems = [
   {
     title: "Notifications",
     href: "/notifications",
-    icon: IconBill,
+    icon: IconMessage,
     color: "#ec4899", // pink
     requiresFeature: 'notifications' as const, // Requires enterprise license
   },
