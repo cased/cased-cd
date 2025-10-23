@@ -189,7 +189,7 @@ useUpdateRBACConfig() // PUT /settings/rbac
 - Delete confirmation with username typing
 
 **RBAC Page** (`src/pages/rbac.tsx`)
-- License gate with upgrade modal
+- Enterprise feature gate with upgrade modal
 - Permission summary card (users, policies, apps count)
 - Permission editor component
 - User list table with policy counts
@@ -310,7 +310,7 @@ Tests       63 passed (63)
 - ✅ Token generation and deletion
 - ✅ RBAC permission assignment
 - ✅ Wildcard permission handling
-- ✅ License gating (enterprise vs free)
+- ✅ Enterprise feature gating (endpoint-based detection)
 - ✅ DELETE request Content-Type fix
 - ✅ Real-time query invalidation
 
@@ -415,7 +415,7 @@ helm install cased-cd cased/cased-cd --namespace argocd
 ### Enterprise Deployment
 Contact support@cased.com for access to:
 - Enterprise Helm chart with RBAC backend
-- License key configuration
+- Private container registry credentials
 - Deployment documentation
 - Kubernetes RBAC requirements
 
