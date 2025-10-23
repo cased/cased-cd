@@ -15,6 +15,7 @@ import { CreateApplicationPanel } from "@/components/create-application-panel";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ApplicationCard } from "@/components/-applications/application-card";
+import { PageTitle } from "@/components/ui/page-title";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -29,7 +30,7 @@ export function ApplicationsPage() {
   // Filter applications based on search
   const filteredApps =
     data?.items?.filter((app) =>
-      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase())
+      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase()),
     ) || [];
 
   const handleRefresh = async (name: string) => {
@@ -50,16 +51,9 @@ export function ApplicationsPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white">
-                Applications
-              </h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Manage and monitor your deployments across all clusters
-              </p>
-            </div>
+            <PageTitle>Applications</PageTitle>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -85,7 +79,10 @@ export function ApplicationsPage() {
           {/* Search and Filters */}
           <div className="flex items-center gap-3">
             <div className="relative flex-1 max-w-md">
-              <IconSearch size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <IconSearch
+                size={16}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+              />
               <Input
                 placeholder="Search applications..."
                 className="pl-9"
@@ -172,7 +169,10 @@ export function ApplicationsPage() {
                 onClick={() => setShowCreatePanel(true)}
               >
                 <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
-                  <IconAdd size={16} className="text-neutral-600 dark:text-neutral-400" />
+                  <IconAdd
+                    size={16}
+                    className="text-neutral-600 dark:text-neutral-400"
+                  />
                 </div>
                 <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
                   Create Application
