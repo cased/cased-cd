@@ -163,24 +163,25 @@ export function ApplicationsPage() {
                 />
               ))}
 
-              {/* Add New Card */}
-              <div
-                className="rounded border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-3 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
-                onClick={() => setShowCreatePanel(true)}
-              >
-                <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
-                  <IconAdd
-                    size={16}
-                    className="text-neutral-600 dark:text-neutral-400"
-                  />
+              {data?.items?.length === 0 && (
+                <div
+                  className="rounded border-2 border-dashed border-neutral-300 dark:border-neutral-800 bg-transparent p-3 flex flex-col items-center justify-center text-center hover:border-neutral-400 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-950 transition-colors cursor-pointer group"
+                  onClick={() => setShowCreatePanel(true)}
+                >
+                  <div className="h-8 w-8 rounded bg-neutral-200 dark:bg-neutral-900 flex items-center justify-center mb-2 group-hover:bg-neutral-300 dark:group-hover:bg-neutral-800 transition-colors">
+                    <IconAdd
+                      size={16}
+                      className="text-neutral-600 dark:text-neutral-400"
+                    />
+                  </div>
+                  <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
+                    Create an application
+                  </h3>
+                  <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
+                    Deploy a new application to your cluster
+                  </p>
                 </div>
-                <h3 className="text-sm font-medium text-black dark:text-white mb-0.5">
-                  Create Application
-                </h3>
-                <p className="text-[11px] text-neutral-600 dark:text-neutral-500">
-                  Deploy a new application to your cluster
-                </p>
-              </div>
+              )}
             </div>
           )}
         </div>
