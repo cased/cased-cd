@@ -57,14 +57,17 @@ export function PermissionEditor({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load existing permissions when user and app are selected
+  // Extract subject and app to avoid effect running on every form change
+  const { subject, app } = form
+
   useEffect(() => {
-    if (!form.subject || !form.app) return
+    if (!subject || !app) return
 
     // Parse the app selection (format: "project/app" or "*/*")
-    const [project, appName] = form.app.split('/')
+    const [project, appName] = app.split('/')
 
     // Get policies for this user
-    const userPolicies = getPoliciesForSubject(currentPolicies, form.subject)
+    const userPolicies = getPoliciesForSubject(currentPolicies, subject)
 
     // Helper to check if user has a specific permission
     const hasPermission = (action: string): boolean => {
@@ -83,7 +86,7 @@ export function PermissionEditor({
       canRollback: hasPermission('action/*') || hasPermission('action'),
       canDelete: hasPermission('delete'),
     }))
-  }, [form.subject, form.app, currentPolicies])
+  }, [subject, app, currentPolicies])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -233,7 +236,7 @@ export function PermissionEditor({
 
           {/* Permissions Checkboxes */}
           <div className="space-y-3">
-            <Label>Permissions</Label>
+            <Label className="mb-2">Permissions</Label>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Checkbox
