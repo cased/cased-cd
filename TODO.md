@@ -19,6 +19,19 @@
 - [ ] Compliance reporting
 - [ ] Detailed diff view for configuration changes
 
+## Security Enhancements
+- [ ] Implement CSRF protection
+  - [ ] Add CSRF tokens for state-changing operations
+  - [ ] Tighten CORS policy (replace `*` with specific origins)
+  - [ ] Add SameSite cookies for JWT storage
+  - [ ] Implement custom request headers (X-Requested-With)
+- [ ] Content Security Policy (CSP) headers
+- [ ] XSS protection improvements
+- [ ] Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- [ ] Rate limiting on API endpoints
+- [ ] Session timeout and refresh token mechanism
+- [ ] Research and implement ArgoCD UI security best practices
+
 ## Future Features
 - [ ] Multi-cluster management
 - [ ] Application health dashboard
