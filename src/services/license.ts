@@ -27,7 +27,7 @@ export const licenseApi = {
         tier: 'enterprise',
         features: ['rbac', 'sso', 'audit-logs'],
       }
-    } catch (error) {
+    } catch {
       // If endpoint doesn't exist (404) or any other error, return standard license
       return {
         tier: 'standard',

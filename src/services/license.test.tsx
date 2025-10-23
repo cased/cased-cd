@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useLicense, useHasFeature, useIsEnterprise, licenseApi } from './license'
 import api from '@/lib/api-client'
 import type { AxiosResponse } from 'axios'
-import type { License } from '@/types/api'
 import React from 'react'
 
 // Mock the API client
