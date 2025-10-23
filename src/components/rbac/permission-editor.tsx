@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { IconCheck } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -24,15 +24,14 @@ import type { CasbinPolicy } from '@/types/api'
 
 interface PermissionEditorProps {
   accounts: Array<{ name: string; enabled: boolean }>
-  apps: Array<{ name: string; project: string }>
   projects: string[]
   currentPolicies: CasbinPolicy[]
-  onAddPermissions: (policies: CasbinPolicy[]) => Promise<void>
+  onAddPermissions: (policies: CasbinPolicy[], replaceFor?: { subject: string; project: string }) => Promise<void>
 }
 
 interface PermissionForm {
   subject: string
-  app: string // "project/app" or "*/*" for all
+  project: string // "project" or "*" for all
   canView: boolean
   canDeploy: boolean
   canRollback: boolean
@@ -41,14 +40,13 @@ interface PermissionForm {
 
 export function PermissionEditor({
   accounts,
-  apps,
   projects,
   currentPolicies,
   onAddPermissions,
 }: PermissionEditorProps) {
   const [form, setForm] = useState<PermissionForm>({
     subject: '',
-    app: '',
+    project: '',
     canView: false,
     canDeploy: false,
     canRollback: false,
@@ -56,15 +54,44 @@ export function PermissionEditor({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Load existing permissions when user and app are selected
-  // Extract subject and app to avoid effect running on every form change
-  const { subject, app } = form
+  // Track previous subject/project to only reload permissions when they actually change
+  const prevSubjectRef = useRef<string>('')
+  const prevProjectRef = useRef<string>('')
+
+  // Load existing permissions when user and project are selected
+  const { subject, project } = form
+
+  // Check if user has wildcard permissions and what they grant
+  const wildcardPermissions = subject ? (() => {
+    const userPolicies = getPoliciesForSubject(currentPolicies, subject)
+    const wildcardPolicies = userPolicies.filter(p => p.object === '*/*')
+
+    if (wildcardPolicies.length === 0) return null
+
+    const hasWildcardAction = wildcardPolicies.some(p =>
+      p.resource === '*' || (p.resource === 'applications' && p.action === '*')
+    )
+
+    const hasAction = (action: string) => wildcardPolicies.some(p =>
+      (p.action === action || p.action === '*') &&
+      (p.resource === 'applications' || p.resource === '*')
+    )
+
+    return {
+      canView: hasWildcardAction || hasAction('get'),
+      canDeploy: hasWildcardAction || hasAction('sync'),
+      canRollback: hasWildcardAction || hasAction('action/*') || hasAction('action'),
+      canDelete: hasWildcardAction || hasAction('delete'),
+    }
+  })() : null
 
   useEffect(() => {
-    if (!subject || !app) return
+    // Only reload permissions if subject or project actually changed
+    if (subject === prevSubjectRef.current && project === prevProjectRef.current) {
+      return
+    }
 
-    // Parse the app selection (format: "project/app" or "*/*")
-    const [project, appName] = app.split('/')
+    if (!subject || !project) return
 
     // Get policies for this user
     const userPolicies = getPoliciesForSubject(currentPolicies, subject)
@@ -74,7 +101,8 @@ export function PermissionEditor({
       return userPolicies.some(policy => {
         if (policy.action !== action && policy.action !== '*') return false
         if (policy.resource !== 'applications' && policy.resource !== '*') return false
-        return policyMatchesApp(policy, project, appName)
+        // Check if policy matches the project (project/* or */*)
+        return policyMatchesApp(policy, project, '*')
       })
     }
 
@@ -86,11 +114,15 @@ export function PermissionEditor({
       canRollback: hasPermission('action/*') || hasPermission('action'),
       canDelete: hasPermission('delete'),
     }))
-  }, [subject, app, currentPolicies])
+
+    // Update refs to current values
+    prevSubjectRef.current = subject
+    prevProjectRef.current = project
+  }, [subject, project, currentPolicies])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.subject || !form.app) return
+    if (!form.subject || !form.project) return
 
     setIsSubmitting(true)
 
@@ -98,13 +130,17 @@ export function PermissionEditor({
       // Generate policies for each selected action
       const policies: CasbinPolicy[] = []
 
-      if (form.canView) {
+      // Format the object as project/* or */* for all projects
+      const policyObject = form.project === '*' ? '*/*' : `${form.project}/*`
+
+      // Always include view permission if any other permission is selected
+      if (form.canView || hasOtherActions) {
         policies.push({
           type: 'p',
           subject: form.subject,
           resource: 'applications',
           action: 'get',
-          object: form.app,
+          object: policyObject,
           effect: 'allow',
         })
       }
@@ -115,7 +151,7 @@ export function PermissionEditor({
           subject: form.subject,
           resource: 'applications',
           action: 'sync',
-          object: form.app,
+          object: policyObject,
           effect: 'allow',
         })
       }
@@ -126,7 +162,7 @@ export function PermissionEditor({
           subject: form.subject,
           resource: 'applications',
           action: 'action/*',
-          object: form.app,
+          object: policyObject,
           effect: 'allow',
         })
       }
@@ -137,27 +173,20 @@ export function PermissionEditor({
           subject: form.subject,
           resource: 'applications',
           action: 'delete',
-          object: form.app,
+          object: policyObject,
           effect: 'allow',
         })
       }
 
       console.log('Setting permissions:', policies)
 
-      // Add all policies in a single batch
-      await onAddPermissions(policies)
+      // Replace all policies for this user/project combination
+      await onAddPermissions(policies, { subject: form.subject, project: form.project })
 
       toast.success('Permissions updated successfully')
 
-      // Reset form
-      setForm({
-        subject: '',
-        app: '',
-        canView: false,
-        canDeploy: false,
-        canRollback: false,
-        canDelete: false,
-      })
+      // Don't reset user/project - keep them selected so user can see updated permissions
+      // The useEffect will reload the permissions for this user/project combination
     } catch (error) {
       console.error('Failed to set permissions:', error)
       toast.error('Failed to update permissions')
@@ -167,6 +196,11 @@ export function PermissionEditor({
   }
 
   const hasSelectedActions = form.canView || form.canDeploy || form.canRollback || form.canDelete
+  const hasOtherActions = form.canDeploy || form.canRollback || form.canDelete
+
+  // Check if we're editing a specific project (not wildcard) and user has wildcard permissions
+  const isEditingSpecificProject = form.project && form.project !== '*'
+  const hasWildcardPerms = isEditingSpecificProject && wildcardPermissions
 
   return (
     <Card>
@@ -197,37 +231,25 @@ export function PermissionEditor({
             </Select>
           </div>
 
-          {/* App Selection */}
+          {/* Project Selection */}
           <div className="space-y-2">
-            <Label>Scope</Label>
-            <Select value={form.app} onValueChange={(value) => setForm({ ...form, app: value })}>
+            <Label>Project</Label>
+            <Select value={form.project} onValueChange={(value) => setForm({ ...form, project: value })}>
               <SelectTrigger>
-                <SelectValue placeholder="Select scope (project or app)" />
+                <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
-                {/* Global wildcard */}
-                <SelectItem value="*/*">
+                {/* All projects */}
+                <SelectItem value="*">
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className="text-xs">All Projects</Badge>
-                    <span className="text-xs text-neutral-500">All apps in all projects</span>
                   </div>
                 </SelectItem>
 
-                {/* Project-level wildcards */}
+                {/* Individual projects */}
                 {projects.sort().map((project) => (
-                  <SelectItem key={`${project}/*`} value={`${project}/*`}>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">{project}/*</Badge>
-                      <span className="text-xs text-neutral-500">All apps in {project}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-
-                {/* Individual apps */}
-                {apps.map((app) => (
-                  <SelectItem key={`${app.project}/${app.name}`} value={`${app.project}/${app.name}`}>
-                    {app.name}
-                    <span className="text-xs text-neutral-500 ml-2">({app.project})</span>
+                  <SelectItem key={project} value={project}>
+                    {project}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -236,68 +258,72 @@ export function PermissionEditor({
 
           {/* Permissions Checkboxes */}
           <div className="space-y-3">
-            <Label className="mb-2">Permissions</Label>
+            <Label className="block mb-3">Permissions</Label>
             <div className="space-y-2">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="canView"
-                  checked={form.canView}
+                  checked={form.canView || hasOtherActions || (hasWildcardPerms?.canView ?? false)}
+                  disabled={!form.subject || !form.project || hasOtherActions || (hasWildcardPerms?.canView ?? false)}
                   onCheckedChange={(checked) => setForm({ ...form, canView: checked as boolean })}
                 />
                 <label
                   htmlFor="canView"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Can view
+                  Can view{hasWildcardPerms?.canView ? ' (granted by All Projects)' : ''}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="canDeploy"
-                  checked={form.canDeploy}
-                  onCheckedChange={(checked) => setForm({ ...form, canDeploy: checked as boolean })}
+                  checked={form.canDeploy || (hasWildcardPerms?.canDeploy ?? false)}
+                  disabled={!form.subject || !form.project || (hasWildcardPerms?.canDeploy ?? false)}
+                  onCheckedChange={(checked) => setForm({ ...form, canDeploy: checked as boolean, canView: checked ? true : form.canView })}
                 />
                 <label
                   htmlFor="canDeploy"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Can deploy
+                  Can deploy{hasWildcardPerms?.canDeploy ? ' (granted by All Projects)' : ''}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="canRollback"
-                  checked={form.canRollback}
-                  onCheckedChange={(checked) => setForm({ ...form, canRollback: checked as boolean })}
+                  checked={form.canRollback || (hasWildcardPerms?.canRollback ?? false)}
+                  disabled={!form.subject || !form.project || (hasWildcardPerms?.canRollback ?? false)}
+                  onCheckedChange={(checked) => setForm({ ...form, canRollback: checked as boolean, canView: checked ? true : form.canView })}
                 />
                 <label
                   htmlFor="canRollback"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Can rollback
+                  Can rollback{hasWildcardPerms?.canRollback ? ' (granted by All Projects)' : ''}
                 </label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="canDelete"
-                  checked={form.canDelete}
-                  onCheckedChange={(checked) => setForm({ ...form, canDelete: checked as boolean })}
+                  checked={form.canDelete || (hasWildcardPerms?.canDelete ?? false)}
+                  disabled={!form.subject || !form.project || (hasWildcardPerms?.canDelete ?? false)}
+                  onCheckedChange={(checked) => setForm({ ...form, canDelete: checked as boolean, canView: checked ? true : form.canView })}
                 />
                 <label
                   htmlFor="canDelete"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  Can delete
+                  Can delete{hasWildcardPerms?.canDelete ? ' (granted by All Projects)' : ''}
                 </label>
               </div>
             </div>
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-start">
             <Button
               type="submit"
-              disabled={!form.subject || !form.app || !hasSelectedActions || isSubmitting}
+              disabled={!form.subject || !form.project || !hasSelectedActions || isSubmitting}
             >
               <IconCheck className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Saving...' : 'Save Permissions'}

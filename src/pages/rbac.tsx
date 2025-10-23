@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconClose, IconAdd } from 'obra-icons-react'
+import { IconLock, IconUser, IconClose, IconAdd, IconDelete } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
 import { useAccounts, useRBACConfig, useUpdateRBACConfig, useCreateAccount } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
@@ -109,42 +109,72 @@ export function RBACPage() {
   // Get all project names
   const projects = (projectsData?.items || []).map(project => project.metadata.name)
 
-  // Function to check if user has specific permission for an app
-  const hasPermission = (subject: string, action: string, project: string, appName: string): boolean => {
+  // Function to check if user has specific permission for a project
+  const hasPermission = (subject: string, action: string, project: string): boolean => {
     const policies = getPoliciesForSubject(parsedRBAC.policies, subject)
 
     return policies.some(policy => {
       if (policy.action !== action && policy.action !== '*') return false
       if (policy.resource !== 'applications' && policy.resource !== '*') return false
-      return policyMatchesApp(policy, project, appName)
+      return policyMatchesApp(policy, project, '*')
     })
   }
 
-  // Get user-facing capabilities for an app
-  const getCapabilities = (subject: string, project: string, appName: string): AppCapabilities => {
+  // Get user-facing capabilities for a project
+  const getCapabilities = (subject: string, project: string): AppCapabilities => {
     const policies = getPoliciesForSubject(parsedRBAC.policies, subject)
 
-    // Check for wildcards (full access)
+    // Check for wildcards (full access) - only if action is truly '*' or resource is '*'
     const hasWildcard = policies.some(p =>
-      p.resource === '*' || (p.resource === 'applications' && p.action === '*' && policyMatchesApp(p, project, appName))
+      (p.resource === '*' || (p.resource === 'applications' && p.action === '*')) && policyMatchesApp(p, project, '*')
     )
 
-    if (hasWildcard) {
-      return {
-        canView: true,
-        canDeploy: true,
-        canRollback: true,
-        canDelete: true,
-        isFullAccess: true,
-      }
-    }
+    const canView = hasWildcard || hasPermission(subject, 'get', project)
+    const canDeploy = hasWildcard || hasPermission(subject, 'sync', project)
+    const canRollback = hasWildcard || hasPermission(subject, 'action/*', project) || hasPermission(subject, 'action', project)
+    const canDelete = hasWildcard || hasPermission(subject, 'delete', project)
+
+    // Only mark as full access if they have ALL permissions
+    const isFullAccess = canView && canDeploy && canRollback && canDelete
 
     return {
-      canView: hasPermission(subject, 'get', project, appName),
-      canDeploy: hasPermission(subject, 'sync', project, appName),
-      canRollback: hasPermission(subject, 'action/*', project, appName) || hasPermission(subject, 'action', project, appName),
-      canDelete: hasPermission(subject, 'delete', project, appName),
-      isFullAccess: false,
+      canView,
+      canDeploy,
+      canRollback,
+      canDelete,
+      isFullAccess,
+    }
+  }
+
+  // Get capabilities from ONLY the wildcard (*/*) policies
+  const getWildcardOnlyCapabilities = (subject: string): AppCapabilities => {
+    const policies = getPoliciesForSubject(parsedRBAC.policies, subject)
+
+    // Only consider policies with object = '*/*'
+    const wildcardPolicies = policies.filter(p => p.object === '*/*')
+
+    const hasWildcardAction = wildcardPolicies.some(p =>
+      p.resource === '*' || (p.resource === 'applications' && p.action === '*')
+    )
+
+    const hasAction = (action: string) => wildcardPolicies.some(p =>
+      (p.action === action || p.action === '*') &&
+      (p.resource === 'applications' || p.resource === '*')
+    )
+
+    const canView = hasWildcardAction || hasAction('get')
+    const canDeploy = hasWildcardAction || hasAction('sync')
+    const canRollback = hasWildcardAction || hasAction('action/*') || hasAction('action')
+    const canDelete = hasWildcardAction || hasAction('delete')
+
+    const isFullAccess = canView && canDeploy && canRollback && canDelete
+
+    return {
+      canView,
+      canDeploy,
+      canRollback,
+      canDelete,
+      isFullAccess,
     }
   }
 
@@ -226,7 +256,7 @@ export function RBACPage() {
   }
 
   // Handler to add new permissions (batch)
-  const handleAddPermissions = async (policies: CasbinPolicy[]) => {
+  const handleAddPermissions = async (policies: CasbinPolicy[], replaceFor?: { subject: string; project: string }) => {
     if (!rbacData) {
       console.error('No RBAC data available')
       return
@@ -235,8 +265,32 @@ export function RBACPage() {
     console.log('handleAddPermissions called with:', policies)
     console.log('Current policies count:', parsedRBAC.policies.length)
 
-    // Add all new policies to existing policies
-    const updatedPolicies = [...parsedRBAC.policies, ...policies]
+    let updatedPolicies: CasbinPolicy[]
+
+    if (replaceFor) {
+      // Remove existing policies for this user/project combination
+      const policyObject = replaceFor.project === '*' ? '*/*' : `${replaceFor.project}/*`
+
+      console.log(`Replacing policies for subject=${replaceFor.subject}, object=${policyObject}`)
+
+      // Filter out policies that match this subject and project
+      updatedPolicies = parsedRBAC.policies.filter(policy => {
+        const isMatchingSubject = policy.subject === replaceFor.subject
+        const isMatchingObject = policy.object === policyObject
+
+        // Keep policy if it doesn't match both subject and object
+        return !(isMatchingSubject && isMatchingObject)
+      })
+
+      console.log(`Filtered out ${parsedRBAC.policies.length - updatedPolicies.length} existing policies`)
+
+      // Add new policies
+      updatedPolicies = [...updatedPolicies, ...policies]
+    } else {
+      // Just append new policies (legacy behavior)
+      updatedPolicies = [...parsedRBAC.policies, ...policies]
+    }
+
     const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
 
     console.log('Updated policies count:', updatedPolicies.length)
@@ -248,6 +302,35 @@ export function RBACPage() {
     })
 
     console.log('Mutation complete')
+  }
+
+  // Handler to clear all permissions for a user
+  const handleClearPermissions = async (subject: string) => {
+    if (!rbacData) {
+      console.error('No RBAC data available')
+      return
+    }
+
+    try {
+      // Filter out all policies for this user
+      const updatedPolicies = parsedRBAC.policies.filter(policy => policy.subject !== subject)
+      const updatedPolicyCsv = generatePolicyCsv(updatedPolicies)
+
+      await updateRBACMutation.mutateAsync({
+        ...rbacData,
+        policy: updatedPolicyCsv,
+      })
+
+      toast.success('Permissions cleared', {
+        description: `All permissions for ${subject} have been removed`,
+      })
+
+      // Close the panel
+      setSelectedUser(null)
+    } catch (error) {
+      console.error('Failed to clear permissions:', error)
+      toast.error('Failed to clear permissions')
+    }
   }
 
   return (
@@ -445,15 +528,28 @@ export function RBACPage() {
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-black dark:text-white">Permissions for {selectedUser}</h2>
-                      <p className="text-sm text-neutral-600 dark:text-neutral-400">What this user can do across applications</p>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">What this user can do across projects</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedUser(null)}
-                    className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                  >
-                    <IconClose size={20} />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {selectedUser !== 'admin' && selectedUserPolicies.length > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleClearPermissions(selectedUser)}
+                        disabled={updateRBACMutation.isPending}
+                      >
+                        <IconDelete className="h-4 w-4 mr-2" />
+                        Clear Permissions
+                      </Button>
+                    )}
+                    <button
+                      onClick={() => setSelectedUser(null)}
+                      className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
+                    >
+                      <IconClose size={20} />
+                    </button>
+                  </div>
                 </div>
 
                 {/* Content */}
@@ -477,53 +573,95 @@ export function RBACPage() {
                       </div>
                     ) : (
                       <>
-                        {/* Check if user has any app permissions */}
-                        {apps.filter(app => {
-                          const caps = getCapabilities(selectedUser, app.project, app.name)
-                          return caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
-                        }).length === 0 ? (
-                          /* Blank state */
-                          <div className="flex flex-col items-center justify-center py-12 text-center">
-                            <IconLock size={48} className="text-neutral-300 dark:text-neutral-700 mb-4" />
-                            <h3 className="text-lg font-medium text-black dark:text-white mb-2">No permissions set</h3>
-                            <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
-                              This user doesn't have permissions for any applications yet. Use "Set Permissions" above to grant access.
-                            </p>
-                          </div>
-                        ) : (
-                          /* Capabilities summary */
-                          <div className="grid gap-3">
-                            {apps.map((app, i) => {
-                              const caps = getCapabilities(selectedUser, app.project, app.name)
-                              const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                        {/* Check if user has any project permissions */}
+                        {(() => {
+                          // Check for all projects wildcard
+                          const hasAllProjects = selectedUserPolicies.some(p => p.object === '*/*')
 
-                              if (!hasAnyAccess) return null
+                          // Get capabilities from ONLY wildcard policies
+                          const wildcardCaps = hasAllProjects ? getWildcardOnlyCapabilities(selectedUser) : null
 
-                              return (
-                                <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
-                                  <div className="flex-1">
-                                    <div className="font-medium text-sm mb-1">{app.name}</div>
-                                    <div className="text-xs text-neutral-500 mb-2">{app.project}</div>
-                                    <div className="flex flex-wrap gap-2">
-                                      {caps.isFullAccess ? (
-                                        <Badge>Full Access</Badge>
-                                      ) : (
-                                        <>
-                                          {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
-                                            <Badge variant="outline">Can view</Badge>
-                                          )}
-                                          {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
-                                          {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
-                                          {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
-                                        </>
+                          // Get projects with permissions
+                          let projectsWithPermissions: string[] = []
+
+                          if (hasAllProjects) {
+                            // Always show "All Projects"
+                            projectsWithPermissions.push('*')
+
+                            // Also show individual projects if they have ADDITIONAL permissions beyond wildcard
+                            projects.forEach(project => {
+                              const projectCaps = getCapabilities(selectedUser, project)
+                              const hasAdditionalPerms = wildcardCaps && (
+                                (!wildcardCaps.canView && projectCaps.canView) ||
+                                (!wildcardCaps.canDeploy && projectCaps.canDeploy) ||
+                                (!wildcardCaps.canRollback && projectCaps.canRollback) ||
+                                (!wildcardCaps.canDelete && projectCaps.canDelete)
+                              )
+                              if (hasAdditionalPerms) {
+                                projectsWithPermissions.push(project)
+                              }
+                            })
+                          } else {
+                            // No wildcard, show all projects with any permissions
+                            projectsWithPermissions = projects.filter(project => {
+                              const caps = getCapabilities(selectedUser, project)
+                              return caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                            })
+                          }
+
+                          if (projectsWithPermissions.length === 0) {
+                            return (
+                              /* Blank state */
+                              <div className="flex flex-col items-center justify-center py-12 text-center">
+                                <IconLock size={48} className="text-neutral-300 dark:text-neutral-700 mb-4" />
+                                <h3 className="text-lg font-medium text-black dark:text-white mb-2">No permissions set</h3>
+                                <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
+                                  This user doesn't have permissions for any projects yet. Use "Set Permissions" above to grant access.
+                                </p>
+                              </div>
+                            )
+                          }
+
+                          return (
+                            /* Capabilities summary */
+                            <div className="grid gap-3">
+                              {projectsWithPermissions.map((project, i) => {
+                                const isAllProjects = project === '*'
+                                const caps = getCapabilities(selectedUser, project)
+                                const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+
+                                if (!hasAnyAccess) return null
+
+                                return (
+                                  <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
+                                    <div className="flex-1">
+                                      <div className="font-medium text-sm mb-1">
+                                        {isAllProjects ? 'All Projects' : project}
+                                      </div>
+                                      {isAllProjects && (
+                                        <div className="text-xs text-neutral-500 mb-2">Applies to all current and future projects</div>
                                       )}
+                                      <div className="flex flex-wrap gap-2">
+                                        {caps.isFullAccess ? (
+                                          <Badge>Full Access</Badge>
+                                        ) : (
+                                          <>
+                                            {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
+                                              <Badge variant="outline">Can view</Badge>
+                                            )}
+                                            {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
+                                            {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
+                                            {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
+                                          </>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        )}
+                                )
+                              })}
+                            </div>
+                          )
+                        })()}
                       </>
                     )}
 

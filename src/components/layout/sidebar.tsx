@@ -35,6 +35,12 @@ const navItems = [
     color: "#3b82f6", // blue
   },
   {
+    title: "Projects",
+    href: "/projects",
+    icon: IconFolder,
+    color: "#f59e0b", // amber
+  },
+  {
     title: "Repositories",
     href: "/repositories",
     icon: IconCodeBranch,
@@ -47,15 +53,10 @@ const navItems = [
     color: "#10b981", // green
   },
   {
-    title: "Projects",
-    href: "/projects",
-    icon: IconFolder,
-    color: "#f59e0b", // amber
-  },
-  {
     title: "RBAC",
     href: "/rbac",
     icon: IconLock,
+    color: "#ef4444", // red
     requiresFeature: 'rbac' as const, // Requires enterprise license
   },
 ];
