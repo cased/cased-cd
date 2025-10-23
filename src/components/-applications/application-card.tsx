@@ -4,7 +4,6 @@ import {
   IconClock3,
   IconCircleForward,
   IconCircleInfo,
-  IconArrowRightUp,
 } from "obra-icons-react";
 import { Badge } from "@/components/ui/badge";
 import { getHealthIcon } from "@/lib/status-icons";
@@ -42,10 +41,6 @@ export function ApplicationCard({
             <h3 className="text-sm font-medium text-card-foreground truncate">
               {app.metadata.name}
             </h3>
-            <IconArrowRightUp
-              size={12}
-              className="text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-            />
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
             <span className="truncate">
@@ -96,7 +91,7 @@ export function ApplicationCard({
       {/* Footer */}
       <div className="flex items-center justify-between pt-2 border-t border-border">
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <IconClock3 size={11} />
+          <IconClock3 size={14} />
           <span>
             {app.status?.reconciledAt
               ? formatDistanceToNow(new Date(app.status.reconciledAt), {
@@ -131,7 +126,7 @@ export function ApplicationCard({
               e.stopPropagation();
               onRefresh(app.metadata.name);
             }}
-            className="text-muted-foreground hover:text-background transition-colors"
+            className="text-muted-foreground hover:text-foreground transition-colors"
             title="Refresh application"
           >
             <IconCircleInfo size={14} />
