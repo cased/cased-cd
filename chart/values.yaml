@@ -26,6 +26,24 @@ argocd:
   # Default assumes ArgoCD is installed in the 'argocd' namespace
   server: "http://argocd-server.argocd.svc.cluster.local:80"
 
+# RBAC Proxy for enterprise ConfigMap updates
+rbacProxy:
+  # Enable RBAC proxy (required for RBAC permission editing)
+  enabled: true
+  # Number of replicas
+  replicaCount: 1
+  image:
+    repository: ghcr.io/cased/cased-cd-enterprise
+    pullPolicy: IfNotPresent
+    tag: ""
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
 service:
   # Service type (ClusterIP, NodePort, LoadBalancer)
   type: ClusterIP

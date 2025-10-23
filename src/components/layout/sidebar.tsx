@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
+import { useHasFeature } from "@/services/license";
 import {
   IconGrid,
   IconSettings,
@@ -8,6 +9,7 @@ import {
   IconCodeBranch,
   IconLayers,
   IconFolder,
+  IconLock,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -33,6 +35,12 @@ const navItems = [
     color: "#3b82f6", // blue
   },
   {
+    title: "Projects",
+    href: "/projects",
+    icon: IconFolder,
+    color: "#f59e0b", // amber
+  },
+  {
     title: "Repositories",
     href: "/repositories",
     icon: IconCodeBranch,
@@ -45,10 +53,11 @@ const navItems = [
     color: "#10b981", // green
   },
   {
-    title: "Projects",
-    href: "/projects",
-    icon: IconFolder,
-    color: "#f59e0b", // amber
+    title: "RBAC",
+    href: "/rbac",
+    icon: IconLock,
+    color: "#ef4444", // red
+    requiresFeature: 'rbac' as const, // Requires enterprise license
   },
 ];
 
@@ -56,6 +65,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const hasRBAC = useHasFeature('rbac');
+
+  // Filter nav items based on license
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.requiresFeature) return true;
+    if (item.requiresFeature === 'rbac') return hasRBAC;
+    return false;
+  });
 
   const handleLogout = () => {
     logout();
@@ -74,7 +91,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = location.pathname.startsWith(item.href);
 

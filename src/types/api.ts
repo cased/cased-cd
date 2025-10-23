@@ -362,3 +362,56 @@ export interface RollbackRequest {
   dryRun?: boolean
   appNamespace?: string
 }
+
+export interface AccountList {
+  items: Account[]
+}
+
+// Casbin Policy Types
+export type PolicyEffect = 'allow' | 'deny'
+export type PolicyType = 'p' | 'g' // p = policy, g = group
+
+export interface CasbinPolicy {
+  type: PolicyType
+  subject: string // user, role, or group
+  resource?: string // applications, clusters, etc.
+  action?: string // get, create, sync, etc.
+  object?: string // project/app pattern, e.g., "*/*, "my-project/*"
+  effect?: PolicyEffect
+  role?: string // for group assignments (type 'g')
+}
+
+export interface RBACConfig {
+  policy: string // raw policy.csv content
+  policyDefault?: string // default policy
+  scopes?: string
+}
+
+export interface ParsedRBACConfig {
+  policies: CasbinPolicy[]
+  defaultPolicy?: string
+  raw: string
+}
+
+// Permission check request/response
+export interface CanIRequest {
+  resource: string // applications, clusters, etc.
+  action: string // get, sync, delete, etc.
+  subresource?: string // project/app, e.g., "my-project/my-app"
+}
+
+export interface CanIResponse {
+  value: string // "yes" or "no"
+}
+
+// Licensing
+export type LicenseTier = 'free' | 'enterprise'
+
+export type FeatureFlag = 'rbac' | 'audit' | 'sso'
+
+export interface License {
+  tier: LicenseTier
+  features: FeatureFlag[]
+  expiresAt?: string // ISO date string
+  organization?: string
+}

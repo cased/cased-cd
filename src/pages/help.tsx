@@ -11,8 +11,11 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconCheck,
+  IconShieldCheck,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
+import { useIsEnterprise } from '@/services/license'
+import { Button } from '@/components/ui/button'
 
 interface GuideSection {
   id: string
@@ -215,6 +218,7 @@ const resources = [
 
 export function HelpPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('getting-started')
+  const isEnterprise = useIsEnterprise()
 
   return (
     <div className="flex flex-col h-full">
@@ -265,38 +269,6 @@ export function HelpPage() {
             </div>
           </div>
 
-          {/* ArgoCD Concepts */}
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold text-black dark:text-white mb-3">ArgoCD Concepts</h2>
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
-              <div className="space-y-3 text-sm">
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">What is GitOps?</h4>
-                  <p className="text-neutral-700 dark:text-neutral-300">
-                    GitOps uses Git as the single source of truth for declarative infrastructure and applications. When you commit changes to Git, ArgoCD automatically deploys them to your cluster.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">Sync Status</h4>
-                  <ul className="space-y-1 text-neutral-700 dark:text-neutral-300">
-                    <li><strong className="text-green-600 dark:text-green-400">Synced</strong> - Cluster matches Git</li>
-                    <li><strong className="text-amber-600 dark:text-amber-400">Out of Sync</strong> - Git has changes not yet deployed</li>
-                    <li><strong className="text-neutral-600 dark:text-neutral-400">Unknown</strong> - Unable to determine sync status</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">Health Status</h4>
-                  <ul className="space-y-1 text-neutral-700 dark:text-neutral-300">
-                    <li><strong className="text-green-600 dark:text-green-400">Healthy</strong> - All resources are running properly</li>
-                    <li><strong className="text-blue-600 dark:text-blue-400">Progressing</strong> - Deployment in progress</li>
-                    <li><strong className="text-red-600 dark:text-red-400">Degraded</strong> - Some resources are failing</li>
-                    <li><strong className="text-amber-600 dark:text-amber-400">Suspended</strong> - Application is paused</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Resources */}
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-black dark:text-white mb-3">External Resources</h2>
@@ -336,10 +308,10 @@ export function HelpPage() {
               <div className="flex-1">
                 <h3 className="font-medium text-sm text-black dark:text-white mb-1 flex items-center gap-2">
                   <IconCheck size={16} className="text-green-600 dark:text-green-400" />
-                  You're using Cased CD
+                  You're using Cased CD {isEnterprise ? 'Enterprise' : ''}
                 </h3>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
-                  A modern, open-source UI for ArgoCD
+                  A modern UI for ArgoCD
                 </p>
                 <a
                   href="https://cased.com"
@@ -352,11 +324,56 @@ export function HelpPage() {
                 </a>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold text-black dark:text-white font-mono">v0.1.0</div>
+                <div className="text-lg font-semibold text-black dark:text-white font-mono">v0.1.4</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Latest</div>
               </div>
             </div>
           </div>
+
+          {/* Enterprise Upsell - Only show for free tier */}
+          {!isEnterprise && (
+            <div className="mt-4 rounded border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <IconShieldCheck size={20} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm text-black dark:text-white mb-1">
+                    Upgrade to Cased CD Enterprise
+                  </h3>
+                  <p className="text-xs text-neutral-700 dark:text-neutral-300 mb-3">
+                    Get advanced features for teams managing production deployments at scale
+                  </p>
+                  <ul className="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300 mb-3">
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>RBAC Management</strong> - Granular per-app permissions</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>SSO Integration</strong> - OIDC/SAML authentication</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>Audit Logging</strong> - Complete deployment history</span>
+                    </li>
+                  </ul>
+                  <a
+                    href="https://cased.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      View Enterprise Features
+                    </Button>
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -7,6 +7,12 @@ const PORT = 8080
 app.use(cors())
 app.use(express.json())
 
+// Log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`)
+  next()
+})
+
 // Mock session/login endpoint
 app.post('/api/v1/session', (req, res) => {
   const { username, password } = req.body
@@ -812,6 +818,147 @@ spec:
       },
     ],
   })
+})
+
+// Mock accounts list endpoint
+app.get('/api/v1/account', (req, res) => {
+  res.json({
+    items: [
+      {
+        name: 'admin',
+        enabled: true,
+        capabilities: ['login', 'apiKey'],
+        tokens: []
+      },
+      {
+        name: 'dev-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      },
+      {
+        name: 'ops-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      },
+      {
+        name: 'readonly-user',
+        enabled: true,
+        capabilities: ['login'],
+        tokens: []
+      }
+    ]
+  })
+})
+
+// Mock can-i permission check endpoint (with subresource)
+app.get('/api/v1/account/can-i/:resource/:action/:subresource', (req, res) => {
+  const { resource, action, subresource } = req.params
+  const token = req.headers.authorization
+
+  // Simple mock logic: admin can do everything
+  if (token && token.includes('admin')) {
+    res.json({ value: 'yes' })
+  } else {
+    // Non-admin users have limited permissions
+    if (action === 'get') {
+      res.json({ value: 'yes' })
+    } else if (action === 'sync' && subresource?.includes('dev')) {
+      res.json({ value: 'yes' })
+    } else {
+      res.json({ value: 'no' })
+    }
+  }
+})
+
+// Mock can-i permission check endpoint (without subresource)
+app.get('/api/v1/account/can-i/:resource/:action', (req, res) => {
+  const { resource, action } = req.params
+  const token = req.headers.authorization
+
+  // Simple mock logic: admin can do everything
+  if (token && token.includes('admin')) {
+    res.json({ value: 'yes' })
+  } else {
+    // Non-admin users have limited permissions
+    if (action === 'get') {
+      res.json({ value: 'yes' })
+    } else {
+      res.json({ value: 'no' })
+    }
+  }
+})
+
+// Mock license endpoint
+app.get('/api/v1/license', (req, res) => {
+  // For demo, return enterprise license with all features
+  // In production, this would call app.cased.com to validate
+
+  // Enterprise tier (default for demo)
+  res.json({
+    tier: 'enterprise',
+    features: ['rbac', 'audit', 'sso'],
+    organization: 'Demo Organization',
+    // expiresAt: '2025-12-31T23:59:59Z' // Optional expiration
+  })
+
+  // Uncomment to test free tier (no RBAC access)
+  // res.json({
+  //   tier: 'free',
+  //   features: [], // Free tier has no advanced features
+  //   organization: 'Demo Organization',
+  // })
+})
+
+// In-memory RBAC config store
+let rbacConfig = {
+  policy: `# Admin has full access
+p, admin, *, *, */*, allow
+p, role:admin, *, *, */*, allow
+
+# Dev user can sync dev apps
+p, dev-user, applications, get, */*, allow
+p, dev-user, applications, sync, default/guestbook, allow
+p, dev-user, applications, sync, default/helm-guestbook, allow
+
+# Ops user can rollback production apps
+p, ops-user, applications, get, */*, allow
+p, ops-user, applications, action/*, production/*, allow
+
+# Readonly user can only view
+p, readonly-user, applications, get, */*, allow
+p, readonly-user, clusters, get, */*, allow
+p, readonly-user, repositories, get, */*, allow
+
+# Group assignments
+g, admin, role:admin`,
+  policyDefault: 'role:readonly',
+  scopes: '[groups, email]'
+}
+
+// Mock RBAC configuration endpoint - GET
+app.get('/api/v1/settings/rbac', (req, res) => {
+  res.json(rbacConfig)
+})
+
+// Mock RBAC configuration endpoint - PUT (update)
+app.put('/api/v1/settings/rbac', (req, res) => {
+  const { policy, policyDefault, scopes } = req.body
+
+  console.log('📝 Updating RBAC config...')
+  console.log('Received policy length:', policy?.length || 0)
+
+  // Update the in-memory config
+  if (policy !== undefined) rbacConfig.policy = policy
+  if (policyDefault !== undefined) rbacConfig.policyDefault = policyDefault
+  if (scopes !== undefined) rbacConfig.scopes = scopes
+
+  console.log('✅ RBAC config updated')
+  console.log('New policy length:', rbacConfig.policy?.length || 0)
+
+  // Return the updated config
+  res.json(rbacConfig)
 })
 
 app.listen(PORT, () => {
