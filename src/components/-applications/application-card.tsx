@@ -83,14 +83,14 @@ export function ApplicationCard({
       </div>
 
       {/* Repository */}
-      <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-2 px-3">
+      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-3">
         <IconCodeBranch size={12} className="text-muted-foreground" />
         <span className="truncate">{app.spec.source.repoURL}</span>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-2 border-t border-border px-3 pb-3">
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+      <div className="flex items-center justify-between border-t border-border p-3">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <IconClock3 size={14} />
           <span>
             {app.status?.reconciledAt
@@ -99,38 +99,6 @@ export function ApplicationCard({
                 })
               : "Never synced"}
           </span>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (!isSyncing) {
-                onSync(app.metadata.name);
-              }
-            }}
-            disabled={isSyncing}
-            className={`transition-colors ${
-              isSyncing
-                ? "text-blue-400 cursor-not-allowed"
-                : "text-muted-foreground hover:text-blue-400"
-            }`}
-            title={isSyncing ? "Syncing in progress..." : "Sync application"}
-          >
-            <IconCircleForward
-              size={14}
-              className={isSyncing ? "animate-spin" : ""}
-            />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRefresh(app.metadata.name);
-            }}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            title="Refresh application"
-          >
-            <IconCircleInfo size={14} />
-          </button>
         </div>
       </div>
     </Link>
