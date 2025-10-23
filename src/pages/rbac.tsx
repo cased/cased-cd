@@ -88,11 +88,11 @@ export function RBACPage() {
   }
 
   if (accountsError) {
-    return <ErrorAlert error={accountsError} message="Failed to load accounts" />
+    return <ErrorAlert error={accountsError} title="Failed to load accounts" />
   }
 
   if (rbacError) {
-    return <ErrorAlert error={rbacError} message="Failed to load RBAC configuration" />
+    return <ErrorAlert error={rbacError} title="Failed to load RBAC configuration" />
   }
 
   const accounts = accountsData?.items || []
@@ -302,18 +302,10 @@ export function RBACPage() {
         }
       />
 
-      <div
-        className="flex-1 overflow-auto p-6"
-        onClick={(e) => {
-          // Deselect user when clicking outside the table
-          if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.deselect-area')) {
-            setSelectedUser(null)
-          }
-        }}
-      >
-        <div className="max-w-7xl mx-auto space-y-6 deselect-area">
+      <div className="flex-1 overflow-auto p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
           {/* Summary Card */}
-          <Card onClick={(e) => e.stopPropagation()}>
+          <Card>
             <CardHeader>
               <CardTitle>Permission Summary</CardTitle>
               <CardDescription>
@@ -413,88 +405,112 @@ export function RBACPage() {
             </CardContent>
           </Card>
 
-          {/* User Permissions Detail */}
+          {/* User Permissions Panel */}
           {selectedUser && (
-            <Card onClick={(e) => e.stopPropagation()}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>Permissions for {selectedUser}</CardTitle>
-                    <CardDescription>
-                      What this user can do across applications
-                    </CardDescription>
+            <div className="fixed inset-0 z-50">
+              {/* Backdrop */}
+              <div className="fixed inset-0 bg-black/50" onClick={() => setSelectedUser(null)} />
+
+              {/* Panel */}
+              <div className="fixed right-0 top-0 bottom-0 w-full max-w-2xl bg-white dark:bg-black border-l border-neutral-200 dark:border-neutral-800 flex flex-col animate-in slide-in-from-right duration-300">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 dark:border-neutral-800">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
+                      <IconUser size={16} className="text-neutral-600 dark:text-neutral-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-black dark:text-white">Permissions for {selectedUser}</h2>
+                      <p className="text-sm text-neutral-600 dark:text-neutral-400">What this user can do across applications</p>
+                    </div>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
+                  <button
                     onClick={() => setSelectedUser(null)}
-                    className="h-8 w-8 p-0"
+                    className="text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                   >
-                    <IconClose className="h-4 w-4" />
-                  </Button>
+                    <IconClose size={20} />
+                  </button>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Capabilities summary */}
-                  <div className="grid gap-3">
-                    {apps.map((app, i) => {
+
+                {/* Content */}
+                <div className="flex-1 overflow-auto p-6">
+                  <div className="space-y-4">
+                    {/* Check if user has any app permissions */}
+                    {apps.filter(app => {
                       const caps = getCapabilities(selectedUser, app.project, app.name)
-                      const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                      return caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                    }).length === 0 ? (
+                      /* Blank state */
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <IconLock size={48} className="text-neutral-300 dark:text-neutral-700 mb-4" />
+                        <h3 className="text-lg font-medium text-black dark:text-white mb-2">No permissions set</h3>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
+                          This user doesn't have permissions for any applications yet. Use "Set Permissions" above to grant access.
+                        </p>
+                      </div>
+                    ) : (
+                      /* Capabilities summary */
+                      <div className="grid gap-3">
+                        {apps.map((app, i) => {
+                          const caps = getCapabilities(selectedUser, app.project, app.name)
+                          const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
 
-                      if (!hasAnyAccess) return null
+                          if (!hasAnyAccess) return null
 
-                      return (
-                        <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
-                          <div className="flex-1">
-                            <div className="font-medium text-sm mb-1">{app.name}</div>
-                            <div className="flex flex-wrap gap-2">
-                              {caps.isFullAccess ? (
-                                <Badge>Full Access</Badge>
-                              ) : (
-                                <>
-                                  {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
-                                    <Badge variant="outline">View only</Badge>
+                          return (
+                            <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
+                              <div className="flex-1">
+                                <div className="font-medium text-sm mb-1">{app.name}</div>
+                                <div className="text-xs text-neutral-500 mb-2">{app.project}</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {caps.isFullAccess ? (
+                                    <Badge>Full Access</Badge>
+                                  ) : (
+                                    <>
+                                      {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
+                                        <Badge variant="outline">View only</Badge>
+                                      )}
+                                      {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
+                                      {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
+                                      {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
+                                    </>
                                   )}
-                                  {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
-                                  {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
-                                  {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  {/* Casbin policy details (expandable) */}
-                  {selectedUserPolicies.length > 0 && (
-                    <Accordion type="single" collapsible>
-                      <AccordionItem value="casbin">
-                        <AccordionTrigger className="text-sm">
-                          Casbin Policies ({selectedUserPolicies.length})
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-2 pt-2">
-                            {selectedUserPolicies.map((policy, i) => (
-                              <div key={i} className="flex items-center gap-2 text-sm p-2 rounded bg-neutral-50 dark:bg-neutral-900">
-                                <Badge variant={policy.effect === 'allow' ? 'default' : 'destructive'} className="text-xs">
-                                  {policy.effect}
-                                </Badge>
-                                <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                                  {policy.resource}/{policy.action} on {policy.object}
-                                </span>
+                                </div>
                               </div>
-                            ))}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    </Accordion>
-                  )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+
+                    {/* Casbin policy details (expandable) */}
+                    {selectedUserPolicies.length > 0 && (
+                      <Accordion type="single" collapsible>
+                        <AccordionItem value="casbin">
+                          <AccordionTrigger className="text-sm">
+                            Casbin Policies ({selectedUserPolicies.length})
+                          </AccordionTrigger>
+                          <AccordionContent>
+                            <div className="space-y-2 pt-2">
+                              {selectedUserPolicies.map((policy, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm p-2 rounded bg-neutral-50 dark:bg-neutral-900">
+                                  <Badge variant={policy.effect === 'allow' ? 'default' : 'destructive'} className="text-xs">
+                                    {policy.effect}
+                                  </Badge>
+                                  <span className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                                    {policy.resource}/{policy.action} on {policy.object}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      </Accordion>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           )}
         </div>
       </div>
