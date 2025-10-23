@@ -269,38 +269,6 @@ export function HelpPage() {
             </div>
           </div>
 
-          {/* ArgoCD Concepts */}
-          <div className="mb-6">
-            <h2 className="text-sm font-semibold text-black dark:text-white mb-3">ArgoCD Concepts</h2>
-            <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
-              <div className="space-y-3 text-sm">
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">What is GitOps?</h4>
-                  <p className="text-neutral-700 dark:text-neutral-300">
-                    GitOps uses Git as the single source of truth for declarative infrastructure and applications. When you commit changes to Git, ArgoCD automatically deploys them to your cluster.
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">Sync Status</h4>
-                  <ul className="space-y-1 text-neutral-700 dark:text-neutral-300">
-                    <li><strong className="text-green-600 dark:text-green-400">Synced</strong> - Cluster matches Git</li>
-                    <li><strong className="text-amber-600 dark:text-amber-400">Out of Sync</strong> - Git has changes not yet deployed</li>
-                    <li><strong className="text-neutral-600 dark:text-neutral-400">Unknown</strong> - Unable to determine sync status</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium text-black dark:text-white mb-1">Health Status</h4>
-                  <ul className="space-y-1 text-neutral-700 dark:text-neutral-300">
-                    <li><strong className="text-green-600 dark:text-green-400">Healthy</strong> - All resources are running properly</li>
-                    <li><strong className="text-blue-600 dark:text-blue-400">Progressing</strong> - Deployment in progress</li>
-                    <li><strong className="text-red-600 dark:text-red-400">Degraded</strong> - Some resources are failing</li>
-                    <li><strong className="text-amber-600 dark:text-amber-400">Suspended</strong> - Application is paused</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Resources */}
           <div className="mb-6">
             <h2 className="text-sm font-semibold text-black dark:text-white mb-3">External Resources</h2>
