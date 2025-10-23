@@ -16,7 +16,6 @@ import {
 import { PageHeader } from '@/components/page-header'
 import { useIsEnterprise } from '@/services/license'
 import { Button } from '@/components/ui/button'
-import { useNavigate } from 'react-router-dom'
 
 interface GuideSection {
   id: string
@@ -220,7 +219,6 @@ const resources = [
 export function HelpPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('getting-started')
   const isEnterprise = useIsEnterprise()
-  const navigate = useNavigate()
 
   return (
     <div className="flex flex-col h-full">
@@ -392,13 +390,18 @@ export function HelpPage() {
                       <span><strong>Audit Logging</strong> - Complete deployment history</span>
                     </li>
                   </ul>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate('/accounts')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  <a
+                    href="https://cased.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    View Enterprise Features
-                  </Button>
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      View Enterprise Features
+                    </Button>
+                  </a>
                 </div>
               </div>
             </div>
