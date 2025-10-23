@@ -3,7 +3,6 @@ import {
   IconCodeBranch,
   IconClock3,
   IconCircleForward,
-  IconCircleInfo,
 } from "obra-icons-react";
 import { Badge } from "@/components/ui/badge";
 import { getHealthIcon } from "@/lib/status-icons";
@@ -13,15 +12,11 @@ import { Link } from "react-router-dom";
 
 interface ApplicationCardProps {
   app: Application;
-  onRefresh: (name: string) => void;
-  onSync: (name: string) => void;
+  onRefresh?: (name: string) => void;
+  onSync?: (name: string) => void;
 }
 
-export function ApplicationCard({
-  app,
-  onRefresh,
-  onSync,
-}: ApplicationCardProps) {
+export function ApplicationCard({ app }: ApplicationCardProps) {
   const healthStatus = app.status?.health?.status || "Unknown";
   const syncStatus = app.status?.sync?.status || "Unknown";
   const operationPhase = app.status?.operationState?.phase;

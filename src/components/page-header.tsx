@@ -1,4 +1,4 @@
-import type { ComponentType, ReactNode } from 'react';
+import type { ComponentType, ReactNode } from "react";
 
 interface PageHeaderProps {
   title: string;
@@ -8,14 +8,23 @@ interface PageHeaderProps {
   action?: ReactNode;
 }
 
-export function PageHeader({ title, description, subtitle, icon: Icon, action }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  subtitle,
+  icon: Icon,
+  action,
+}: PageHeaderProps) {
   return (
     <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-      <div className="px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
           {Icon && (
             <div className="h-8 w-8 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
-              <Icon className="text-neutral-600 dark:text-neutral-400" size={16} />
+              <Icon
+                className="text-neutral-600 dark:text-neutral-400"
+                size={16}
+              />
             </div>
           )}
           <div>
