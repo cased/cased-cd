@@ -62,6 +62,7 @@ export function RBACPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [usernameError, setUsernameError] = useState('')
 
   const { data: accountsData, isLoading: loadingAccounts, error: accountsError } = useAccounts()
   const { data: rbacData, isLoading: loadingRBAC, error: rbacError } = useRBACConfig()
@@ -152,8 +153,39 @@ export function RBACPage() {
     : []
 
   // Handler to create new user
+  const validateUsername = (username: string): string => {
+    if (!username) {
+      return 'Username is required'
+    }
+    if (username.length < 3) {
+      return 'Username must be at least 3 characters'
+    }
+    if (username.length > 63) {
+      return 'Username must be less than 63 characters'
+    }
+    // Kubernetes ConfigMap keys can contain alphanumeric, '-', '_', '.'
+    // But start/end with alphanumeric for safety
+    if (!/^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$/.test(username)) {
+      return 'Username must start and end with alphanumeric, and contain only letters, numbers, hyphens, underscores, or periods'
+    }
+    return ''
+  }
+
+  const handleUsernameChange = (value: string) => {
+    setNewUsername(value)
+    const error = validateUsername(value)
+    setUsernameError(error)
+  }
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    // Validate username before submission
+    const error = validateUsername(newUsername)
+    if (error) {
+      setUsernameError(error)
+      return
+    }
 
     try {
       await createAccountMutation.mutateAsync({
@@ -166,6 +198,7 @@ export function RBACPage() {
       setShowCreateDialog(false)
       setNewUsername('')
       setNewPassword('')
+      setUsernameError('')
     } catch (error) {
       console.error('Failed to create account:', error)
     }
@@ -224,10 +257,17 @@ export function RBACPage() {
                     <Input
                       id="username"
                       value={newUsername}
-                      onChange={(e) => setNewUsername(e.target.value)}
-                      placeholder="Enter username"
+                      onChange={(e) => handleUsernameChange(e.target.value)}
+                      placeholder="alice"
                       required
+                      className={usernameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
                     />
+                    {usernameError && (
+                      <p className="text-sm text-red-500">{usernameError}</p>
+                    )}
+                    <p className="text-xs text-neutral-500">
+                      Letters, numbers, hyphens, underscores, or periods. Must start and end with alphanumeric.
+                    </p>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="password">Password</Label>
@@ -251,7 +291,7 @@ export function RBACPage() {
                   </Button>
                   <Button
                     type="submit"
-                    disabled={createAccountMutation.isPending}
+                    disabled={createAccountMutation.isPending || !!usernameError || !newUsername || !newPassword}
                   >
                     {createAccountMutation.isPending ? 'Creating...' : 'Create User'}
                   </Button>

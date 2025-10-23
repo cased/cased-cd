@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"golang.org/x/crypto/bcrypt"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -224,6 +225,21 @@ func (h *Handler) createAccount(ctx context.Context, w http.ResponseWriter, r *h
 	// Validate input
 	if req.Name == "" {
 		http.Error(w, "Account name is required", http.StatusBadRequest)
+		return
+	}
+	if len(req.Name) < 3 {
+		http.Error(w, "Account name must be at least 3 characters", http.StatusBadRequest)
+		return
+	}
+	if len(req.Name) > 63 {
+		http.Error(w, "Account name must be less than 63 characters", http.StatusBadRequest)
+		return
+	}
+	// Validate username format: alphanumeric, hyphens, underscores, periods
+	// Must start and end with alphanumeric
+	matched, _ := regexp.MatchString(`^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$`, req.Name)
+	if !matched {
+		http.Error(w, "Account name must start and end with alphanumeric, and contain only letters, numbers, hyphens, underscores, or periods", http.StatusBadRequest)
 		return
 	}
 	if req.Password == "" {
