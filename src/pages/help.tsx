@@ -11,8 +11,12 @@ import {
   IconChevronDown,
   IconChevronRight,
   IconCheck,
+  IconSparkle,
 } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
+import { useIsEnterprise } from '@/services/license'
+import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
 
 interface GuideSection {
   id: string
@@ -215,6 +219,8 @@ const resources = [
 
 export function HelpPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>('getting-started')
+  const isEnterprise = useIsEnterprise()
+  const navigate = useNavigate()
 
   return (
     <div className="flex flex-col h-full">
@@ -336,10 +342,10 @@ export function HelpPage() {
               <div className="flex-1">
                 <h3 className="font-medium text-sm text-black dark:text-white mb-1 flex items-center gap-2">
                   <IconCheck size={16} className="text-green-600 dark:text-green-400" />
-                  You're using Cased CD
+                  You're using Cased CD {isEnterprise ? 'Enterprise' : ''}
                 </h3>
                 <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-2">
-                  A modern, open-source UI for ArgoCD
+                  A modern UI for ArgoCD
                 </p>
                 <a
                   href="https://cased.com"
@@ -357,6 +363,46 @@ export function HelpPage() {
               </div>
             </div>
           </div>
+
+          {/* Enterprise Upsell - Only show for free tier */}
+          {!isEnterprise && (
+            <div className="mt-4 rounded border border-blue-200 dark:border-blue-800 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-4">
+              <div className="flex items-start gap-3">
+                <div className="h-10 w-10 rounded bg-blue-600 flex items-center justify-center flex-shrink-0">
+                  <IconSparkle size={20} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-sm text-black dark:text-white mb-1">
+                    Upgrade to Cased CD Enterprise
+                  </h3>
+                  <p className="text-xs text-neutral-700 dark:text-neutral-300 mb-3">
+                    Get advanced features for teams managing production deployments at scale
+                  </p>
+                  <ul className="space-y-1.5 text-xs text-neutral-700 dark:text-neutral-300 mb-3">
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>RBAC Management</strong> - Granular per-app permissions</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>SSO Integration</strong> - OIDC/SAML authentication</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <IconCheck size={14} className="text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      <span><strong>Audit Logging</strong> - Complete deployment history</span>
+                    </li>
+                  </ul>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate('/accounts')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    View Enterprise Features
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
