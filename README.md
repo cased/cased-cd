@@ -309,12 +309,36 @@ To stop the servers:
 
 ### Testing with Real ArgoCD
 
-To test against a real ArgoCD instance:
+For a complete local ArgoCD setup with seed data:
 
 ```bash
-# Prerequisites: Docker Desktop must be running
-./scripts/setup-argocd.sh   # Setup local k3d cluster with ArgoCD
-npm run dev:real            # Start Vite with real ArgoCD API
+./scripts/dev-start-real.sh
+```
+
+This will:
+- ✅ Check Docker Desktop is running
+- 🏗️ Create k3d cluster with ArgoCD
+- 🌱 Seed with test data (3 apps, 3 repos, 2 clusters)
+- 🔐 Display admin credentials
+- 🌐 Start Vite dev server
+
+**What you get:**
+- Real ArgoCD running locally in k3d
+- 3 sample applications (guestbook variants)
+- 3 repositories (ArgoCD examples, Kubernetes examples, Bitnami Helm)
+- 2 mock clusters (staging, production)
+- Full GitOps workflow testing
+
+To tear down when done:
+```bash
+./scripts/teardown-argocd.sh
+```
+
+**Manual Setup** (if you prefer step-by-step):
+```bash
+./scripts/setup-argocd.sh    # Setup k3d cluster with ArgoCD
+./scripts/seed-argocd.sh     # Add test data
+npm run dev:real             # Start Vite with real ArgoCD API
 ./scripts/teardown-argocd.sh # Cleanup when done
 ```
 
