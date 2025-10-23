@@ -18,6 +18,7 @@ import { ProjectsPage } from './pages/projects'
 import { UserInfoPage } from './pages/user-info'
 import { HelpPage } from './pages/help'
 import { RBACPage } from './pages/rbac'
+import NotificationsPage from './pages/notifications'
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
                 <Route path="applications/:name/settings" element={<ApplicationSettingsPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="rbac" element={<RBACPage />} />
+                <Route path="notifications" element={<NotificationsPage />} />
                 <Route path="accounts" element={<AccountsPage />} />
                 <Route path="certificates" element={<CertificatesPage />} />
                 <Route path="gpgkeys" element={<GPGKeysPage />} />
