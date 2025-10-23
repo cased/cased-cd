@@ -329,6 +329,19 @@ This will:
 - 2 mock clusters (staging, production)
 - Full GitOps workflow testing
 
+**Getting the admin password:**
+
+The script displays the password when it runs and saves it to `.argocd-credentials`. If you need to retrieve it later:
+
+```bash
+# Option 1: Read from saved credentials file
+cat .argocd-credentials
+
+# Option 2: Get directly from Kubernetes secret
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
 To tear down when done:
 ```bash
 ./scripts/teardown-argocd.sh
