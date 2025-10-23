@@ -21,7 +21,7 @@ const notificationsApi = {
     // For now, use a custom endpoint that wraps kubectl
     // In the future, this could use ArgoCD's settings API or a custom backend endpoint
     const response = await api.get<NotificationsConfigMap>(
-      '/api/v1/notifications/config'
+      '/notifications/config'
     )
 
     const configMap = response.data
