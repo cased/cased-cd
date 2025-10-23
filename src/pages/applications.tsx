@@ -17,10 +17,8 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { ApplicationCard } from "@/components/-applications/application-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export function ApplicationsPage() {
-  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [showCreatePanel, setShowCreatePanel] = useState(false);
   const { data, isLoading, error, refetch } = useApplications();

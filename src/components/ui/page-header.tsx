@@ -20,7 +20,7 @@ export function PageHeader({
           <div>
             <PageTitle>{title}</PageTitle>
             {description && (
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
+              <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
                 {description}
               </p>
             )}
