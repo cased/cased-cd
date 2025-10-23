@@ -27,6 +27,11 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true,
       },
+      // Proxy notifications requests to local RBAC proxy (reads argocd-notifications-cm)
+      '/api/v1/notifications': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
       // All other API requests go to real ArgoCD (or mock if VITE_USE_REAL_API not set)
       '/api/v1': {
         target: process.env.VITE_USE_REAL_API ? 'http://localhost:8090' : 'http://localhost:8080',

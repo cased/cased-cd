@@ -407,7 +407,7 @@ export interface CanIResponse {
 // Licensing
 export type LicenseTier = 'free' | 'enterprise'
 
-export type FeatureFlag = 'rbac' | 'audit' | 'sso'
+export type FeatureFlag = 'rbac' | 'audit' | 'sso' | 'notifications'
 
 export interface License {
   tier: LicenseTier

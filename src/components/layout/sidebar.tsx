@@ -54,7 +54,7 @@ const navItems = [
     color: "#10b981", // green
   },
   {
-    title: "RBAC",
+    title: "Permissions",
     href: "/rbac",
     icon: IconLock,
     color: "#ef4444", // red
@@ -65,6 +65,7 @@ const navItems = [
     href: "/notifications",
     icon: IconBill,
     color: "#ec4899", // pink
+    requiresFeature: 'notifications' as const, // Requires enterprise license
   },
 ];
 
@@ -73,11 +74,13 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const hasRBAC = useHasFeature('rbac');
+  const hasNotifications = useHasFeature('notifications');
 
   // Filter nav items based on license
   const visibleNavItems = navItems.filter(item => {
     if (!item.requiresFeature) return true;
     if (item.requiresFeature === 'rbac') return hasRBAC;
+    if (item.requiresFeature === 'notifications') return hasNotifications;
     return false;
   });
 

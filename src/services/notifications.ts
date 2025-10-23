@@ -18,9 +18,10 @@ export const notificationKeys = {
 const notificationsApi = {
   // Get the notifications ConfigMap
   getNotificationsConfig: async (): Promise<NotificationsConfig> => {
-    // Access via ArgoCD's Kubernetes API proxy
+    // For now, use a custom endpoint that wraps kubectl
+    // In the future, this could use ArgoCD's settings API or a custom backend endpoint
     const response = await api.get<NotificationsConfigMap>(
-      '/api/v1/clusters/in-cluster/api/v1/namespaces/argocd/configmaps/argocd-notifications-cm'
+      '/api/v1/notifications/config'
     )
 
     const configMap = response.data
@@ -58,36 +59,8 @@ const notificationsApi = {
 
   // Update the notifications ConfigMap
   updateNotificationsConfig: async (config: NotificationsConfig): Promise<void> => {
-    // First, get the current ConfigMap to preserve metadata
-    const currentResponse = await api.get<NotificationsConfigMap>(
-      '/api/v1/clusters/in-cluster/api/v1/namespaces/argocd/configmaps/argocd-notifications-cm'
-    )
-
-    const configMap = currentResponse.data
-
-    // Rebuild data object from structured config
-    const data: Record<string, string> = {}
-
-    config.services.forEach((service) => {
-      data[`service.${service.name}`] = service.config
-    })
-
-    config.templates.forEach((template) => {
-      data[`template.${template.name}`] = template.config
-    })
-
-    config.triggers.forEach((trigger) => {
-      data[`trigger.${trigger.name}`] = trigger.config
-    })
-
-    // Update ConfigMap
-    await api.put(
-      '/api/v1/clusters/in-cluster/api/v1/namespaces/argocd/configmaps/argocd-notifications-cm',
-      {
-        ...configMap,
-        data,
-      }
-    )
+    // Use custom endpoint that wraps kubectl
+    await api.put('/api/v1/notifications/config', config)
   },
 }
 

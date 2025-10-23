@@ -87,7 +87,7 @@ func main() {
 		req.Host = argoCDURL.Host
 	}
 
-	// Proxy all /api/* requests (except /api/v1/settings/*) to ArgoCD
+	// Proxy all /api/* requests (except /api/v1/settings/* and /api/v1/notifications/*) to ArgoCD
 	http.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
 		// Handle RBAC endpoints directly (don't proxy to ArgoCD)
 		if r.URL.Path == "/api/v1/settings/rbac" {
@@ -96,6 +96,10 @@ func main() {
 		}
 		if r.URL.Path == "/api/v1/settings/accounts" {
 			handler.handleAccount(w, r)
+			return
+		}
+		if r.URL.Path == "/api/v1/notifications/config" {
+			handler.handleNotifications(w, r)
 			return
 		}
 
@@ -405,4 +409,43 @@ func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *h
 		"name":    accountName,
 		"message": "Account deleted successfully",
 	})
+}
+
+func (h *Handler) handleNotifications(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	ctx := context.Background()
+
+	switch r.Method {
+	case "GET":
+		h.getNotifications(ctx, w, r)
+	case "PUT":
+		h.updateNotifications(ctx, w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) getNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(configMap)
+}
+
+func (h *Handler) updateNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// This will be implemented when we add edit functionality
+	http.Error(w, "Not implemented yet", http.StatusNotImplemented)
 }
