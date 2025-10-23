@@ -214,6 +214,29 @@ Enterprise customers receive an additional backend component for advanced featur
 
 ## Troubleshooting
 
+### Local Development: 404 Errors or RBAC Failures
+
+If you're getting 404 errors or RBAC configuration failures in local development, your kubectl context may be pointing to the wrong cluster.
+
+**Fix:**
+```bash
+# 1. Check current context
+kubectl config current-context
+
+# 2. Switch to k3d cluster
+kubectl config use-context k3d-cased-cd
+
+# 3. Restart port-forward (nginx expects this on port 9000)
+kubectl port-forward svc/argocd-server -n argocd 9000:80 &
+
+# 4. Restart RBAC proxy (if using enterprise features)
+cd backend
+lsof -ti:8081 | xargs kill
+./rbac-proxy &
+```
+
+**Common cause**: Switching between production and local k3d clusters without restarting dependent services.
+
 ### Can't connect to ArgoCD
 
 **Check the ArgoCD server URL:**
