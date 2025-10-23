@@ -213,7 +213,7 @@ export function PermissionEditor({
                   htmlFor="canView"
                   className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
-                  View only
+                  Can view
                 </label>
               </div>
               <div className="flex items-center space-x-2">
