@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { IconAdd } from 'obra-icons-react'
+import { IconCheck } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
@@ -299,8 +299,8 @@ export function PermissionEditor({
               type="submit"
               disabled={!form.subject || !form.app || !hasSelectedActions || isSubmitting}
             >
-              <IconAdd className="h-4 w-4 mr-2" />
-              {isSubmitting ? 'Setting...' : 'Set Permissions'}
+              <IconCheck className="h-4 w-4 mr-2" />
+              {isSubmitting ? 'Saving...' : 'Save Permissions'}
             </Button>
           </div>
         </form>
