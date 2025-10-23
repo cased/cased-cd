@@ -336,7 +336,7 @@ export function RBACPage() {
             <CardContent>
               <div className="grid grid-cols-3 gap-4">
                 <div>
-                  <div className="text-2xl font-bold">{accounts.length}</div>
+                  <div className="text-2xl font-bold">{accounts.filter(a => a.name !== 'admin').length}</div>
                   <div className="text-sm text-neutral-600 dark:text-neutral-400">Total Users</div>
                 </div>
                 <div>
@@ -383,44 +383,46 @@ export function RBACPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {accounts.map((account) => {
-                    const isSelected = selectedUser === account.name
-                    const policyCount = getPoliciesForSubject(parsedRBAC.policies, account.name).length
+                  {accounts
+                    .filter(account => account.name !== 'admin') // Filter out built-in admin account
+                    .map((account) => {
+                      const isSelected = selectedUser === account.name
+                      const policyCount = getPoliciesForSubject(parsedRBAC.policies, account.name).length
 
-                    return (
-                      <TableRow
-                        key={account.name}
-                        className={`cursor-pointer transition-colors ${
-                          isSelected
-                            ? 'bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
-                            : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
-                        }`}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedUser(isSelected ? null : account.name)
-                        }}
-                      >
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <IconUser size={16} className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'} />
-                            <span className={`font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : ''}`}>
-                              {account.name}
+                      return (
+                        <TableRow
+                          key={account.name}
+                          className={`cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
+                              : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setSelectedUser(isSelected ? null : account.name)
+                          }}
+                        >
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <IconUser size={16} className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'} />
+                              <span className={`font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : ''}`}>
+                                {account.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={account.enabled ? 'default' : 'outline'} className="text-xs">
+                              {account.enabled ? 'Enabled' : 'Disabled'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <span className={`text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100 font-medium' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                              {policyCount} {policyCount === 1 ? 'policy' : 'policies'}
                             </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={account.enabled ? 'default' : 'outline'} className="text-xs">
-                            {account.enabled ? 'Enabled' : 'Disabled'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100 font-medium' : 'text-neutral-600 dark:text-neutral-400'}`}>
-                            {policyCount} {policyCount === 1 ? 'policy' : 'policies'}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    )
-                  })}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                 </TableBody>
               </Table>
             </CardContent>

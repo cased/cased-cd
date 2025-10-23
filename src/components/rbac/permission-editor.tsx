@@ -151,11 +151,13 @@ export function PermissionEditor({
                 <SelectValue placeholder="Select a user" />
               </SelectTrigger>
               <SelectContent>
-                {accounts.map((account) => (
-                  <SelectItem key={account.name} value={account.name}>
-                    {account.name}
-                  </SelectItem>
-                ))}
+                {accounts
+                  .filter(account => account.name !== 'admin') // Filter out built-in admin account
+                  .map((account) => (
+                    <SelectItem key={account.name} value={account.name}>
+                      {account.name}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
