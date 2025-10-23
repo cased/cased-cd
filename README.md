@@ -236,6 +236,53 @@ The nginx proxy isn't working correctly. Check:
 
 See **[DEPLOY.md](DEPLOY.md)** for more troubleshooting tips.
 
+## Building from Source
+
+Cased CD uses a unified multi-stage Dockerfile that produces both standard and enterprise images from a single build process.
+
+### Build Standard Image (Free Tier)
+
+```bash
+./scripts/build-standard.sh [version]
+```
+
+This builds the standard image containing:
+- React frontend
+- nginx web server
+- ArgoCD API proxy
+
+**Output**: `ghcr.io/cased/cased-cd:latest`
+
+### Build Enterprise Image
+
+```bash
+./scripts/build-enterprise.sh [version]
+```
+
+This builds the enterprise image containing:
+- React frontend
+- Go backend (RBAC + user management)
+- Static file server
+
+**Output**: `ghcr.io/cased/cased-cd-enterprise:latest`
+
+### Multi-stage Build Architecture
+
+The Dockerfile uses 4 stages:
+
+1. **frontend-builder** - Builds React app (shared by both images)
+2. **standard** - nginx + React (standard tier)
+3. **backend-builder** - Builds Go binary (enterprise only)
+4. **enterprise** - Go + React (enterprise tier)
+
+### Enterprise Requirements
+
+The enterprise image requires:
+- Kubernetes RBAC permissions to read/write ConfigMaps and Secrets in `argocd` namespace
+- Access to private container registry (credentials serve as license validation)
+
+Contact support@cased.com for enterprise access.
+
 ## Support
 
 - **Website**: [cased.com](https://cased.com)

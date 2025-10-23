@@ -4,34 +4,49 @@ import type { License, FeatureFlag } from '@/types/api'
 
 // API endpoints
 const ENDPOINTS = {
-  license: '/license',
+  rbacCheck: '/settings/rbac', // Check if RBAC endpoint exists to detect enterprise
 }
 
 // Query keys
 export const licenseKeys = {
   all: ['license'] as const,
   detail: () => [...licenseKeys.all, 'detail'] as const,
+  enterpriseCheck: () => [...licenseKeys.all, 'enterprise-check'] as const,
 }
 
 // API methods
 export const licenseApi = {
-  // Get license information
-  getLicense: async (): Promise<License> => {
-    const response = await api.get<License>(ENDPOINTS.license)
-    return response.data
+  // Check if enterprise features are available by checking RBAC endpoint
+  checkEnterprise: async (): Promise<License> => {
+    try {
+      // Try to access the RBAC endpoint - only available in enterprise
+      await api.get(ENDPOINTS.rbacCheck)
+
+      // If successful, return enterprise license
+      return {
+        tier: 'enterprise',
+        features: ['rbac', 'sso', 'audit-logs'],
+      }
+    } catch (error) {
+      // If endpoint doesn't exist (404) or any other error, return standard license
+      return {
+        tier: 'standard',
+        features: [],
+      }
+    }
   },
 }
 
 // React Query Hooks
 
-// Get license information
+// Get license information (enterprise detection via RBAC endpoint check)
 export function useLicense() {
   return useQuery({
-    queryKey: licenseKeys.detail(),
-    queryFn: () => licenseApi.getLicense(),
-    staleTime: 5 * 60 * 1000, // 5 minutes - cache license info
-    gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 3, // Retry on failure since license is critical
+    queryKey: licenseKeys.enterpriseCheck(),
+    queryFn: () => licenseApi.checkEnterprise(),
+    staleTime: Infinity, // Cache forever - tier doesn't change during session
+    gcTime: Infinity,
+    retry: false, // Don't retry - a 404 is expected for standard tier
   })
 }
 

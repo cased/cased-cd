@@ -42,17 +42,10 @@ describe('License Service', () => {
     </QueryClientProvider>
   )
 
-  describe('licenseApi.getLicense', () => {
-    it('should fetch license information successfully', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac', 'audit', 'sso'],
-        organization: 'Test Org',
-        expiresAt: '2025-12-31T23:59:59Z',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+  describe('licenseApi.checkEnterprise', () => {
+    it('should return enterprise license when RBAC endpoint is accessible', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -61,29 +54,31 @@ describe('License Service', () => {
 
       vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
 
-      const result = await licenseApi.getLicense()
+      const result = await licenseApi.checkEnterprise()
 
-      expect(api.get).toHaveBeenCalledWith('/license')
-      expect(result).toEqual(mockLicense)
+      expect(api.get).toHaveBeenCalledWith('/settings/rbac')
+      expect(result).toEqual({
+        tier: 'enterprise',
+        features: ['rbac', 'sso', 'audit-logs'],
+      })
     })
 
-    it('should throw error on API failure', async () => {
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('API Error'))
+    it('should return standard license when RBAC endpoint is not accessible', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
-      await expect(licenseApi.getLicense()).rejects.toThrow('API Error')
+      const result = await licenseApi.checkEnterprise()
+
+      expect(result).toEqual({
+        tier: 'standard',
+        features: [],
+      })
     })
   })
 
   describe('useLicense', () => {
-    it('should fetch and cache license data', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac', 'audit'],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+    it('should detect enterprise tier when RBAC endpoint exists', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -96,13 +91,30 @@ describe('License Service', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-      expect(result.current.data).toEqual(mockLicense)
+      expect(result.current.data).toEqual({
+        tier: 'enterprise',
+        features: ['rbac', 'sso', 'audit-logs'],
+      })
       expect(api.get).toHaveBeenCalledTimes(1)
+      expect(api.get).toHaveBeenCalledWith('/settings/rbac')
+    })
+
+    it('should detect standard tier when RBAC endpoint does not exist', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
+
+      const { result } = renderHook(() => useLicense(), { wrapper })
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+      expect(result.current.data).toEqual({
+        tier: 'standard',
+        features: [],
+      })
     })
 
     it('should return loading state initially', () => {
-      const mockResponse: AxiosResponse<License> = {
-        data: { tier: 'free', features: [] },
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -116,55 +128,12 @@ describe('License Service', () => {
       expect(result.current.isLoading).toBe(true)
       expect(result.current.data).toBeUndefined()
     })
-
-    it('should handle error state', async () => {
-      // Mock failures for initial attempt + 3 retries
-      const error = new Error('Failed to fetch')
-      vi.mocked(api.get).mockRejectedValue(error)
-
-      const { result } = renderHook(() => useLicense(), { wrapper })
-
-      // Wait for retries with exponential backoff (1s, 2s, 4s)
-      await waitFor(
-        () => expect(result.current.isError).toBe(true),
-        { timeout: 10000 } // Allow time for all retries with backoff
-      )
-
-      expect(result.current.error).toBeTruthy()
-      expect(result.current.data).toBeUndefined()
-    }, 15000) // Set test timeout to 15s
-
-    it('should retry on failure', async () => {
-      // Mock 4 failures: initial attempt + 3 retries
-      vi.mocked(api.get)
-        .mockRejectedValueOnce(new Error('Fail 1'))
-        .mockRejectedValueOnce(new Error('Fail 2'))
-        .mockRejectedValueOnce(new Error('Fail 3'))
-        .mockRejectedValueOnce(new Error('Fail 4'))
-
-      const { result } = renderHook(() => useLicense(), { wrapper })
-
-      // Wait for all retries with exponential backoff
-      await waitFor(
-        () => expect(result.current.isError).toBe(true),
-        { timeout: 10000 } // Allow time for all retries with backoff
-      )
-
-      // Should retry 3 times as configured
-      expect(api.get).toHaveBeenCalledTimes(4) // Initial + 3 retries
-    }, 15000) // Set test timeout to 15s
   })
 
   describe('useHasFeature', () => {
-    it('should return true when feature exists in license', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac', 'audit', 'sso'],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+    it('should return true when feature exists in enterprise tier', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -181,22 +150,8 @@ describe('License Service', () => {
       )
     })
 
-    it('should return false when feature does not exist', async () => {
-      const mockLicense: License = {
-        tier: 'free',
-        features: [],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as never },
-      }
-
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
+    it('should return false when feature does not exist in standard tier', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
 
@@ -211,24 +166,18 @@ describe('License Service', () => {
       expect(result.current).toBe(false)
     })
 
-    it('should return false on license fetch error', async () => {
-      vi.mocked(api.get).mockRejectedValueOnce(new Error('Failed to fetch'))
+    it('should return false on endpoint check failure', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
 
-      // Should return false even when there's an error
+      // Should return false when RBAC endpoint is not accessible (standard tier)
       await waitFor(() => expect(result.current).toBe(false))
     })
 
-    it('should check different features correctly', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac', 'sso'], // Note: no 'audit'
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+    it('should check different features correctly in enterprise tier', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -238,14 +187,14 @@ describe('License Service', () => {
       vi.mocked(api.get).mockResolvedValue(mockResponse)
 
       const { result: rbacResult } = renderHook(() => useHasFeature('rbac'), { wrapper })
-      const { result: auditResult } = renderHook(() => useHasFeature('audit'), { wrapper })
       const { result: ssoResult } = renderHook(() => useHasFeature('sso'), { wrapper })
+      const { result: auditResult } = renderHook(() => useHasFeature('audit-logs'), { wrapper })
 
       await waitFor(
         () => {
           expect(rbacResult.current).toBe(true)
-          expect(auditResult.current).toBe(false)
           expect(ssoResult.current).toBe(true)
+          expect(auditResult.current).toBe(true)
         },
         { timeout: 3000 }
       )
@@ -253,15 +202,9 @@ describe('License Service', () => {
   })
 
   describe('useIsEnterprise', () => {
-    it('should return true for enterprise tier', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac'],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+    it('should return true when RBAC endpoint exists', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -275,22 +218,8 @@ describe('License Service', () => {
       await waitFor(() => expect(result.current).toBe(true))
     })
 
-    it('should return false for free tier', async () => {
-      const mockLicense: License = {
-        tier: 'free',
-        features: [],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as never },
-      }
-
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
+    it('should return false when RBAC endpoint does not exist', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useIsEnterprise(), { wrapper })
 
@@ -307,15 +236,9 @@ describe('License Service', () => {
   })
 
   describe('Caching behavior', () => {
-    it('should cache license data for 5 minutes', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac'],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
+    it('should cache enterprise detection result forever', async () => {
+      const mockResponse: AxiosResponse = {
+        data: {},
         status: 200,
         statusText: 'OK',
         headers: {},
@@ -338,71 +261,44 @@ describe('License Service', () => {
   })
 
   describe('Edge Cases', () => {
-    it('should handle license with no organization', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac'],
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as never },
-      }
-
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
-
-      const { result } = renderHook(() => useLicense(), { wrapper })
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data?.organization).toBeUndefined()
-    })
-
-    it('should handle license with no expiration', async () => {
-      const mockLicense: License = {
-        tier: 'enterprise',
-        features: ['rbac'],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as never },
-      }
-
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
-
-      const { result } = renderHook(() => useLicense(), { wrapper })
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true))
-      expect(result.current.data?.expiresAt).toBeUndefined()
-    })
-
-    it('should handle empty features array', async () => {
-      const mockLicense: License = {
-        tier: 'free',
-        features: [],
-        organization: 'Test Org',
-      }
-
-      const mockResponse: AxiosResponse<License> = {
-        data: mockLicense,
-        status: 200,
-        statusText: 'OK',
-        headers: {},
-        config: { headers: {} as never },
-      }
-
-      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
+    it('should handle standard tier with empty features', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
 
       await waitFor(() => expect(result.current).toBe(false))
+    })
+
+    it('should handle network errors as standard tier', async () => {
+      vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
+
+      const { result } = renderHook(() => useLicense(), { wrapper })
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      expect(result.current.data).toEqual({
+        tier: 'standard',
+        features: [],
+      })
+    })
+
+    it('should detect enterprise even if RBAC endpoint returns empty data', async () => {
+      const mockResponse: AxiosResponse = {
+        data: null,
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: { headers: {} as never },
+      }
+
+      vi.mocked(api.get).mockResolvedValueOnce(mockResponse)
+
+      const { result } = renderHook(() => useLicense(), { wrapper })
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true))
+      expect(result.current.data).toEqual({
+        tier: 'enterprise',
+        features: ['rbac', 'sso', 'audit-logs'],
+      })
     })
   })
 })

@@ -24,11 +24,6 @@ type RBACConfig struct {
 	Scopes       string `json:"scopes,omitempty"`
 }
 
-type License struct {
-	Tier     string   `json:"tier"`
-	Features []string `json:"features"`
-}
-
 type CreateAccountRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
@@ -73,13 +68,19 @@ func main() {
 		namespace: "argocd",
 	}
 
+	// API endpoints
 	http.HandleFunc("/api/v1/settings/rbac", handler.handleRBAC)
-	http.HandleFunc("/api/v1/license", handler.handleLicense)
 	http.HandleFunc("/api/v1/settings/accounts", handler.handleAccount)
+
+	// Health check
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
+
+	// Serve static files (React build)
+	fs := http.FileServer(http.Dir("/app/dist"))
+	http.Handle("/", fs)
 
 	log.Printf("Starting RBAC proxy server on port %s", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
@@ -167,32 +168,6 @@ func (h *Handler) updateRBACConfig(ctx context.Context, w http.ResponseWriter, r
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(config)
-}
-
-func (h *Handler) handleLicense(w http.ResponseWriter, r *http.Request) {
-	// Enable CORS
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
-	if r.Method != "GET" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	// Return enterprise license for local development
-	license := License{
-		Tier:     "enterprise",
-		Features: []string{"rbac", "sso", "audit-logs"},
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(license)
 }
 
 func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
