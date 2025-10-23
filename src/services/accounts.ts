@@ -97,6 +97,14 @@ export const accountsApi = {
     const response = await api.put<RBACConfig>(ENDPOINTS.rbacConfig, config)
     return response.data
   },
+
+  // Delete account (custom Cased endpoint)
+  deleteAccount: async (name: string): Promise<{ name: string; message: string }> => {
+    const response = await api.delete<{ name: string; message: string }>(
+      `${ENDPOINTS.createAccount}?name=${name}`
+    )
+    return response.data
+  },
 }
 
 // React Query Hooks
@@ -157,6 +165,7 @@ export function useCreateToken() {
       accountsApi.createToken(name, expiresIn),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: accountKeys.detail(variables.name) })
+      queryClient.invalidateQueries({ queryKey: accountKeys.lists() })
     },
   })
 }
@@ -170,6 +179,7 @@ export function useDeleteToken() {
       accountsApi.deleteToken(name, tokenId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: accountKeys.detail(variables.name) })
+      queryClient.invalidateQueries({ queryKey: accountKeys.lists() })
     },
   })
 }
@@ -202,6 +212,19 @@ export function useUpdateRBACConfig() {
     onSuccess: () => {
       // Invalidate RBAC queries to refresh the data
       queryClient.invalidateQueries({ queryKey: accountKeys.rbac() })
+    },
+  })
+}
+
+// Delete account mutation
+export function useDeleteAccount() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (name: string) => accountsApi.deleteAccount(name),
+    onSuccess: () => {
+      // Invalidate account list to refresh accounts
+      queryClient.invalidateQueries({ queryKey: accountKeys.lists() })
     },
   })
 }

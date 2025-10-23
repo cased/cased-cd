@@ -198,7 +198,7 @@ func (h *Handler) handleLicense(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 	if r.Method == "OPTIONS" {
@@ -206,13 +206,16 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if r.Method != "POST" {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
 	ctx := context.Background()
-	h.createAccount(ctx, w, r)
+
+	switch r.Method {
+	case "POST":
+		h.createAccount(ctx, w, r)
+	case "DELETE":
+		h.deleteAccount(ctx, w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
 }
 
 func (h *Handler) createAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -319,5 +322,70 @@ func (h *Handler) createAccount(ctx context.Context, w http.ResponseWriter, r *h
 	json.NewEncoder(w).Encode(map[string]string{
 		"name":    req.Name,
 		"message": "Account created successfully",
+	})
+}
+
+func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Get account name from query parameter
+	accountName := r.URL.Query().Get("name")
+	if accountName == "" {
+		http.Error(w, "Account name is required", http.StatusBadRequest)
+		return
+	}
+
+	// Prevent deletion of admin account
+	if accountName == "admin" {
+		http.Error(w, "Cannot delete admin account", http.StatusForbidden)
+		return
+	}
+
+	// Get argocd-cm ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if account exists
+	accountKey := fmt.Sprintf("accounts.%s", accountName)
+	if _, exists := configMap.Data[accountKey]; !exists {
+		http.Error(w, "Account not found", http.StatusNotFound)
+		return
+	}
+
+	// Remove account fields from ConfigMap
+	delete(configMap.Data, accountKey)
+	enabledKey := fmt.Sprintf("accounts.%s.enabled", accountName)
+	delete(configMap.Data, enabledKey)
+
+	// Update ConfigMap
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Delete password from argocd-secret Secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-secret", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get Secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	passwordKey := fmt.Sprintf("accounts.%s.password", accountName)
+	delete(secret.Data, passwordKey)
+
+	// Update Secret
+	_, err = h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update Secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"name":    accountName,
+		"message": "Account deleted successfully",
 	})
 }

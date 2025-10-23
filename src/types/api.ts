@@ -363,20 +363,6 @@ export interface RollbackRequest {
   appNamespace?: string
 }
 
-// RBAC & Account Management
-export interface Account {
-  name: string
-  enabled: boolean
-  capabilities: string[]
-  tokens?: AccountToken[]
-}
-
-export interface AccountToken {
-  id: string
-  issuedAt: number
-  expiresAt?: number
-}
-
 export interface AccountList {
   items: Account[]
 }

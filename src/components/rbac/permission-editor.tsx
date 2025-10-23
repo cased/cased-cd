@@ -200,7 +200,7 @@ export function PermissionEditor({
 
   // Check if we're editing a specific project (not wildcard) and user has wildcard permissions
   const isEditingSpecificProject = form.project && form.project !== '*'
-  const hasWildcardPerms = isEditingSpecificProject && wildcardPermissions
+  const hasWildcardPerms = isEditingSpecificProject ? wildcardPermissions : null
 
   return (
     <Card>

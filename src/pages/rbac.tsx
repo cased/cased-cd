@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconClose, IconAdd, IconDelete } from 'obra-icons-react'
-import { PageHeader } from '@/components/page-header'
-import { useAccounts, useRBACConfig, useUpdateRBACConfig, useCreateAccount } from '@/services/accounts'
+import { IconLock, IconUser, IconClose } from 'obra-icons-react'
+import { useAccounts, useRBACConfig, useUpdateRBACConfig } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
 import { useProjects } from '@/services/projects'
 import { useHasFeature } from '@/services/license'
@@ -11,19 +10,8 @@ import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { UpgradeModal } from '@/components/upgrade-modal'
 import { toast } from 'sonner'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -60,17 +48,12 @@ export function RBACPage() {
   const hasRBAC = useHasFeature('rbac')
   const [showUpgrade, setShowUpgrade] = useState(!hasRBAC)
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
-  const [showCreateDialog, setShowCreateDialog] = useState(false)
-  const [newUsername, setNewUsername] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [usernameError, setUsernameError] = useState('')
 
   const { data: accountsData, isLoading: loadingAccounts, error: accountsError } = useAccounts()
   const { data: rbacData, isLoading: loadingRBAC, error: rbacError } = useRBACConfig()
   const { data: appsData, isLoading: loadingApps } = useApplications()
   const { data: projectsData, isLoading: loadingProjects } = useProjects()
   const updateRBACMutation = useUpdateRBACConfig()
-  const createAccountMutation = useCreateAccount()
 
   // If user doesn't have RBAC feature, show upgrade modal
   if (!hasRBAC) {
@@ -99,12 +82,6 @@ export function RBACPage() {
   const accounts = accountsData?.items || []
   const applications = appsData?.items || []
   const parsedRBAC = rbacData ? parseRBACConfig(rbacData) : { policies: [], raw: '' }
-
-  // Get unique apps for the table
-  const apps = applications.map(app => ({
-    name: app.metadata.name,
-    project: app.spec.project || 'default',
-  }))
 
   // Get all project names
   const projects = (projectsData?.items || []).map(project => project.metadata.name)
@@ -182,78 +159,6 @@ export function RBACPage() {
   const selectedUserPolicies = selectedUser
     ? getPoliciesForSubject(parsedRBAC.policies, selectedUser)
     : []
-
-  // Handler to create new user
-  const validateUsername = (username: string): string => {
-    if (!username) {
-      return 'Username is required'
-    }
-    if (username.length < 3) {
-      return 'Username must be at least 3 characters'
-    }
-    if (username.length > 63) {
-      return 'Username must be less than 63 characters'
-    }
-    // Kubernetes ConfigMap keys can contain alphanumeric, '-', '_', '.'
-    // But start/end with alphanumeric for safety
-    if (!/^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?$/.test(username)) {
-      return 'Username must start and end with alphanumeric, and contain only letters, numbers, hyphens, underscores, or periods'
-    }
-    return ''
-  }
-
-  const handleUsernameChange = (value: string) => {
-    setNewUsername(value)
-    const error = validateUsername(value)
-    setUsernameError(error)
-  }
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Validate username before submission
-    const error = validateUsername(newUsername)
-    if (error) {
-      setUsernameError(error)
-      return
-    }
-
-    try {
-      await createAccountMutation.mutateAsync({
-        name: newUsername,
-        password: newPassword,
-        enabled: true,
-      })
-
-      // Show success message
-      toast.success('User created successfully', {
-        description: `Account "${newUsername}" has been created`,
-      })
-
-      // Close dialog and reset form
-      setShowCreateDialog(false)
-      setNewUsername('')
-      setNewPassword('')
-      setUsernameError('')
-    } catch (error) {
-      console.error('Failed to create account:', error)
-      // Extract error message from the error object
-      // Axios errors have the server message in error.response.data
-      let errorMessage = 'Unknown error occurred'
-      if (typeof error === 'object' && error !== null) {
-        if ('response' in error && typeof error.response === 'object' && error.response !== null) {
-          const response = error.response as { data?: unknown }
-          errorMessage = typeof response.data === 'string' ? response.data : 'Failed to create account'
-        } else if ('message' in error) {
-          errorMessage = String(error.message)
-        }
-      }
-
-      toast.error('Failed to create user', {
-        description: errorMessage,
-      })
-    }
-  }
 
   // Handler to add new permissions (batch)
   const handleAddPermissions = async (policies: CasbinPolicy[], replaceFor?: { subject: string; project: string }) => {
@@ -335,79 +240,22 @@ export function RBACPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <PageHeader
-        icon={IconLock}
-        title="RBAC Permissions"
-        subtitle="View role-based access control permissions for users"
-        action={
-          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <IconAdd className="mr-2 h-4 w-4" />
-                Create User
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create New User</DialogTitle>
-                <DialogDescription>
-                  Create a new local user account for ArgoCD
-                </DialogDescription>
-              </DialogHeader>
-              <form onSubmit={handleCreateUser}>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="username">Username</Label>
-                    <Input
-                      id="username"
-                      value={newUsername}
-                      onChange={(e) => handleUsernameChange(e.target.value)}
-                      placeholder="alice"
-                      required
-                      className={usernameError ? 'border-red-500 focus-visible:ring-red-500' : ''}
-                    />
-                    {usernameError && (
-                      <p className="text-sm text-red-500">{usernameError}</p>
-                    )}
-                    <p className="text-xs text-neutral-500">
-                      Letters, numbers, hyphens, underscores, or periods. Must start and end with alphanumeric.
-                    </p>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter password"
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowCreateDialog(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createAccountMutation.isPending || !!usernameError || !newUsername || !newPassword}
-                  >
-                    {createAccountMutation.isPending ? 'Creating...' : 'Create User'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
-        }
-      />
+      {/* Header */}
+      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">RBAC Permissions</h1>
+              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
+                Manage role-based access control permissions for users
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <div className="flex-1 overflow-auto bg-white dark:bg-black">
+        <div className="p-4 space-y-4">
           {/* Summary Card */}
           <Card>
             <CardHeader>
@@ -437,7 +285,6 @@ export function RBACPage() {
           {/* Permission Editor */}
           <PermissionEditor
             accounts={accounts}
-            apps={apps}
             projects={projects}
             currentPolicies={parsedRBAC.policies}
             onAddPermissions={handleAddPermissions}
@@ -539,7 +386,6 @@ export function RBACPage() {
                         onClick={() => handleClearPermissions(selectedUser)}
                         disabled={updateRBACMutation.isPending}
                       >
-                        <IconDelete className="h-4 w-4 mr-2" />
                         Clear Permissions
                       </Button>
                     )}

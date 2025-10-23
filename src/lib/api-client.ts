@@ -23,8 +23,15 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
-    // Always set Content-Type to application/json for all requests
-    config.headers['Content-Type'] = 'application/json'
+    // ArgoCD 2.9.4+ requires Content-Type header for non-GET requests that have data
+    // See: https://github.com/argoproj/argo-cd/pull/16860
+    // However, DELETE requests without a body should not have Content-Type
+    const isNonGetRequest = config.method?.toLowerCase() !== 'get'
+    const hasData = config.data !== undefined && config.data !== null
+
+    if (isNonGetRequest && hasData) {
+      config.headers['Content-Type'] = 'application/json'
+    }
     config.headers['Accept'] = 'application/json'
 
     return config
@@ -66,7 +73,9 @@ export const api = {
   },
 
   delete: <T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> => {
-    return apiClient.delete<T>(url, config)
+    // Send empty JSON body with DELETE requests to satisfy ArgoCD's Content-Type requirement
+    // while avoiding 415 errors from proxies that reject DELETE with Content-Type but no body
+    return apiClient.delete<T>(url, { ...config, data: config?.data ?? {} })
   },
 }
 
