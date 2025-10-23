@@ -54,6 +54,14 @@ export function PermissionEditor({
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Track initial permissions loaded from server to detect changes
+  const [initialPermissions, setInitialPermissions] = useState<{
+    canView: boolean
+    canDeploy: boolean
+    canRollback: boolean
+    canDelete: boolean
+  } | null>(null)
+
   // Track previous subject/project to only reload permissions when they actually change
   const prevSubjectRef = useRef<string>('')
   const prevProjectRef = useRef<string>('')
@@ -91,7 +99,10 @@ export function PermissionEditor({
       return
     }
 
-    if (!subject || !project) return
+    if (!subject || !project) {
+      setInitialPermissions(null)
+      return
+    }
 
     // Get policies for this user
     const userPolicies = getPoliciesForSubject(currentPolicies, subject)
@@ -106,14 +117,21 @@ export function PermissionEditor({
       })
     }
 
-    // Update form with existing permissions
-    setForm(prev => ({
-      ...prev,
+    const loadedPermissions = {
       canView: hasPermission('get'),
       canDeploy: hasPermission('sync'),
       canRollback: hasPermission('action/*') || hasPermission('action'),
       canDelete: hasPermission('delete'),
+    }
+
+    // Update form with existing permissions
+    setForm(prev => ({
+      ...prev,
+      ...loadedPermissions,
     }))
+
+    // Store initial permissions to detect changes
+    setInitialPermissions(loadedPermissions)
 
     // Update refs to current values
     prevSubjectRef.current = subject
@@ -185,6 +203,14 @@ export function PermissionEditor({
 
       toast.success('Permissions updated successfully')
 
+      // Update initial permissions to current state so button becomes disabled
+      setInitialPermissions({
+        canView: form.canView,
+        canDeploy: form.canDeploy,
+        canRollback: form.canRollback,
+        canDelete: form.canDelete,
+      })
+
       // Don't reset user/project - keep them selected so user can see updated permissions
       // The useEffect will reload the permissions for this user/project combination
     } catch (error) {
@@ -201,6 +227,14 @@ export function PermissionEditor({
   // Check if we're editing a specific project (not wildcard) and user has wildcard permissions
   const isEditingSpecificProject = form.project && form.project !== '*'
   const hasWildcardPerms = isEditingSpecificProject ? wildcardPermissions : null
+
+  // Check if permissions have changed from initial state
+  const hasChanges = initialPermissions ? (
+    form.canView !== initialPermissions.canView ||
+    form.canDeploy !== initialPermissions.canDeploy ||
+    form.canRollback !== initialPermissions.canRollback ||
+    form.canDelete !== initialPermissions.canDelete
+  ) : true // If no initial permissions, consider it changed (new permission set)
 
   return (
     <Card>
@@ -323,7 +357,7 @@ export function PermissionEditor({
           <div className="flex justify-start">
             <Button
               type="submit"
-              disabled={!form.subject || !form.project || !hasSelectedActions || isSubmitting}
+              disabled={!form.subject || !form.project || !hasSelectedActions || !hasChanges || isSubmitting}
             >
               <IconCheck className="h-4 w-4 mr-2" />
               {isSubmitting ? 'Saving...' : 'Save Permissions'}
