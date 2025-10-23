@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { IconAdd } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -19,12 +19,14 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { getPoliciesForSubject, policyMatchesApp } from '@/lib/casbin-parser'
 import type { CasbinPolicy } from '@/types/api'
 
 interface PermissionEditorProps {
   accounts: Array<{ name: string; enabled: boolean }>
   apps: Array<{ name: string; project: string }>
   projects: string[]
+  currentPolicies: CasbinPolicy[]
   onAddPermissions: (policies: CasbinPolicy[]) => Promise<void>
 }
 
@@ -41,6 +43,7 @@ export function PermissionEditor({
   accounts,
   apps,
   projects,
+  currentPolicies,
   onAddPermissions,
 }: PermissionEditorProps) {
   const [form, setForm] = useState<PermissionForm>({
@@ -52,6 +55,35 @@ export function PermissionEditor({
     canDelete: false,
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Load existing permissions when user and app are selected
+  useEffect(() => {
+    if (!form.subject || !form.app) return
+
+    // Parse the app selection (format: "project/app" or "*/*")
+    const [project, appName] = form.app.split('/')
+
+    // Get policies for this user
+    const userPolicies = getPoliciesForSubject(currentPolicies, form.subject)
+
+    // Helper to check if user has a specific permission
+    const hasPermission = (action: string): boolean => {
+      return userPolicies.some(policy => {
+        if (policy.action !== action && policy.action !== '*') return false
+        if (policy.resource !== 'applications' && policy.resource !== '*') return false
+        return policyMatchesApp(policy, project, appName)
+      })
+    }
+
+    // Update form with existing permissions
+    setForm(prev => ({
+      ...prev,
+      canView: hasPermission('get'),
+      canDeploy: hasPermission('sync'),
+      canRollback: hasPermission('action/*') || hasPermission('action'),
+      canDelete: hasPermission('delete'),
+    }))
+  }, [form.subject, form.app, currentPolicies])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

@@ -356,6 +356,7 @@ export function RBACPage() {
             accounts={accounts}
             apps={apps}
             projects={projects}
+            currentPolicies={parsedRBAC.policies}
             onAddPermissions={handleAddPermissions}
           />
 
