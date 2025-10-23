@@ -17,9 +17,19 @@ export default defineConfig({
         target: 'http://localhost:8081',
         changeOrigin: true,
       },
-      // All other API requests go to mock server
+      // Proxy account creation to local RBAC proxy (creates users in k8s)
+      '/api/v1/settings/accounts': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      // Proxy license requests to local RBAC proxy (provides enterprise license)
+      '/api/v1/license': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+      },
+      // All other API requests go to real ArgoCD (or mock if VITE_USE_REAL_API not set)
       '/api/v1': {
-        target: 'http://localhost:8080',
+        target: process.env.VITE_USE_REAL_API ? 'http://localhost:8090' : 'http://localhost:8080',
         changeOrigin: true,
       },
     },

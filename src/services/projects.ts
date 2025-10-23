@@ -43,7 +43,7 @@ export const projectsApi = {
 
   // Create project
   createProject: async (project: Project): Promise<Project> => {
-    const response = await api.post<Project>(ENDPOINTS.projects, project)
+    const response = await api.post<Project>(ENDPOINTS.projects, { project })
     return response.data
   },
 

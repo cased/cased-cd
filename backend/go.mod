@@ -3,6 +3,7 @@ module github.com/cased/cased-cd/backend
 go 1.21
 
 require (
+	golang.org/x/crypto v0.14.0
 	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.28.3
 )

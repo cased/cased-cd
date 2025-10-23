@@ -9,8 +9,6 @@ import {
   IconCodeBranch,
   IconLayers,
   IconFolder,
-  IconServer,
-  IconBox,
   IconLock,
 } from "obra-icons-react";
 import {

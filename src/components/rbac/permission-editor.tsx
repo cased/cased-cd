@@ -24,6 +24,7 @@ import type { CasbinPolicy } from '@/types/api'
 interface PermissionEditorProps {
   accounts: Array<{ name: string; enabled: boolean }>
   apps: Array<{ name: string; project: string }>
+  projects: string[]
   onAddPermissions: (policies: CasbinPolicy[]) => Promise<void>
 }
 
@@ -39,6 +40,7 @@ interface PermissionForm {
 export function PermissionEditor({
   accounts,
   apps,
+  projects,
   onAddPermissions,
 }: PermissionEditorProps) {
   const [form, setForm] = useState<PermissionForm>({
@@ -160,17 +162,31 @@ export function PermissionEditor({
 
           {/* App Selection */}
           <div className="space-y-2">
-            <Label>Application</Label>
+            <Label>Scope</Label>
             <Select value={form.app} onValueChange={(value) => setForm({ ...form, app: value })}>
               <SelectTrigger>
-                <SelectValue placeholder="Select an application" />
+                <SelectValue placeholder="Select scope (project or app)" />
               </SelectTrigger>
               <SelectContent>
+                {/* Global wildcard */}
                 <SelectItem value="*/*">
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-xs">All Apps</Badge>
+                    <Badge variant="outline" className="text-xs">All Projects</Badge>
+                    <span className="text-xs text-neutral-500">All apps in all projects</span>
                   </div>
                 </SelectItem>
+
+                {/* Project-level wildcards */}
+                {projects.sort().map((project) => (
+                  <SelectItem key={`${project}/*`} value={`${project}/*`}>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">{project}/*</Badge>
+                      <span className="text-xs text-neutral-500">All apps in {project}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+
+                {/* Individual apps */}
                 {apps.map((app) => (
                   <SelectItem key={`${app.project}/${app.name}`} value={`${app.project}/${app.name}`}>
                     {app.name}

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { IconLock, IconUser, IconClose } from 'obra-icons-react'
+import { IconLock, IconUser, IconClose, IconAdd } from 'obra-icons-react'
 import { PageHeader } from '@/components/page-header'
-import { useAccounts, useRBACConfig, useUpdateRBACConfig } from '@/services/accounts'
+import { useAccounts, useRBACConfig, useUpdateRBACConfig, useCreateAccount } from '@/services/accounts'
 import { useApplications } from '@/services/applications'
+import { useProjects } from '@/services/projects'
 import { useHasFeature } from '@/services/license'
 import { parseRBACConfig, getPoliciesForSubject, policyMatchesApp, generatePolicyCsv } from '@/lib/casbin-parser'
 import { PermissionEditor } from '@/components/rbac/permission-editor'
@@ -10,7 +11,18 @@ import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
 import {
   Table,
   TableBody,
@@ -47,11 +59,16 @@ export function RBACPage() {
   const hasRBAC = useHasFeature('rbac')
   const [showUpgrade, setShowUpgrade] = useState(!hasRBAC)
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [newUsername, setNewUsername] = useState('')
+  const [newPassword, setNewPassword] = useState('')
 
   const { data: accountsData, isLoading: loadingAccounts, error: accountsError } = useAccounts()
   const { data: rbacData, isLoading: loadingRBAC, error: rbacError } = useRBACConfig()
   const { data: appsData, isLoading: loadingApps } = useApplications()
+  const { data: projectsData, isLoading: loadingProjects } = useProjects()
   const updateRBACMutation = useUpdateRBACConfig()
+  const createAccountMutation = useCreateAccount()
 
   // If user doesn't have RBAC feature, show upgrade modal
   if (!hasRBAC) {
@@ -65,7 +82,7 @@ export function RBACPage() {
     )
   }
 
-  if (loadingAccounts || loadingRBAC || loadingApps) {
+  if (loadingAccounts || loadingRBAC || loadingApps || loadingProjects) {
     return <LoadingSpinner />
   }
 
@@ -86,6 +103,9 @@ export function RBACPage() {
     name: app.metadata.name,
     project: app.spec.project || 'default',
   }))
+
+  // Get all project names
+  const projects = (projectsData?.items || []).map(project => project.metadata.name)
 
   // Function to check if user has specific permission for an app
   const hasPermission = (subject: string, action: string, project: string, appName: string): boolean => {
@@ -131,6 +151,26 @@ export function RBACPage() {
     ? getPoliciesForSubject(parsedRBAC.policies, selectedUser)
     : []
 
+  // Handler to create new user
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      await createAccountMutation.mutateAsync({
+        name: newUsername,
+        password: newPassword,
+        enabled: true,
+      })
+
+      // Close dialog and reset form
+      setShowCreateDialog(false)
+      setNewUsername('')
+      setNewPassword('')
+    } catch (error) {
+      console.error('Failed to create account:', error)
+    }
+  }
+
   // Handler to add new permissions (batch)
   const handleAddPermissions = async (policies: CasbinPolicy[]) => {
     if (!rbacData) {
@@ -162,6 +202,64 @@ export function RBACPage() {
         icon={IconLock}
         title="RBAC Permissions"
         subtitle="View role-based access control permissions for users"
+        action={
+          <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <IconAdd className="mr-2 h-4 w-4" />
+                Create User
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New User</DialogTitle>
+                <DialogDescription>
+                  Create a new local user account for ArgoCD
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleCreateUser}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      placeholder="Enter username"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter password"
+                      required
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowCreateDialog(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={createAccountMutation.isPending}
+                  >
+                    {createAccountMutation.isPending ? 'Creating...' : 'Create User'}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
       />
 
       <div
@@ -204,6 +302,7 @@ export function RBACPage() {
           <PermissionEditor
             accounts={accounts}
             apps={apps}
+            projects={projects}
             onAddPermissions={handleAddPermissions}
           />
 

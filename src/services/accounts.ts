@@ -8,10 +8,22 @@ export interface AccountPassword {
   currentPassword?: string
 }
 
+export interface CreateAccountRequest {
+  name: string
+  password: string
+  enabled?: boolean
+}
+
+export interface CreateAccountResponse {
+  name: string
+  message: string
+}
+
 // API endpoints
 const ENDPOINTS = {
   accounts: '/account',
   account: (name: string) => `/account/${name}`,
+  createAccount: '/settings/accounts', // Custom endpoint to create accounts
   password: '/account/password', // Password endpoint doesn't take account name
   token: (name: string) => `/account/${name}/token`,
   canI: (resource: string, action: string, subresource?: string) =>
@@ -40,6 +52,15 @@ export const accountsApi = {
   // Get single account
   getAccount: async (name: string): Promise<Account> => {
     const response = await api.get<Account>(ENDPOINTS.account(name))
+    return response.data
+  },
+
+  // Create account (custom Cased endpoint)
+  createAccount: async (request: CreateAccountRequest): Promise<CreateAccountResponse> => {
+    const response = await api.post<CreateAccountResponse>(ENDPOINTS.createAccount, {
+      ...request,
+      enabled: request.enabled ?? true,
+    })
     return response.data
   },
 
@@ -96,6 +117,20 @@ export function useAccount(name: string, enabled: boolean = true) {
     queryFn: () => accountsApi.getAccount(name),
     enabled: enabled && !!name,
     staleTime: 30 * 1000,
+  })
+}
+
+// Create account mutation
+export function useCreateAccount() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (request: CreateAccountRequest) =>
+      accountsApi.createAccount(request),
+    onSuccess: () => {
+      // Invalidate account list to show new account
+      queryClient.invalidateQueries({ queryKey: accountKeys.lists() })
+    },
   })
 }
 
