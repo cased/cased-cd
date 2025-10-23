@@ -1,123 +1,138 @@
 import { useState } from 'react'
-import { useNotificationsConfig } from '@/services/notifications'
+import { IconCircleForward, IconMessage, IconEmail, IconWebhook } from 'obra-icons-react'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { IconCircleInfo, IconBill, IconEmail, IconWebhook } from 'obra-icons-react'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { useNotificationsConfig } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 
 export default function NotificationsPage() {
-  const { data: config, isLoading, error } = useNotificationsConfig()
+  const { data: config, isLoading, error, refetch } = useNotificationsConfig()
   const [selectedTab, setSelectedTab] = useState('services')
 
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-96" />
-        </div>
-        <Skeleton className="h-96" />
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <Alert variant="destructive">
-          <IconCircleInfo size={16} />
-          <AlertDescription>
-            Failed to load notifications configuration: {error.message}
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold mb-1">Notifications</h1>
-        <p className="text-muted-foreground">
-          Configure notification services, templates, and triggers for your applications
-        </p>
+      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
+        <div className="px-6 py-3">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Notifications</h1>
+              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
+                Configure notification services, templates, and triggers for your applications
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                disabled={isLoading}
+              >
+                <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
+                Refresh
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-        <TabsList>
-          <TabsTrigger value="services">
-            Services ({config?.services.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="templates">
-            Templates ({config?.templates.length || 0})
-          </TabsTrigger>
-          <TabsTrigger value="triggers">
-            Triggers ({config?.triggers.length || 0})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Services Tab */}
-        <TabsContent value="services" className="space-y-4">
-          {config?.services.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-center">
-                  No notification services configured
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {config?.services.map((service) => (
-                <ServiceCard key={service.name} service={service} />
-              ))}
-            </div>
+      {/* Content */}
+      <div className="flex-1 overflow-auto bg-white dark:bg-black">
+        <div className="p-4">
+          {/* Loading State */}
+          {isLoading && (
+            <LoadingSpinner message="Loading notifications configuration..." />
           )}
-        </TabsContent>
 
-        {/* Templates Tab */}
-        <TabsContent value="templates" className="space-y-4">
-          {config?.templates.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-center">
-                  No notification templates configured
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {config?.templates.map((template) => (
-                <TemplateCard key={template.name} template={template} />
-              ))}
-            </div>
+          {/* Error State */}
+          {error && (
+            <ErrorAlert
+              error={error}
+              onRetry={() => refetch()}
+              title="Failed to load notifications configuration"
+              icon="close"
+              size="sm"
+            />
           )}
-        </TabsContent>
 
-        {/* Triggers Tab */}
-        <TabsContent value="triggers" className="space-y-4">
-          {config?.triggers.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-muted-foreground text-center">
-                  No notification triggers configured
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4">
-              {config?.triggers.map((trigger) => (
-                <TriggerCard key={trigger.name} trigger={trigger} />
-              ))}
-            </div>
+          {/* Notifications Content */}
+          {!isLoading && !error && config && (
+            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+              <TabsList>
+                <TabsTrigger value="services">
+                  Services ({config.services.length})
+                </TabsTrigger>
+                <TabsTrigger value="templates">
+                  Templates ({config.templates.length})
+                </TabsTrigger>
+                <TabsTrigger value="triggers">
+                  Triggers ({config.triggers.length})
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Services Tab */}
+              <TabsContent value="services" className="space-y-4 mt-4">
+                {config.services.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
+                        No notification services configured
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {config.services.map((service) => (
+                      <ServiceCard key={service.name} service={service} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Templates Tab */}
+              <TabsContent value="templates" className="space-y-4 mt-4">
+                {config.templates.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
+                        No notification templates configured
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {config.templates.map((template) => (
+                      <TemplateCard key={template.name} template={template} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Triggers Tab */}
+              <TabsContent value="triggers" className="space-y-4 mt-4">
+                {config.triggers.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
+                        No notification triggers configured
+                      </p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {config.triggers.map((trigger) => (
+                      <TriggerCard key={trigger.name} trigger={trigger} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           )}
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
     </div>
   )
 }
@@ -132,7 +147,7 @@ function ServiceCard({ service }: { service: NotificationService }) {
         <div className="flex items-center gap-3">
           {icon}
           <div className="flex-1">
-            <CardTitle className="text-lg">{service.name}</CardTitle>
+            <CardTitle className="text-base">{service.name}</CardTitle>
             <CardDescription>
               <Badge variant="secondary" className="mt-1">
                 {service.type}
@@ -142,7 +157,7 @@ function ServiceCard({ service }: { service: NotificationService }) {
         </div>
       </CardHeader>
       <CardContent>
-        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
+        <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
           <code>{service.config}</code>
         </pre>
       </CardContent>
@@ -156,12 +171,12 @@ function TemplateCard({ template }: { template: { name: string; config: string }
     <Card>
       <CardHeader>
         <div className="flex items-center gap-3">
-          <IconBill size={20} />
-          <CardTitle className="text-lg">{template.name}</CardTitle>
+          <IconMessage size={20} />
+          <CardTitle className="text-base">{template.name}</CardTitle>
         </div>
       </CardHeader>
       <CardContent>
-        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
+        <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
           <code>{template.config}</code>
         </pre>
       </CardContent>
@@ -174,10 +189,10 @@ function TriggerCard({ trigger }: { trigger: { name: string; config: string } })
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{trigger.name}</CardTitle>
+        <CardTitle className="text-base">{trigger.name}</CardTitle>
       </CardHeader>
       <CardContent>
-        <pre className="text-xs bg-muted p-3 rounded-md overflow-x-auto">
+        <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
           <code>{trigger.config}</code>
         </pre>
       </CardContent>
@@ -193,6 +208,6 @@ function getServiceIcon(type: NotificationService['type']) {
     case 'webhook':
       return <IconWebhook size={20} />
     default:
-      return <IconBill size={20} />
+      return <IconMessage size={20} />
   }
 }
