@@ -33,7 +33,7 @@ rbacProxy:
   # Number of replicas
   replicaCount: 1
   image:
-    repository: ghcr.io/cased/cased-cd-rbac-proxy
+    repository: ghcr.io/cased/cased-cd-enterprise
     pullPolicy: IfNotPresent
     tag: ""
   resources:
