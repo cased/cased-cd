@@ -306,95 +306,70 @@ export function RBACPage() {
             onAddPermissions={handleAddPermissions}
           />
 
-          {/* Permission Matrix */}
+          {/* Users List */}
           <Card onClick={(e) => e.stopPropagation()}>
             <CardHeader>
-              <CardTitle>Permission Matrix</CardTitle>
+              <CardTitle>Users</CardTitle>
               <CardDescription>
-                Click a user to view detailed permissions
+                Click a user to view their permissions
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-neutral-100 dark:bg-neutral-900">
-                      <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider sticky left-0 bg-neutral-100 dark:bg-neutral-900">
-                        User
-                      </TableHead>
-                      {apps.slice(0, 5).map((app, i) => (
-                        <TableHead key={i} className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                          {app.name}
-                        </TableHead>
-                      ))}
-                      <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                        Summary
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {accounts.map((account) => {
-                      const isSelected = selectedUser === account.name
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-neutral-100 dark:bg-neutral-900">
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      User
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                      Status
+                    </TableHead>
+                    <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider text-right">
+                      Permissions
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {accounts.map((account) => {
+                    const isSelected = selectedUser === account.name
+                    const policyCount = getPoliciesForSubject(parsedRBAC.policies, account.name).length
 
-                      return (
-                        <TableRow
-                          key={account.name}
-                          className={`cursor-pointer transition-colors ${
-                            isSelected
-                              ? 'bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
-                              : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setSelectedUser(isSelected ? null : account.name)
-                          }}
-                        >
-                          <TableCell className={`sticky left-0 ${
-                            isSelected
-                              ? 'bg-blue-50 dark:bg-blue-950'
-                              : 'bg-white dark:bg-black'
-                          }`}>
-                            <div className="flex items-center gap-2">
-                              <IconUser size={16} className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'} />
-                              <span className={`font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : ''}`}>
-                                {account.name}
-                              </span>
-                            </div>
-                          </TableCell>
-                        {apps.slice(0, 5).map((app, i) => {
-                          const caps = getCapabilities(account.name, app.project, app.name)
-                          const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
-
-                          return (
-                            <TableCell key={i}>
-                              {caps.isFullAccess ? (
-                                <Badge className="text-xs">Full Access</Badge>
-                              ) : hasAnyAccess ? (
-                                <div className="flex flex-col gap-0.5 text-xs">
-                                  {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
-                                    <span className="text-neutral-600 dark:text-neutral-400">View only</span>
-                                  )}
-                                  {caps.canDeploy && <span className="text-grass-11">Can deploy</span>}
-                                  {caps.canRollback && <span className="text-amber-600">Can rollback</span>}
-                                  {caps.canDelete && <span className="text-red-600">Can delete</span>}
-                                </div>
-                              ) : (
-                                <span className="text-neutral-400 text-xs">No access</span>
-                              )}
-                            </TableCell>
-                          )
-                        })}
-                        <TableCell className="text-center">
-                          <div className="text-xs text-neutral-600">
-                            {getPoliciesForSubject(parsedRBAC.policies, account.name).length} policies
+                    return (
+                      <TableRow
+                        key={account.name}
+                        className={`cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-blue-50 dark:bg-blue-950 hover:bg-blue-100 dark:hover:bg-blue-900'
+                            : 'hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedUser(isSelected ? null : account.name)
+                        }}
+                      >
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <IconUser size={16} className={isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-500'} />
+                            <span className={`font-medium ${isSelected ? 'text-blue-900 dark:text-blue-100' : ''}`}>
+                              {account.name}
+                            </span>
                           </div>
                         </TableCell>
+                        <TableCell>
+                          <Badge variant={account.enabled ? 'default' : 'outline'} className="text-xs">
+                            {account.enabled ? 'Enabled' : 'Disabled'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <span className={`text-sm ${isSelected ? 'text-blue-900 dark:text-blue-100 font-medium' : 'text-neutral-600 dark:text-neutral-400'}`}>
+                            {policyCount} {policyCount === 1 ? 'policy' : 'policies'}
+                          </span>
+                        </TableCell>
                       </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+                    )
+                  })}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
 
