@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -194,6 +195,11 @@ export function RBACPage() {
         enabled: true,
       })
 
+      // Show success message
+      toast.success('User created successfully', {
+        description: `Account "${newUsername}" has been created`,
+      })
+
       // Close dialog and reset form
       setShowCreateDialog(false)
       setNewUsername('')
@@ -201,6 +207,21 @@ export function RBACPage() {
       setUsernameError('')
     } catch (error) {
       console.error('Failed to create account:', error)
+      // Extract error message from the error object
+      // Axios errors have the server message in error.response.data
+      let errorMessage = 'Unknown error occurred'
+      if (typeof error === 'object' && error !== null) {
+        if ('response' in error && typeof error.response === 'object' && error.response !== null) {
+          const response = error.response as { data?: unknown }
+          errorMessage = typeof response.data === 'string' ? response.data : 'Failed to create account'
+        } else if ('message' in error) {
+          errorMessage = String(error.message)
+        }
+      }
+
+      toast.error('Failed to create user', {
+        description: errorMessage,
+      })
     }
   }
 
