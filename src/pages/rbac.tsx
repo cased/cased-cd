@@ -456,56 +456,76 @@ export function RBACPage() {
                 {/* Content */}
                 <div className="flex-1 overflow-auto p-6">
                   <div className="space-y-4">
-                    {/* Check if user has any app permissions */}
-                    {apps.filter(app => {
-                      const caps = getCapabilities(selectedUser, app.project, app.name)
-                      return caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
-                    }).length === 0 ? (
-                      /* Blank state */
+                    {/* Special handling for admin user */}
+                    {selectedUser === 'admin' ? (
                       <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <IconLock size={48} className="text-neutral-300 dark:text-neutral-700 mb-4" />
-                        <h3 className="text-lg font-medium text-black dark:text-white mb-2">No permissions set</h3>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
-                          This user doesn't have permissions for any applications yet. Use "Set Permissions" above to grant access.
+                        <div className="h-16 w-16 rounded-full bg-blue-500/10 flex items-center justify-center mb-4">
+                          <IconLock size={32} className="text-blue-500" />
+                        </div>
+                        <h3 className="text-lg font-medium text-black dark:text-white mb-2">Full Administrator</h3>
+                        <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm mb-4">
+                          The admin account has unrestricted access to all resources and cannot be limited by RBAC policies.
                         </p>
+                        <div className="rounded-md border border-blue-500/20 bg-blue-500/10 p-3 max-w-md">
+                          <p className="text-xs text-blue-400">
+                            Admin is a built-in ArgoCD account with full administrative privileges across all applications, projects, clusters, and settings.
+                          </p>
+                        </div>
                       </div>
                     ) : (
-                      /* Capabilities summary */
-                      <div className="grid gap-3">
-                        {apps.map((app, i) => {
+                      <>
+                        {/* Check if user has any app permissions */}
+                        {apps.filter(app => {
                           const caps = getCapabilities(selectedUser, app.project, app.name)
-                          const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                          return caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
+                        }).length === 0 ? (
+                          /* Blank state */
+                          <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <IconLock size={48} className="text-neutral-300 dark:text-neutral-700 mb-4" />
+                            <h3 className="text-lg font-medium text-black dark:text-white mb-2">No permissions set</h3>
+                            <p className="text-sm text-neutral-600 dark:text-neutral-400 max-w-sm">
+                              This user doesn't have permissions for any applications yet. Use "Set Permissions" above to grant access.
+                            </p>
+                          </div>
+                        ) : (
+                          /* Capabilities summary */
+                          <div className="grid gap-3">
+                            {apps.map((app, i) => {
+                              const caps = getCapabilities(selectedUser, app.project, app.name)
+                              const hasAnyAccess = caps.canView || caps.canDeploy || caps.canRollback || caps.canDelete
 
-                          if (!hasAnyAccess) return null
+                              if (!hasAnyAccess) return null
 
-                          return (
-                            <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
-                              <div className="flex-1">
-                                <div className="font-medium text-sm mb-1">{app.name}</div>
-                                <div className="text-xs text-neutral-500 mb-2">{app.project}</div>
-                                <div className="flex flex-wrap gap-2">
-                                  {caps.isFullAccess ? (
-                                    <Badge>Full Access</Badge>
-                                  ) : (
-                                    <>
-                                      {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
-                                        <Badge variant="outline">View only</Badge>
+                              return (
+                                <div key={i} className="flex items-start justify-between p-3 rounded border border-neutral-200 dark:border-neutral-800">
+                                  <div className="flex-1">
+                                    <div className="font-medium text-sm mb-1">{app.name}</div>
+                                    <div className="text-xs text-neutral-500 mb-2">{app.project}</div>
+                                    <div className="flex flex-wrap gap-2">
+                                      {caps.isFullAccess ? (
+                                        <Badge>Full Access</Badge>
+                                      ) : (
+                                        <>
+                                          {caps.canView && !caps.canDeploy && !caps.canRollback && !caps.canDelete && (
+                                            <Badge variant="outline">Can view</Badge>
+                                          )}
+                                          {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
+                                          {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
+                                          {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
+                                        </>
                                       )}
-                                      {caps.canDeploy && <Badge variant="outline" className="border-grass-11 text-grass-11">Can deploy</Badge>}
-                                      {caps.canRollback && <Badge variant="outline" className="border-amber-600 text-amber-600">Can rollback</Badge>}
-                                      {caps.canDelete && <Badge variant="outline" className="border-red-600 text-red-600">Can delete</Badge>}
-                                    </>
-                                  )}
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </>
                     )}
 
-                    {/* Casbin policy details (expandable) */}
-                    {selectedUserPolicies.length > 0 && (
+                    {/* Casbin policy details (expandable) - hidden for admin */}
+                    {selectedUser !== 'admin' && selectedUserPolicies.length > 0 && (
                       <Accordion type="single" collapsible>
                         <AccordionItem value="casbin">
                           <AccordionTrigger className="text-sm">
