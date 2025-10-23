@@ -7,7 +7,6 @@
 @variant dark (.dark &);
 
 @theme inline {
-
   --radius-sm: calc(var(--radius) - 4px);
 
   --radius-md: calc(var(--radius) - 2px);
@@ -45,6 +44,10 @@
   --color-accent-foreground: var(--accent-foreground);
 
   --color-destructive: var(--destructive);
+
+  --color-warning: var(--warning);
+
+  --color-warning-foreground: var(--warning-foreground);
 
   --color-border: var(--border);
 
@@ -84,7 +87,6 @@
 }
 
 :root {
-
   --radius: 0.625rem;
 
   --background: oklch(1 0 0);
@@ -117,6 +119,10 @@
 
   --destructive: oklch(0.577 0.245 27.325);
 
+  --warning: oklch(0.75 0.15 75);
+
+  --warning-foreground: oklch(0.2 0.05 75);
+
   --border: oklch(0.922 0 0);
 
   --input: oklch(0.922 0 0);
@@ -145,7 +151,7 @@
 
   --sidebar-primary-foreground: oklch(0.985 0 0);
 
-  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent: oklch(0.94 0 0);
 
   --sidebar-accent-foreground: oklch(0.205 0 0);
 
@@ -155,7 +161,6 @@
 }
 
 .dark {
-
   --background: oklch(0.145 0 0);
 
   --foreground: oklch(0.985 0 0);
@@ -186,6 +191,10 @@
 
   --destructive: oklch(0.704 0.191 22.216);
 
+  --warning: oklch(0.8 0.18 85);
+
+  --warning-foreground: oklch(0.95 0 0);
+
   --border: oklch(1 0 0 / 10%);
 
   --input: oklch(1 0 0 / 15%);
@@ -202,9 +211,9 @@
 
   --chart-5: oklch(0.645 0.246 16.439);
 
-  --grass-9: oklch(0.60 0.16 142);
+  --grass-9: oklch(0.6 0.16 142);
 
-  --grass-11: oklch(0.70 0.18 142);
+  --grass-11: oklch(0.7 0.18 142);
 
   --sidebar: oklch(0.205 0 0);
 
@@ -227,7 +236,8 @@
   * {
     @apply border-border outline-ring/50;
   }
-  html, body {
+  html,
+  body {
     @apply overflow-x-hidden;
   }
   body {
