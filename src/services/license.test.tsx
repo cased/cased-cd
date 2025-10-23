@@ -58,17 +58,17 @@ describe('License Service', () => {
       expect(api.get).toHaveBeenCalledWith('/settings/rbac')
       expect(result).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit-logs'],
+        features: ['rbac', 'sso', 'audit'],
       })
     })
 
-    it('should return standard license when RBAC endpoint is not accessible', async () => {
+    it('should return free license when RBAC endpoint is not accessible', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const result = await licenseApi.checkEnterprise()
 
       expect(result).toEqual({
-        tier: 'standard',
+        tier: 'free',
         features: [],
       })
     })
@@ -92,13 +92,13 @@ describe('License Service', () => {
 
       expect(result.current.data).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit-logs'],
+        features: ['rbac', 'sso', 'audit'],
       })
       expect(api.get).toHaveBeenCalledTimes(1)
       expect(api.get).toHaveBeenCalledWith('/settings/rbac')
     })
 
-    it('should detect standard tier when RBAC endpoint does not exist', async () => {
+    it('should detect free tier when RBAC endpoint does not exist', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useLicense(), { wrapper })
@@ -106,7 +106,7 @@ describe('License Service', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
       expect(result.current.data).toEqual({
-        tier: 'standard',
+        tier: 'free',
         features: [],
       })
     })
@@ -149,7 +149,7 @@ describe('License Service', () => {
       )
     })
 
-    it('should return false when feature does not exist in standard tier', async () => {
+    it('should return false when feature does not exist in free tier', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
@@ -170,7 +170,7 @@ describe('License Service', () => {
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
 
-      // Should return false when RBAC endpoint is not accessible (standard tier)
+      // Should return false when RBAC endpoint is not accessible (free tier)
       await waitFor(() => expect(result.current).toBe(false))
     })
 
@@ -187,7 +187,7 @@ describe('License Service', () => {
 
       const { result: rbacResult } = renderHook(() => useHasFeature('rbac'), { wrapper })
       const { result: ssoResult } = renderHook(() => useHasFeature('sso'), { wrapper })
-      const { result: auditResult } = renderHook(() => useHasFeature('audit-logs'), { wrapper })
+      const { result: auditResult } = renderHook(() => useHasFeature('audit'), { wrapper })
 
       await waitFor(
         () => {
@@ -260,7 +260,7 @@ describe('License Service', () => {
   })
 
   describe('Edge Cases', () => {
-    it('should handle standard tier with empty features', async () => {
+    it('should handle free tier with empty features', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('404 Not Found'))
 
       const { result } = renderHook(() => useHasFeature('rbac'), { wrapper })
@@ -268,14 +268,14 @@ describe('License Service', () => {
       await waitFor(() => expect(result.current).toBe(false))
     })
 
-    it('should handle network errors as standard tier', async () => {
+    it('should handle network errors as free tier', async () => {
       vi.mocked(api.get).mockRejectedValueOnce(new Error('Network error'))
 
       const { result } = renderHook(() => useLicense(), { wrapper })
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
       expect(result.current.data).toEqual({
-        tier: 'standard',
+        tier: 'free',
         features: [],
       })
     })
@@ -296,7 +296,7 @@ describe('License Service', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
       expect(result.current.data).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit-logs'],
+        features: ['rbac', 'sso', 'audit'],
       })
     })
   })

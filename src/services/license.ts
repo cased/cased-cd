@@ -25,12 +25,12 @@ export const licenseApi = {
       // If successful, return enterprise license
       return {
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit-logs'],
+        features: ['rbac', 'sso', 'audit'],
       }
     } catch {
-      // If endpoint doesn't exist (404) or any other error, return standard license
+      // If endpoint doesn't exist (404) or any other error, return free license
       return {
-        tier: 'standard',
+        tier: 'free',
         features: [],
       }
     }
