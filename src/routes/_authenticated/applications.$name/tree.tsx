@@ -10,10 +10,28 @@ export const Route = createFileRoute('/_authenticated/applications/$name/tree')(
   component: TreePage,
 })
 
+interface ResourceNode {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status: string
+  }
+  group?: string
+  version?: string
+  parentRefs?: Array<{
+    kind: string
+    name: string
+    namespace?: string
+    group?: string
+  }>
+}
+
 function TreePage() {
   const { name } = useParams({ from: '/_authenticated/applications/$name/tree' })
   const { data, isLoading, error, refetch } = useResourceTree(name || '')
-  const [selectedResource, setSelectedResource] = useState<any>(null)
+  const [selectedResource, setSelectedResource] = useState<ResourceNode | null>(null)
 
   if (isLoading) {
     return (

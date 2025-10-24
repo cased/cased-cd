@@ -1,7 +1,6 @@
 import { createFileRoute, Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import {
-  IconArrowLeft,
   IconCircleForward,
   IconDelete,
   IconCodeBranch,
