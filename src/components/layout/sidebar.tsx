@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
 import { useHasFeature } from "@/services/license";
 import {
@@ -62,7 +62,7 @@ const navItems = [
 ];
 
 export function AppSidebar({ children }: { children: React.ReactNode }) {
-  const location = useLocation();
+  const router = useRouterState();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const hasRBAC = useHasFeature('rbac');
@@ -76,7 +76,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate({ to: "/login" });
   };
 
   return (
@@ -93,7 +93,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
               <SidebarMenu>
                 {visibleNavItems.map((item) => {
                   const Icon = item.icon;
-                  const isActive = location.pathname.startsWith(item.href);
+                  const isActive = router.location.pathname.startsWith(item.href);
 
                   return (
                     <SidebarMenuItem key={item.href}>
@@ -121,7 +121,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={location.pathname.startsWith("/help")}
+                isActive={router.location.pathname.startsWith("/help")}
                 tooltip="Documentation"
               >
                 <Link to="/help">
@@ -133,7 +133,7 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
             <SidebarMenuItem>
               <SidebarMenuButton
                 asChild
-                isActive={location.pathname.startsWith("/settings")}
+                isActive={router.location.pathname.startsWith("/settings")}
                 tooltip="Settings"
               >
                 <Link to="/settings">
@@ -155,14 +155,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <a href="/user-info">
+                <Link to="/user-info">
                   <div className="flex flex-col gap-0.5 leading-none">
                     <span className="text-xs font-medium">Admin User</span>
                     <span className="text-[11px] text-sidebar-foreground/70">
                       admin@cased.cd
                     </span>
                   </div>
-                </a>
+                </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>

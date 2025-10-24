@@ -27,6 +27,12 @@ const buttonVariants = cva(
         icon: "h-7 w-7",
       },
     },
+    compoundVariants: [
+      {
+        variant: "ghost",
+        class: "p-0 m-0",
+      },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",

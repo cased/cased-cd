@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet } from "@tanstack/react-router";
 import { AppSidebar } from "./sidebar";
 
 export function Layout() {

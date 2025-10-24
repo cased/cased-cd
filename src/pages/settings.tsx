@@ -5,7 +5,7 @@ import {
   IconArrowRight,
   IconServer,
 } from "obra-icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAppearance } from "@/lib/theme";
 import {
   Card,
@@ -97,7 +97,7 @@ export function SettingsPage() {
               return (
                 <div
                   key={card.title}
-                  onClick={() => card.path && navigate(card.path)}
+                  onClick={() => card.path && navigate({ to: card.path })}
                   className="group rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
                 >
                   {/* Icon */}

@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
 import api from './api-client'
 
 interface AuthContextType {
@@ -60,31 +59,14 @@ export function useAuth() {
   return context
 }
 
-// Protected Route component
-export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated, isLoading } = useAuth()
-  const navigate = useNavigate()
-
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate('/login', { replace: true })
-    }
-  }, [isAuthenticated, isLoading, navigate])
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-black">
-        <div className="text-center">
-          <div className="h-8 w-8 border-2 border-neutral-600 border-t-white rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-neutral-400">Loading...</p>
-        </div>
+// Loading component for auth check
+export function AuthLoading() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-black">
+      <div className="text-center">
+        <div className="h-8 w-8 border-2 border-neutral-600 border-t-white rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-neutral-400">Loading...</p>
       </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return null
-  }
-
-  return <>{children}</>
+    </div>
+  )
 }
