@@ -1,8 +1,8 @@
 name: Claude Code Review
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
@@ -12,12 +12,14 @@ jobs:
   claude-review:
     name: Claude PR Review
     runs-on: ubuntu-latest
+    if: github.event.issue.pull_request && contains(github.event.comment.body, '@claude')
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: refs/pull/${{ github.event.issue.number }}/head
 
       - name: Claude Code Review
         uses: anthropics/claude-code-review-action@v1
