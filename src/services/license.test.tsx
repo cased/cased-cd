@@ -58,7 +58,7 @@ describe('License Service', () => {
       expect(api.get).toHaveBeenCalledWith('/settings/rbac')
       expect(result).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit'],
+        features: ['rbac', 'sso', 'audit', 'notifications'],
       })
     })
 
@@ -92,7 +92,7 @@ describe('License Service', () => {
 
       expect(result.current.data).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit'],
+        features: ['rbac', 'sso', 'audit', 'notifications'],
       })
       expect(api.get).toHaveBeenCalledTimes(1)
       expect(api.get).toHaveBeenCalledWith('/settings/rbac')
@@ -296,7 +296,7 @@ describe('License Service', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true))
       expect(result.current.data).toEqual({
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit'],
+        features: ['rbac', 'sso', 'audit', 'notifications'],
       })
     })
   })

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconCircleForward, IconMessage, IconEmail, IconWebhook, IconAdd } from 'obra-icons-react'
+import { IconCircleForward, IconMessage, IconEmail, IconWebhook, IconAdd, IconEdit, IconDelete } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -9,7 +9,8 @@ import { ErrorAlert } from '@/components/ui/error-alert'
 import {
   useNotificationsConfig,
   useCreateSlackService,
-  useTestSlackService
+  useTestSlackService,
+  useDeleteNotificationService
 } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
@@ -23,6 +24,7 @@ export default function NotificationsPage() {
 
   const createSlackService = useCreateSlackService()
   const testSlackService = useTestSlackService()
+  const deleteNotificationService = useDeleteNotificationService()
 
   const handleServiceTypeSelected = (type: ServiceType) => {
     setCreatePanelOpen(false)
@@ -41,8 +43,9 @@ export default function NotificationsPage() {
       await createSlackService.mutateAsync(data)
       setSlackFormOpen(false)
       alert(`✅ Slack service "${data.name}" created successfully!`)
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to create service'
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create service'
       alert(`❌ Error: ${errorMessage}`)
     }
   }
@@ -51,10 +54,32 @@ export default function NotificationsPage() {
     try {
       await testSlackService.mutateAsync(data)
       alert('✅ Test notification sent successfully!')
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to send test notification'
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send test notification'
       alert(`❌ Error: ${errorMessage}`)
     }
+  }
+
+  const handleDeleteService = async (serviceName: string) => {
+    if (!confirm(`Are you sure you want to delete the service "${serviceName}"?`)) {
+      return
+    }
+
+    try {
+      await deleteNotificationService.mutateAsync(serviceName)
+      alert(`✅ Service "${serviceName}" deleted successfully!`)
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete service'
+      alert(`❌ Error: ${errorMessage}`)
+    }
+  }
+
+  const handleEditService = (service: NotificationService) => {
+    // For now, just alert that this is not yet implemented
+    // TODO: Pre-fill the form with existing service data
+    alert(`Edit functionality for "${service.name}" not yet implemented`)
   }
 
   return (
@@ -134,7 +159,12 @@ export default function NotificationsPage() {
                 ) : (
                   <div className="grid gap-4">
                     {config.services.map((service) => (
-                      <ServiceCard key={service.name} service={service} />
+                      <ServiceCard
+                        key={service.name}
+                        service={service}
+                        onEdit={() => handleEditService(service)}
+                        onDelete={() => handleDeleteService(service.name)}
+                      />
                     ))}
                   </div>
                 )}
@@ -203,7 +233,15 @@ export default function NotificationsPage() {
 }
 
 // Service card component
-function ServiceCard({ service }: { service: NotificationService }) {
+function ServiceCard({
+  service,
+  onEdit,
+  onDelete,
+}: {
+  service: NotificationService
+  onEdit: () => void
+  onDelete: () => void
+}) {
   const icon = getServiceIcon(service.type)
 
   return (
@@ -218,6 +256,24 @@ function ServiceCard({ service }: { service: NotificationService }) {
                 {service.type}
               </Badge>
             </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="h-8 px-2"
+            >
+              <IconEdit size={14} />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDelete}
+              className="h-8 px-2 text-red-600 hover:text-red-700 hover:border-red-600"
+            >
+              <IconDelete size={14} />
+            </Button>
           </div>
         </div>
       </CardHeader>

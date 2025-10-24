@@ -66,14 +66,14 @@ export function SlackServiceForm({
         <DialogHeader>
           <DialogTitle>Configure Slack Notification Service</DialogTitle>
           <DialogDescription>
-            Send notifications to Slack channels using an incoming webhook.{' '}
+            Send notifications to Slack channels using a webhook URL from a Slack app.{' '}
             <a
               href="https://api.slack.com/messaging/webhooks"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
-              Learn how to create a webhook →
+              Learn how to create a Slack app with webhooks →
             </a>
           </DialogDescription>
         </DialogHeader>
@@ -138,9 +138,33 @@ export function SlackServiceForm({
                 {errors.webhookUrl.message}
               </p>
             )}
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Create an Incoming Webhook in Slack (no bot required): <strong>Workspace Settings → Apps → Incoming Webhooks</strong>
-            </p>
+            <div className="text-xs text-neutral-600 dark:text-neutral-400">
+              <p className="mb-2">
+                Create a Slack app, enable Incoming Webhooks, and install it to your workspace to get a webhook URL.{' '}
+                <a
+                  href="https://api.slack.com/apps"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Create a Slack app →
+                </a>
+              </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
+                  Show setup instructions
+                </summary>
+                <ol className="list-decimal list-inside mt-2 space-y-1 text-neutral-700 dark:text-neutral-300 pl-2">
+                  <li>Click "Create New App" and choose "From scratch"</li>
+                  <li>Name your app (e.g., "ArgoCD Notifications") and select your workspace</li>
+                  <li>Go to "Incoming Webhooks" in the left sidebar and toggle "Activate Incoming Webhooks" to On</li>
+                  <li>Click "Add New Webhook to Workspace" at the bottom</li>
+                  <li>Select the channel where notifications should be posted</li>
+                  <li>Copy the webhook URL that starts with <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">https://hooks.slack.com/services/...</code></li>
+                  <li>Paste it into the Webhook URL field above</li>
+                </ol>
+              </details>
+            </div>
           </div>
 
           {/* Default Channel */}
