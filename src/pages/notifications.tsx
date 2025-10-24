@@ -1,17 +1,61 @@
 import { useState } from 'react'
-import { IconCircleForward, IconMessage, IconEmail, IconWebhook } from 'obra-icons-react'
+import { IconCircleForward, IconMessage, IconEmail, IconWebhook, IconAdd } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorAlert } from '@/components/ui/error-alert'
-import { useNotificationsConfig } from '@/services/notifications'
+import {
+  useNotificationsConfig,
+  useCreateSlackService,
+  useTestSlackService
+} from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
+import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
+import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
 
 export default function NotificationsPage() {
   const { data: config, isLoading, error, refetch } = useNotificationsConfig()
   const [selectedTab, setSelectedTab] = useState('services')
+  const [createPanelOpen, setCreatePanelOpen] = useState(false)
+  const [slackFormOpen, setSlackFormOpen] = useState(false)
+
+  const createSlackService = useCreateSlackService()
+  const testSlackService = useTestSlackService()
+
+  const handleServiceTypeSelected = (type: ServiceType) => {
+    setCreatePanelOpen(false)
+
+    // Show the appropriate form based on service type
+    if (type === 'slack') {
+      setSlackFormOpen(true)
+    } else {
+      // TODO: Handle other service types
+      alert(`${type} service form not yet implemented`)
+    }
+  }
+
+  const handleSlackSubmit = async (data: SlackServiceFormData) => {
+    try {
+      await createSlackService.mutateAsync(data)
+      setSlackFormOpen(false)
+      alert(`✅ Slack service "${data.name}" created successfully!`)
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to create service'
+      alert(`❌ Error: ${errorMessage}`)
+    }
+  }
+
+  const handleSlackTest = async (data: SlackServiceFormData) => {
+    try {
+      await testSlackService.mutateAsync(data)
+      alert('✅ Test notification sent successfully!')
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to send test notification'
+      alert(`❌ Error: ${errorMessage}`)
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -33,6 +77,10 @@ export default function NotificationsPage() {
               >
                 <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
                 Refresh
+              </Button>
+              <Button onClick={() => setCreatePanelOpen(true)}>
+                <IconAdd size={16} />
+                Add Service
               </Button>
             </div>
           </div>
@@ -133,6 +181,23 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {/* Create Service Panel */}
+      <CreateServicePanel
+        open={createPanelOpen}
+        onOpenChange={setCreatePanelOpen}
+        onServiceTypeSelected={handleServiceTypeSelected}
+      />
+
+      {/* Slack Service Form */}
+      <SlackServiceForm
+        open={slackFormOpen}
+        onOpenChange={setSlackFormOpen}
+        onSubmit={handleSlackSubmit}
+        onTest={handleSlackTest}
+        isSubmitting={createSlackService.isPending}
+        isTesting={testSlackService.isPending}
+      />
     </div>
   )
 }

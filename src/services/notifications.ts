@@ -62,6 +62,36 @@ const notificationsApi = {
     // Use custom endpoint that wraps kubectl
     await api.put('/api/v1/notifications/config', config)
   },
+
+  // Create a Slack notification service
+  createSlackService: async (data: {
+    name: string
+    webhookUrl: string
+    channel?: string
+    username?: string
+    icon?: string
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.post<{ status: string; name: string }>('/notifications/services', data)
+    return response.data
+  },
+
+  // Test a Slack notification service
+  testSlackService: async (data: {
+    name?: string
+    webhookUrl: string
+    channel?: string
+    username?: string
+    icon?: string
+  }): Promise<{ status: string; message: string }> => {
+    const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test`, data)
+    return response.data
+  },
+
+  // Delete a notification service
+  deleteNotificationService: async (name: string): Promise<{ status: string; name: string }> => {
+    const response = await api.delete<{ status: string; name: string }>(`/notifications/services/${name}`)
+    return response.data
+  },
 }
 
 // Helper to determine service type from name and config
@@ -98,6 +128,46 @@ export function useUpdateNotificationsConfig() {
   return useMutation({
     mutationFn: (config: NotificationsConfig) =>
       notificationsApi.updateNotificationsConfig(config),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useCreateSlackService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      webhookUrl: string
+      channel?: string
+      username?: string
+      icon?: string
+    }) => notificationsApi.createSlackService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useTestSlackService() {
+  return useMutation({
+    mutationFn: (data: {
+      name?: string
+      webhookUrl: string
+      channel?: string
+      username?: string
+      icon?: string
+    }) => notificationsApi.testSlackService(data),
+  })
+}
+
+export function useDeleteNotificationService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (name: string) => notificationsApi.deleteNotificationService(name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all })
     },

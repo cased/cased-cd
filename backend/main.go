@@ -11,8 +11,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -100,6 +102,10 @@ func main() {
 		}
 		if r.URL.Path == "/api/v1/notifications/config" {
 			handler.handleNotifications(w, r)
+			return
+		}
+		if strings.HasPrefix(r.URL.Path, "/api/v1/notifications/services") {
+			handler.handleNotificationServices(w, r)
 			return
 		}
 
@@ -448,4 +454,304 @@ func (h *Handler) getNotifications(ctx context.Context, w http.ResponseWriter, r
 func (h *Handler) updateNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// This will be implemented when we add edit functionality
 	http.Error(w, "Not implemented yet", http.StatusNotImplemented)
+}
+
+// handleNotificationServices handles CRUD operations for notification services
+func (h *Handler) handleNotificationServices(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	ctx := context.Background()
+	path := r.URL.Path
+
+	// POST /api/v1/notifications/services - Create service
+	if path == "/api/v1/notifications/services" && r.Method == "POST" {
+		h.createNotificationService(ctx, w, r)
+		return
+	}
+
+	// Extract service name from path: /api/v1/notifications/services/{name}[/test]
+	parts := strings.Split(strings.TrimPrefix(path, "/api/v1/notifications/services/"), "/")
+	if len(parts) == 0 || parts[0] == "" {
+		http.Error(w, "Service name is required", http.StatusBadRequest)
+		return
+	}
+
+	serviceName := parts[0]
+
+	// POST /api/v1/notifications/services/{name}/test - Test service
+	if len(parts) == 2 && parts[1] == "test" && r.Method == "POST" {
+		h.testNotificationService(ctx, w, r, serviceName)
+		return
+	}
+
+	// PUT /api/v1/notifications/services/{name} - Update service
+	if len(parts) == 1 && r.Method == "PUT" {
+		h.updateNotificationService(ctx, w, r, serviceName)
+		return
+	}
+
+	// DELETE /api/v1/notifications/services/{name} - Delete service
+	if len(parts) == 1 && r.Method == "DELETE" {
+		h.deleteNotificationService(ctx, w, r, serviceName)
+		return
+	}
+
+	http.Error(w, "Not found", http.StatusNotFound)
+}
+
+// SlackServiceRequest represents a Slack notification service configuration
+type SlackServiceRequest struct {
+	Name       string `json:"name"`
+	WebhookURL string `json:"webhookUrl"`
+	Channel    string `json:"channel,omitempty"`
+	Username   string `json:"username,omitempty"`
+	Icon       string `json:"icon,omitempty"`
+}
+
+func (h *Handler) createNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var req SlackServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Name == "" || req.WebhookURL == "" {
+		http.Error(w, "name and webhookUrl are required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if service already exists
+	serviceKey := fmt.Sprintf("service.slack.%s", req.Name)
+	if _, exists := configMap.Data[serviceKey]; exists {
+		http.Error(w, "Service already exists", http.StatusConflict)
+		return
+	}
+
+	// Build YAML config for the service
+	var yamlConfig strings.Builder
+	secretKey := fmt.Sprintf("slack-%s-token", req.Name)
+	yamlConfig.WriteString(fmt.Sprintf("token: $%s\n", secretKey))
+	if req.Username != "" {
+		yamlConfig.WriteString(fmt.Sprintf("username: %s\n", req.Username))
+	}
+	if req.Icon != "" {
+		yamlConfig.WriteString(fmt.Sprintf("icon: %s\n", req.Icon))
+	}
+	if req.Channel != "" {
+		yamlConfig.WriteString(fmt.Sprintf("channel: %s\n", req.Channel))
+	}
+
+	// Update ConfigMap
+	if configMap.Data == nil {
+		configMap.Data = make(map[string]string)
+	}
+	configMap.Data[serviceKey] = yamlConfig.String()
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Store webhook URL in secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
+	if err != nil {
+		// Create secret if it doesn't exist
+		secret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "argocd-notifications-secret",
+				Namespace: h.namespace,
+			},
+			Data: make(map[string][]byte),
+		}
+	}
+
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[secretKey] = []byte(req.WebhookURL)
+
+	if secret.CreationTimestamp.IsZero() {
+		_, err = h.clientset.CoreV1().Secrets(h.namespace).Create(ctx, secret, metav1.CreateOptions{})
+	} else {
+		_, err = h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "created", "name": req.Name})
+}
+
+func (h *Handler) updateNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req SlackServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.WebhookURL == "" {
+		http.Error(w, "webhookUrl is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	serviceKey := fmt.Sprintf("service.slack.%s", serviceName)
+	if _, exists := configMap.Data[serviceKey]; !exists {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	// Build YAML config
+	var yamlConfig strings.Builder
+	secretKey := fmt.Sprintf("slack-%s-token", serviceName)
+	yamlConfig.WriteString(fmt.Sprintf("token: $%s\n", secretKey))
+	if req.Username != "" {
+		yamlConfig.WriteString(fmt.Sprintf("username: %s\n", req.Username))
+	}
+	if req.Icon != "" {
+		yamlConfig.WriteString(fmt.Sprintf("icon: %s\n", req.Icon))
+	}
+	if req.Channel != "" {
+		yamlConfig.WriteString(fmt.Sprintf("channel: %s\n", req.Channel))
+	}
+
+	configMap.Data[serviceKey] = yamlConfig.String()
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Update secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[secretKey] = []byte(req.WebhookURL)
+
+	_, err = h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated", "name": serviceName})
+}
+
+func (h *Handler) deleteNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	serviceKey := fmt.Sprintf("service.slack.%s", serviceName)
+	if _, exists := configMap.Data[serviceKey]; !exists {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	// Remove from ConfigMap
+	delete(configMap.Data, serviceKey)
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Remove from secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
+	if err == nil {
+		secretKey := fmt.Sprintf("slack-%s-token", serviceName)
+		delete(secret.Data, secretKey)
+		h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "deleted", "name": serviceName})
+}
+
+func (h *Handler) testNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req SlackServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.WebhookURL == "" {
+		http.Error(w, "webhookUrl is required", http.StatusBadRequest)
+		return
+	}
+
+	// Send test message to Slack
+	payload := map[string]interface{}{
+		"text": "🧪 Test notification from Cased CD",
+	}
+	if req.Username != "" {
+		payload["username"] = req.Username
+	}
+	if req.Icon != "" {
+		payload["icon_emoji"] = req.Icon
+	}
+	if req.Channel != "" {
+		payload["channel"] = req.Channel
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to marshal payload: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post(req.WebhookURL, "application/json", strings.NewReader(string(payloadBytes)))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to send test notification: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		http.Error(w, fmt.Sprintf("Slack returned error: %s", resp.Status), http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Test notification sent"})
 }
