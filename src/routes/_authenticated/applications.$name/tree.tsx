@@ -16,7 +16,7 @@ interface ResourceNode {
   namespace?: string
   status?: string
   health?: {
-    status: string
+    status?: string
   }
   group?: string
   version?: string
@@ -75,7 +75,6 @@ function TreePage() {
             <ResourceDetailsPanel
               resource={selectedResource}
               onClose={() => setSelectedResource(null)}
-              applicationName={name || ''}
             />
           )}
         </>
