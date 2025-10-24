@@ -73,6 +73,25 @@ export function ApplicationsPage() {
 
       {/* Content */}
       <PageContent>
+        {/* Search and Filters */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="relative flex-1 max-w-md">
+            <IconSearch
+              size={16}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
+            />
+            <Input
+              placeholder="Search applications..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline">All Clusters</Button>
+          <Button variant="outline">All Namespaces</Button>
+          <Button variant="outline">All States</Button>
+        </div>
+
         {/* Loading State */}
         {isLoading && (
           <LoadingSpinner message="Loading applications..." size="lg" />
@@ -86,27 +105,6 @@ export function ApplicationsPage() {
             title="Failed to load applications"
             size="lg"
           />
-        )}
-
-        {/* Search and Filters */}
-        {!isLoading && !error && (
-          <div className="flex items-center gap-3 mb-4">
-            <div className="relative flex-1 max-w-md">
-              <IconSearch
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500"
-              />
-              <Input
-                placeholder="Search applications..."
-                className="pl-9"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-            <Button variant="outline">All Clusters</Button>
-            <Button variant="outline">All Namespaces</Button>
-            <Button variant="outline">All States</Button>
-          </div>
         )}
 
         {/* Empty State */}
