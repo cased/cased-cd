@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
+import { PageContent } from "@/components/ui/page-content";
 import { useApplications } from "@/services/applications";
 import { useCertificates } from "@/services/certificates";
 import { useGPGKeys } from "@/services/gpgkeys";
@@ -88,9 +89,8 @@ export function SettingsPage() {
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+      <PageContent>
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {settingsCards.map((card) => {
               const Icon = card.icon;
 
@@ -280,8 +280,7 @@ export function SettingsPage() {
               </div>
             </>
           )}
-        </div>
-      </div>
+      </PageContent>
     </div>
   );
 }

@@ -15,8 +15,8 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-      <div className="px-4 py-3">
-        <div className="flex items-center justify-between mb-3">
+      <div className="px-8 py-3">
+        <div className="flex items-center justify-between">
           <div>
             <PageTitle>{title}</PageTitle>
             {description && (
