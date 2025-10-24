@@ -9,10 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { useProjects, useDeleteProject } from "@/services/projects";
 import { CreateProjectPanel } from "@/components/create-project-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { ErrorAlert } from "@/components/ui/error-alert";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { PageContent } from "@/components/ui/page-content";
 import { useDeleteHandler } from "@/hooks/useDeleteHandler";
 import { useState } from "react";
 import type { Project } from "@/types/api";
@@ -58,24 +59,23 @@ export function ProjectsPage() {
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          {/* Loading State */}
-          {isLoading && <LoadingSpinner message="Loading projects..." />}
+      <PageContent>
+        {/* Loading State */}
+        {isLoading && <LoadingSpinner message="Loading projects..." />}
 
-          {/* Error State */}
-          {error && (
-            <ErrorAlert
-              error={error}
-              onRetry={() => refetch()}
-              title="Failed to load projects"
-              size="sm"
-            />
-          )}
+        {/* Error State */}
+        {error && (
+          <ErrorAlert
+            error={error}
+            onRetry={() => refetch()}
+            title="Failed to load projects"
+            size="sm"
+          />
+        )}
 
-          {/* Projects List */}
-          {!isLoading && !error && data?.items && data.items.length > 0 && (
-            <div className="space-y-2">
+        {/* Projects List */}
+        {!isLoading && !error && data?.items && data.items.length > 0 && (
+          <div className="space-y-2">
               {data.items.map((project) => {
                 const isDefaultProject = project.metadata.name === "default";
                 const sourceReposCount = project.spec.sourceRepos?.length || 0;
@@ -204,23 +204,22 @@ export function ProjectsPage() {
             </div>
           )}
 
-          {/* Empty State */}
-          {!isLoading &&
-            !error &&
-            (!data?.items || data.items.length === 0) && (
-              <EmptyState
-                icon={IconFolder}
-                title="No projects yet"
-                description="Create your first project to organize applications and control access"
-                action={{
-                  label: "Create Project",
-                  onClick: () => setShowCreatePanel(true),
-                  icon: IconAdd,
-                }}
-              />
-            )}
-        </div>
-      </div>
+        {/* Empty State */}
+        {!isLoading &&
+          !error &&
+          (!data?.items || data.items.length === 0) && (
+            <EmptyState
+              icon={IconFolder}
+              title="No projects yet"
+              description="Create your first project to organize applications and control access"
+              action={{
+                label: "Create Project",
+                onClick: () => setShowCreatePanel(true),
+                icon: IconAdd,
+              }}
+            />
+          )}
+      </PageContent>
 
       {/* Create Project Panel */}
       <CreateProjectPanel
