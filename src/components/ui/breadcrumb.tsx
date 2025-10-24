@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
-import { IconChevronRight, IconDots } from "obra-icons-react"
+import { IconChevronRight, IconOptionsHorizontal } from "obra-icons-react"
 
 import { cn } from "@/lib/utils";
 
@@ -98,7 +98,7 @@ const BreadcrumbEllipsis = ({
     className={cn("flex h-9 w-9 items-center justify-center", className)}
     {...props}
   >
-    <IconDots size={16} />
+    <IconOptionsHorizontal size={16} />
     <span className="sr-only">More</span>
   </span>
 );
