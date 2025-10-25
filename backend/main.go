@@ -102,17 +102,14 @@ func main() {
 			handler.handleAccount(w, r)
 			return
 		}
-<<<<<<< ours
 		if r.URL.Path == "/api/v1/notifications/config" {
 			handler.handleNotifications(w, r)
 			return
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/v1/notifications/services") {
 			handler.handleNotificationServices(w, r)
-=======
 		if r.URL.Path == "/api/v1/settings/audit" {
 			handler.handleAudit(w, r)
->>>>>>> theirs
 			return
 		}
 
@@ -424,12 +421,10 @@ func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *h
 	})
 }
 
-<<<<<<< ours
 func (h *Handler) handleNotifications(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
-=======
 // Audit types
 type AuditEvent struct {
 	ID           string                 `json:"id"`
@@ -454,7 +449,6 @@ func (h *Handler) handleAudit(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
->>>>>>> theirs
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 	if r.Method == "OPTIONS" {
@@ -466,19 +460,15 @@ func (h *Handler) handleAudit(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-<<<<<<< ours
 		h.getNotifications(ctx, w, r)
 	case "PUT":
 		h.updateNotifications(ctx, w, r)
-=======
 		h.getAuditEvents(ctx, w, r)
->>>>>>> theirs
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
-<<<<<<< ours
 func (h *Handler) getNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
 	if err != nil {
@@ -1234,7 +1224,6 @@ func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": successMessage,
-=======
 func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	// Get the cased-audit ConfigMap (stores audit events as JSON array)
 	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "cased-audit", metav1.GetOptions{})
@@ -1330,6 +1319,5 @@ func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *
 		Metadata: map[string]interface{}{
 			"totalCount": len(filteredEvents),
 		},
->>>>>>> theirs
 	})
 }
