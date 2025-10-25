@@ -12,12 +12,15 @@ import {
   useTestSlackService,
   useDeleteNotificationService,
   useCreateGitHubService,
-  useTestGitHubService
+  useTestGitHubService,
+  useUpdateSlackService,
+  useUpdateGitHubService
 } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
 import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
 import { GitHubServiceForm, type GitHubServiceFormData } from '@/components/notifications/github-service-form'
+import { toast } from 'sonner'
 
 export default function NotificationsPage() {
   const { data: config, isLoading, error, refetch } = useNotificationsConfig()
@@ -25,11 +28,14 @@ export default function NotificationsPage() {
   const [createPanelOpen, setCreatePanelOpen] = useState(false)
   const [slackFormOpen, setSlackFormOpen] = useState(false)
   const [githubFormOpen, setGithubFormOpen] = useState(false)
+  const [editingService, setEditingService] = useState<NotificationService | null>(null)
 
   const createSlackService = useCreateSlackService()
+  const updateSlackService = useUpdateSlackService()
   const testSlackService = useTestSlackService()
   const deleteNotificationService = useDeleteNotificationService()
   const createGitHubService = useCreateGitHubService()
+  const updateGitHubService = useUpdateGitHubService()
   const testGitHubService = useTestGitHubService()
 
   const handleServiceTypeSelected = (type: ServiceType) => {
@@ -42,74 +48,136 @@ export default function NotificationsPage() {
       setGithubFormOpen(true)
     } else {
       // TODO: Handle other service types
-      alert(`${type} service form not yet implemented`)
+      toast.info(`${type} service form not yet implemented`)
     }
   }
 
   const handleSlackSubmit = async (data: SlackServiceFormData) => {
     try {
-      await createSlackService.mutateAsync(data)
+      if (editingService) {
+        await updateSlackService.mutateAsync(data)
+        toast.success(`Slack service "${data.name}" updated successfully`)
+      } else {
+        await createSlackService.mutateAsync(data)
+        toast.success(`Slack service "${data.name}" created successfully`)
+      }
       setSlackFormOpen(false)
-      alert(`✅ Slack service "${data.name}" created successfully!`)
+      setEditingService(null)
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } }; message?: string }
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to create service'
-      alert(`❌ Error: ${errorMessage}`)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save service'
+      toast.error(errorMessage)
     }
   }
 
   const handleSlackTest = async (data: SlackServiceFormData) => {
     try {
       await testSlackService.mutateAsync(data)
-      alert('✅ Test notification sent successfully!')
+      toast.success('Test notification sent successfully')
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } }; message?: string }
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send test notification'
-      alert(`❌ Error: ${errorMessage}`)
+      toast.error(errorMessage)
     }
   }
 
-  const handleDeleteService = async (serviceName: string) => {
-    if (!confirm(`Are you sure you want to delete the service "${serviceName}"?`)) {
-      return
-    }
-
-    try {
-      await deleteNotificationService.mutateAsync(serviceName)
-      alert(`✅ Service "${serviceName}" deleted successfully!`)
-    } catch (err) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string }
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to delete service'
-      alert(`❌ Error: ${errorMessage}`)
-    }
+  const handleDeleteService = (serviceName: string) => {
+    toast(`Delete service "${serviceName}"?`, {
+      description: 'This action cannot be undone.',
+      action: {
+        label: 'Delete',
+        onClick: async () => {
+          toast.promise(
+            deleteNotificationService.mutateAsync(serviceName),
+            {
+              loading: `Deleting service "${serviceName}"...`,
+              success: `Service "${serviceName}" deleted successfully`,
+              error: (err) => {
+                const error = err as { response?: { data?: { message?: string } }; message?: string }
+                return error.response?.data?.message || error.message || 'Failed to delete service'
+              },
+            }
+          )
+        },
+      },
+      cancel: {
+        label: 'Cancel',
+        onClick: () => {},
+      },
+    })
   }
 
   const handleEditService = (service: NotificationService) => {
-    // For now, just alert that this is not yet implemented
-    // TODO: Pre-fill the form with existing service data
-    alert(`Edit functionality for "${service.name}" not yet implemented`)
+    setEditingService(service)
+
+    // Open the appropriate form based on service type
+    if (service.type === 'slack') {
+      setSlackFormOpen(true)
+    } else if (service.type === 'github') {
+      setGithubFormOpen(true)
+    } else {
+      toast.info(`Edit functionality for "${service.type}" services not yet implemented`)
+    }
+  }
+
+  const parseSlackConfig = (config: string, name: string): SlackServiceFormData => {
+    const lines = config.split('\n')
+    const data: SlackServiceFormData = { name, webhookUrl: '' }
+
+    lines.forEach(line => {
+      const [key, ...valueParts] = line.split(':')
+      const value = valueParts.join(':').trim()
+
+      if (key.trim() === 'webhookUrl') data.webhookUrl = value
+      else if (key.trim() === 'channel') data.channel = value
+      else if (key.trim() === 'username') data.username = value
+      else if (key.trim() === 'icon') data.icon = value
+    })
+
+    return data
+  }
+
+  const parseGitHubConfig = (config: string, name: string): GitHubServiceFormData => {
+    const lines = config.split('\n')
+    const data: GitHubServiceFormData = { name, installationId: '' }
+
+    lines.forEach(line => {
+      const [key, ...valueParts] = line.split(':')
+      const value = valueParts.join(':').trim()
+
+      if (key.trim() === 'installationId') data.installationId = value
+      else if (key.trim() === 'repositories') data.repositories = value
+    })
+
+    return data
   }
 
   const handleGitHubSubmit = async (data: GitHubServiceFormData) => {
     try {
-      await createGitHubService.mutateAsync(data)
+      if (editingService) {
+        await updateGitHubService.mutateAsync(data)
+        toast.success(`GitHub service "${data.name}" updated successfully`)
+      } else {
+        await createGitHubService.mutateAsync(data)
+        toast.success(`GitHub service "${data.name}" created successfully`)
+      }
       setGithubFormOpen(false)
-      alert(`✅ GitHub service "${data.name}" created successfully!`)
+      setEditingService(null)
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } }; message?: string }
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to create service'
-      alert(`❌ Error: ${errorMessage}`)
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save service'
+      toast.error(errorMessage)
     }
   }
 
   const handleGitHubTest = async (data: GitHubServiceFormData) => {
     try {
       await testGitHubService.mutateAsync(data)
-      alert('✅ Test commit status sent successfully!')
+      toast.success('Test commit status sent successfully')
     } catch (err) {
       const error = err as { response?: { data?: { message?: string } }; message?: string }
       const errorMessage = error.response?.data?.message || error.message || 'Failed to send test'
-      alert(`❌ Error: ${errorMessage}`)
+      toast.error(errorMessage)
     }
   }
 
@@ -253,21 +321,31 @@ export default function NotificationsPage() {
       {/* Slack Service Form */}
       <SlackServiceForm
         open={slackFormOpen}
-        onOpenChange={setSlackFormOpen}
+        onOpenChange={(open) => {
+          setSlackFormOpen(open)
+          if (!open) setEditingService(null)
+        }}
         onSubmit={handleSlackSubmit}
         onTest={handleSlackTest}
-        isSubmitting={createSlackService.isPending}
+        isSubmitting={editingService ? updateSlackService.isPending : createSlackService.isPending}
         isTesting={testSlackService.isPending}
+        isEditing={!!editingService && editingService.type === 'slack'}
+        initialData={editingService && editingService.type === 'slack' ? parseSlackConfig(editingService.config, editingService.name) : undefined}
       />
 
       {/* GitHub Service Form */}
       <GitHubServiceForm
         open={githubFormOpen}
-        onOpenChange={setGithubFormOpen}
+        onOpenChange={(open) => {
+          setGithubFormOpen(open)
+          if (!open) setEditingService(null)
+        }}
         onSubmit={handleGitHubSubmit}
         onTest={handleGitHubTest}
-        isSubmitting={createGitHubService.isPending}
+        isSubmitting={editingService ? updateGitHubService.isPending : createGitHubService.isPending}
         isTesting={testGitHubService.isPending}
+        isEditing={!!editingService && editingService.type === 'github'}
+        initialData={editingService && editingService.type === 'github' ? parseGitHubConfig(editingService.config, editingService.name) : undefined}
       />
     </div>
   )

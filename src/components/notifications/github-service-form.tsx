@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -25,6 +26,8 @@ interface GitHubServiceFormProps {
   onTest?: (data: GitHubServiceFormData) => void
   isSubmitting?: boolean
   isTesting?: boolean
+  isEditing?: boolean
+  initialData?: GitHubServiceFormData
 }
 
 export function GitHubServiceForm({
@@ -34,17 +37,26 @@ export function GitHubServiceForm({
   onTest,
   isSubmitting = false,
   isTesting = false,
+  isEditing = false,
+  initialData,
 }: GitHubServiceFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
     getValues,
+    reset,
   } = useForm<GitHubServiceFormData>({
-    defaultValues: {
+    defaultValues: initialData || {
       name: 'github',
     },
   })
+
+  useEffect(() => {
+    if (initialData) {
+      reset(initialData)
+    }
+  }, [initialData, reset])
 
   const handleTestClick = () => {
     if (onTest) {
@@ -57,7 +69,7 @@ export function GitHubServiceForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configure GitHub Notification Service</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Configure'} GitHub Notification Service</DialogTitle>
           <DialogDescription>
             Update commit statuses and create comments on PRs based on deployment status.{' '}
             <a
@@ -80,6 +92,7 @@ export function GitHubServiceForm({
             <Input
               id="name"
               placeholder="github"
+              disabled={isEditing}
               {...register('name', {
                 required: 'Service name is required',
                 pattern: {
@@ -187,7 +200,7 @@ export function GitHubServiceForm({
               ) : (
                 <>
                   <IconCheck size={16} />
-                  Save Service
+                  {isEditing ? 'Update Service' : 'Save Service'}
                 </>
               )}
             </Button>

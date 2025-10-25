@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { IconCheck, IconCircleWarning } from 'obra-icons-react'
+import { toast } from 'sonner'
 
 export interface SlackServiceFormData {
   name: string
@@ -28,6 +29,8 @@ interface SlackServiceFormProps {
   onTest?: (data: SlackServiceFormData) => void
   isSubmitting?: boolean
   isTesting?: boolean
+  isEditing?: boolean
+  initialData?: SlackServiceFormData
 }
 
 export function SlackServiceForm({
@@ -37,19 +40,28 @@ export function SlackServiceForm({
   onTest,
   isSubmitting = false,
   isTesting = false,
+  isEditing = false,
+  initialData,
 }: SlackServiceFormProps) {
   const {
     register,
     handleSubmit,
     formState: { errors },
     getValues,
+    reset,
   } = useForm<SlackServiceFormData>({
-    defaultValues: {
+    defaultValues: initialData || {
       name: 'slack',
-      username: 'ArgoCD',
+      username: 'Cased Deploy',
       icon: ':rocket:',
     },
   })
+
+  useEffect(() => {
+    if (initialData) {
+      reset(initialData)
+    }
+  }, [initialData, reset])
 
   const [showWebhookUrl, setShowWebhookUrl] = useState(false)
 
@@ -64,19 +76,80 @@ export function SlackServiceForm({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Configure Slack Notification Service</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Configure'} Slack Notification Service</DialogTitle>
           <DialogDescription>
-            Send notifications to Slack channels using a webhook URL from a Slack app.{' '}
-            <a
-              href="https://api.slack.com/messaging/webhooks"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Learn how to create a Slack app with webhooks →
-            </a>
+            Send notifications to Slack channels using a webhook URL from a Slack app.
           </DialogDescription>
         </DialogHeader>
+
+        {!isEditing && (
+          <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Quick Setup: Create Slack App in 60 Seconds
+                </h3>
+                <p className="text-xs text-blue-800 dark:text-blue-200 mb-3">
+                  Copy the manifest and create your Slack app - it's already configured with all the permissions you need
+                </p>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="bg-white dark:bg-neutral-900 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    onClick={() => window.open('https://api.slack.com/apps?new_app=1', '_blank')}
+                  >
+                    1. Open Slack →
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="bg-white dark:bg-neutral-900 border-blue-300 dark:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                    onClick={async () => {
+                      const manifest = JSON.stringify({
+                        "display_information": {
+                          "name": "Cased Deploy Notifications",
+                          "description": "Receive deployment notifications from Cased Deploy (ArgoCD)",
+                          "background_color": "#2c3e50"
+                        },
+                        "features": {
+                          "bot_user": {
+                            "display_name": "Cased Deploy",
+                            "always_online": true
+                          }
+                        },
+                        "oauth_config": {
+                          "scopes": {
+                            "bot": [
+                              "incoming-webhook",
+                              "chat:write",
+                              "chat:write.public"
+                            ]
+                          }
+                        },
+                        "settings": {
+                          "org_deploy_enabled": false,
+                          "socket_mode_enabled": false,
+                          "token_rotation_enabled": false
+                        }
+                      }, null, 2)
+                      try {
+                        await navigator.clipboard.writeText(manifest)
+                        toast.success('Manifest copied! Now paste it in Slack when creating your app.')
+                      } catch (err) {
+                        toast.error('Failed to copy manifest. Please copy it manually from the file.')
+                      }
+                    }}
+                  >
+                    2. Copy Manifest
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Service Name */}
@@ -87,6 +160,7 @@ export function SlackServiceForm({
             <Input
               id="name"
               placeholder="slack"
+              disabled={isEditing}
               {...register('name', {
                 required: 'Service name is required',
                 pattern: {
@@ -139,29 +213,15 @@ export function SlackServiceForm({
               </p>
             )}
             <div className="text-xs text-neutral-600 dark:text-neutral-400">
-              <p className="mb-2">
-                Create a Slack app, enable Incoming Webhooks, and install it to your workspace to get a webhook URL.{' '}
-                <a
-                  href="https://api.slack.com/apps"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  Create a Slack app →
-                </a>
-              </p>
               <details className="mt-2">
-                <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline">
-                  Show setup instructions
+                <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                  How to get your webhook URL
                 </summary>
-                <ol className="list-decimal list-inside mt-2 space-y-1 text-neutral-700 dark:text-neutral-300 pl-2">
-                  <li>Click "Create New App" and choose "From scratch"</li>
-                  <li>Name your app (e.g., "ArgoCD Notifications") and select your workspace</li>
-                  <li>Go to "Incoming Webhooks" in the left sidebar and toggle "Activate Incoming Webhooks" to On</li>
-                  <li>Click "Add New Webhook to Workspace" at the bottom</li>
-                  <li>Select the channel where notifications should be posted</li>
-                  <li>Copy the webhook URL that starts with <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">https://hooks.slack.com/services/...</code></li>
-                  <li>Paste it into the Webhook URL field above</li>
+                <ol className="list-decimal list-inside mt-3 space-y-2 text-neutral-700 dark:text-neutral-300 pl-2">
+                  <li>After creating your app, go to "Incoming Webhooks" → "Add New Webhook to Workspace"</li>
+                  <li>Select the channel where you want notifications posted</li>
+                  <li>Copy the webhook URL (starts with <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">https://hooks.slack.com/services/...</code>)</li>
+                  <li>Paste it into the field above</li>
                 </ol>
               </details>
             </div>
@@ -196,7 +256,7 @@ export function SlackServiceForm({
             <Label htmlFor="username">Bot Username (optional)</Label>
             <Input
               id="username"
-              placeholder="ArgoCD"
+              placeholder="Cased Deploy"
               {...register('username')}
             />
             <p className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -251,7 +311,7 @@ export function SlackServiceForm({
               ) : (
                 <>
                   <IconCheck size={16} />
-                  Save Service
+                  {isEditing ? 'Update Service' : 'Save Service'}
                 </>
               )}
             </Button>

@@ -87,6 +87,28 @@ const notificationsApi = {
     return response.data
   },
 
+  // Update a Slack notification service
+  updateSlackService: async (data: {
+    name: string
+    webhookUrl: string
+    channel?: string
+    username?: string
+    icon?: string
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.put<{ status: string; name: string }>(`/notifications/services/slack/${data.name}`, data)
+    return response.data
+  },
+
+  // Update a GitHub notification service
+  updateGitHubService: async (data: {
+    name: string
+    installationId: string
+    repositories?: string
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.put<{ status: string; name: string }>(`/notifications/services/github/${data.name}`, data)
+    return response.data
+  },
+
   // Delete a notification service
   deleteNotificationService: async (name: string): Promise<{ status: string; name: string }> => {
     const response = await api.delete<{ status: string; name: string }>(`/notifications/services/${name}`)
@@ -216,5 +238,37 @@ export function useTestGitHubService() {
       installationId: string
       repositories?: string
     }) => notificationsApi.testGitHubService(data),
+  })
+}
+
+export function useUpdateSlackService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      webhookUrl: string
+      channel?: string
+      username?: string
+      icon?: string
+    }) => notificationsApi.updateSlackService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useUpdateGitHubService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      installationId: string
+      repositories?: string
+    }) => notificationsApi.updateGitHubService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
   })
 }

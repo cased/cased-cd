@@ -965,7 +965,7 @@ app.put('/api/v1/settings/rbac', (req, res) => {
 let notificationServices = []
 
 // Mock notifications config endpoint - GET
-app.get('/notifications/config', (req, res) => {
+app.get('/api/v1/notifications/config', (req, res) => {
   // Return services in ConfigMap format
   const data = {}
 
@@ -978,7 +978,7 @@ app.get('/notifications/config', (req, res) => {
 })
 
 // Mock create Slack service endpoint
-app.post('/notifications/services/slack', (req, res) => {
+app.post('/api/v1/notifications/services/slack', (req, res) => {
   const { name, webhookUrl, channel, username, icon } = req.body
 
   console.log(`📨 Creating Slack notification service: ${name}`)
@@ -1001,7 +1001,7 @@ app.post('/notifications/services/slack', (req, res) => {
 })
 
 // Mock create GitHub service endpoint
-app.post('/notifications/services/github', (req, res) => {
+app.post('/api/v1/notifications/services/github', (req, res) => {
   const { name, installationId, repositories } = req.body
 
   console.log(`📨 Creating GitHub notification service: ${name}`)
@@ -1023,20 +1023,82 @@ app.post('/notifications/services/github', (req, res) => {
   res.json({ status: 'success', name })
 })
 
-// Mock test Slack service endpoint
-app.post('/notifications/services/:name/test', (req, res) => {
+// Test Slack service endpoint - sends REAL message
+app.post('/api/v1/notifications/services/:name/test', async (req, res) => {
   const { name } = req.params
-  const { webhookUrl } = req.body
+  const { webhookUrl, channel, username, icon } = req.body
 
   console.log(`🧪 Testing Slack notification service: ${name}`)
   console.log(`   Webhook URL: ${webhookUrl.substring(0, 40)}...`)
 
-  // Simulate successful test
-  res.json({ status: 'success', message: 'Test notification sent successfully' })
+  try {
+    // Build Slack message payload
+    const payload = {
+      text: '🧪 *Test Notification from Cased Deploy*',
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: '🧪 Test Notification',
+            emoji: true
+          }
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `This is a test notification from the *${name}* service.\n\nIf you're seeing this message, your Slack integration is working correctly! :tada:`
+          }
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Sent at: <!date^${Math.floor(Date.now() / 1000)}^{date_pretty} at {time}|${new Date().toISOString()}>`
+            }
+          ]
+        }
+      ]
+    }
+
+    // Add optional overrides
+    if (channel) payload.channel = channel
+    if (username) payload.username = username
+    if (icon) payload.icon_emoji = icon
+
+    // Send actual HTTP request to Slack webhook
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`❌ Slack webhook failed: ${response.status} ${errorText}`)
+      return res.status(response.status).json({
+        status: 'error',
+        message: `Slack API error: ${errorText || response.statusText}`
+      })
+    }
+
+    console.log(`✅ Test notification sent successfully to Slack`)
+    res.json({ status: 'success', message: 'Test notification sent successfully' })
+  } catch (error) {
+    console.error(`❌ Error sending Slack notification:`, error)
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to send test notification'
+    })
+  }
 })
 
 // Mock test GitHub service endpoint
-app.post('/notifications/services/:name/test/github', (req, res) => {
+app.post('/api/v1/notifications/services/:name/test/github', (req, res) => {
   const { name } = req.params
   const { installationId } = req.body
 
@@ -1047,8 +1109,52 @@ app.post('/notifications/services/:name/test/github', (req, res) => {
   res.json({ status: 'success', message: 'Test commit status sent successfully' })
 })
 
+// Mock update Slack service endpoint
+app.put('/api/v1/notifications/services/slack/:name', (req, res) => {
+  const { name } = req.params
+  const { webhookUrl, channel, username, icon } = req.body
+
+  console.log(`📝 Updating Slack notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `webhookUrl: ${webhookUrl}${channel ? `\nchannel: ${channel}` : ''}${username ? `\nusername: ${username}` : ''}${icon ? `\nicon: ${icon}` : ''}`
+
+  notificationServices[serviceIndex] = { name, type: 'slack', config }
+
+  console.log(`✅ Slack service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
+// Mock update GitHub service endpoint
+app.put('/api/v1/notifications/services/github/:name', (req, res) => {
+  const { name } = req.params
+  const { installationId, repositories } = req.body
+
+  console.log(`📝 Updating GitHub notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `installationId: ${installationId}${repositories ? `\nrepositories: ${repositories}` : ''}`
+
+  notificationServices[serviceIndex] = { name, type: 'github', config }
+
+  console.log(`✅ GitHub service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
 // Mock delete notification service endpoint
-app.delete('/notifications/services/:name', (req, res) => {
+app.delete('/api/v1/notifications/services/:name', (req, res) => {
   const { name } = req.params
 
   console.log(`🗑️  Deleting notification service: ${name}`)
