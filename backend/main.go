@@ -102,12 +102,17 @@ func main() {
 			handler.handleAccount(w, r)
 			return
 		}
+<<<<<<< ours
 		if r.URL.Path == "/api/v1/notifications/config" {
 			handler.handleNotifications(w, r)
 			return
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/v1/notifications/services") {
 			handler.handleNotificationServices(w, r)
+=======
+		if r.URL.Path == "/api/v1/settings/audit" {
+			handler.handleAudit(w, r)
+>>>>>>> theirs
 			return
 		}
 
@@ -419,10 +424,37 @@ func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *h
 	})
 }
 
+<<<<<<< ours
 func (h *Handler) handleNotifications(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, OPTIONS")
+=======
+// Audit types
+type AuditEvent struct {
+	ID           string                 `json:"id"`
+	Timestamp    string                 `json:"timestamp"`
+	User         string                 `json:"user"`
+	Action       string                 `json:"action"`
+	ResourceType string                 `json:"resourceType"`
+	ResourceName string                 `json:"resourceName"`
+	Severity     string                 `json:"severity"`
+	Details      map[string]interface{} `json:"details,omitempty"`
+	IPAddress    string                 `json:"ipAddress,omitempty"`
+	UserAgent    string                 `json:"userAgent,omitempty"`
+	Success      bool                   `json:"success"`
+}
+
+type AuditEventList struct {
+	Items    []AuditEvent          `json:"items"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (h *Handler) handleAudit(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+>>>>>>> theirs
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 	if r.Method == "OPTIONS" {
@@ -434,14 +466,19 @@ func (h *Handler) handleNotifications(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
+<<<<<<< ours
 		h.getNotifications(ctx, w, r)
 	case "PUT":
 		h.updateNotifications(ctx, w, r)
+=======
+		h.getAuditEvents(ctx, w, r)
+>>>>>>> theirs
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
 }
 
+<<<<<<< ours
 func (h *Handler) getNotifications(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
 	if err != nil {
@@ -1197,5 +1234,102 @@ func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
 		"message": successMessage,
+=======
+func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Get the cased-audit ConfigMap (stores audit events as JSON array)
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "cased-audit", metav1.GetOptions{})
+	if err != nil {
+		// If ConfigMap doesn't exist, return empty list
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(AuditEventList{
+			Items: []AuditEvent{},
+		})
+		return
+	}
+
+	// Parse events from ConfigMap data
+	eventsJSON := configMap.Data["events"]
+	if eventsJSON == "" {
+		// No events yet
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(AuditEventList{
+			Items: []AuditEvent{},
+		})
+		return
+	}
+
+	var events []AuditEvent
+	if err := json.Unmarshal([]byte(eventsJSON), &events); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to parse audit events: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Apply query parameter filters
+	queryParams := r.URL.Query()
+	filteredEvents := events
+
+	// Filter by user
+	if user := queryParams.Get("user"); user != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.User == user {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by action
+	if action := queryParams.Get("action"); action != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Action == action {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by resource type
+	if resourceType := queryParams.Get("resourceType"); resourceType != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.ResourceType == resourceType {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by severity
+	if severity := queryParams.Get("severity"); severity != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Severity == severity {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by success
+	if successStr := queryParams.Get("success"); successStr != "" {
+		success := successStr == "true"
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Success == success {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(AuditEventList{
+		Items: filteredEvents,
+		Metadata: map[string]interface{}{
+			"totalCount": len(filteredEvents),
+		},
+>>>>>>> theirs
 	})
 }

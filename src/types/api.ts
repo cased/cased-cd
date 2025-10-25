@@ -415,3 +415,91 @@ export interface License {
   expiresAt?: string // ISO date string
   organization?: string
 }
+
+// Audit Trail
+export type AuditAction =
+  | 'application.create'
+  | 'application.update'
+  | 'application.sync'
+  | 'application.refresh'
+  | 'application.delete'
+  | 'application.rollback'
+  | 'repository.create'
+  | 'repository.update'
+  | 'repository.delete'
+  | 'repository.test'
+  | 'cluster.create'
+  | 'cluster.update'
+  | 'cluster.delete'
+  | 'project.create'
+  | 'project.update'
+  | 'project.delete'
+  | 'rbac.grant'
+  | 'rbac.revoke'
+  | 'rbac.update'
+  | 'account.create'
+  | 'account.update'
+  | 'account.disable'
+  | 'account.enable'
+  | 'account.delete'
+  | 'account.password_change'
+  | 'notification.create'
+  | 'notification.update'
+  | 'notification.delete'
+  | 'notification.test'
+  | 'system.auto_sync'
+  | 'settings.update'
+
+export type AuditSeverity = 'info' | 'warning' | 'error'
+
+export type AuditResourceType =
+  | 'application'
+  | 'repository'
+  | 'cluster'
+  | 'project'
+  | 'rbac'
+  | 'account'
+  | 'notification'
+  | 'settings'
+  | 'system'
+
+export interface AuditEvent {
+  id: string
+  timestamp: string // ISO 8601
+  user: string // Username or 'system' for automated events
+  action: AuditAction
+  resourceType: AuditResourceType
+  resourceName: string
+  severity: AuditSeverity
+  details?: {
+    before?: Record<string, unknown> // State before change
+    after?: Record<string, unknown> // State after change
+    error?: string // Error message if action failed
+    metadata?: Record<string, unknown> // Additional context
+  }
+  ipAddress?: string
+  userAgent?: string
+  success: boolean // Whether the action succeeded
+}
+
+export interface AuditEventList {
+  items: AuditEvent[]
+  metadata?: {
+    continue?: string
+    remainingItemCount?: number
+    totalCount?: number
+  }
+}
+
+export interface AuditEventFilters {
+  user?: string
+  action?: AuditAction
+  resourceType?: AuditResourceType
+  resourceName?: string
+  severity?: AuditSeverity
+  startDate?: string // ISO 8601
+  endDate?: string // ISO 8601
+  success?: boolean
+  limit?: number
+  offset?: number
+}

@@ -1714,6 +1714,92 @@ app.delete('/api/v1/notifications/services/:name', (req, res) => {
   }
 })
 
+// Audit Trail - Mock data
+const generateAuditEvents = () => {
+  const users = ['admin', 'john.doe', 'jane.smith', 'system']
+  const actions = [
+    'application.create', 'application.update', 'application.sync', 'application.refresh', 'application.delete',
+    'repository.create', 'repository.update', 'repository.delete',
+    'cluster.create', 'cluster.update', 'cluster.delete',
+    'project.create', 'project.update', 'project.delete',
+    'rbac.grant', 'rbac.revoke', 'rbac.update',
+    'account.create', 'account.update', 'account.delete',
+    'notification.create', 'notification.update', 'notification.delete',
+    'system.auto_sync'
+  ]
+  const resourceTypes = ['application', 'repository', 'cluster', 'project', 'rbac', 'account', 'notification', 'system']
+  const severities = ['info', 'warning', 'error']
+
+  const events = []
+  const now = new Date()
+
+  // Generate 50 mock audit events
+  for (let i = 0; i < 50; i++) {
+    const timestamp = new Date(now - (i * 3600000)) // 1 hour apart
+    const action = actions[Math.floor(Math.random() * actions.length)]
+    const resourceType = resourceTypes[Math.floor(Math.random() * resourceTypes.length)]
+    const user = users[Math.floor(Math.random() * users.length)]
+    const success = Math.random() > 0.1 // 90% success rate
+    const severity = success ? 'info' : (Math.random() > 0.5 ? 'warning' : 'error')
+
+    events.push({
+      id: `audit-${i + 1}`,
+      timestamp: timestamp.toISOString(),
+      user,
+      action,
+      resourceType,
+      resourceName: `${resourceType}-${Math.floor(Math.random() * 10)}`,
+      severity,
+      success,
+      ipAddress: `192.168.1.${Math.floor(Math.random() * 255)}`,
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+      details: {
+        metadata: {
+          triggeredBy: user === 'system' ? 'auto-sync' : 'manual',
+        }
+      }
+    })
+  }
+
+  return events
+}
+
+let auditEvents = generateAuditEvents()
+
+// GET /api/v1/settings/audit - Get audit events
+app.get('/api/v1/settings/audit', (req, res) => {
+  console.log('📋 GET /api/v1/settings/audit')
+
+  let filteredEvents = [...auditEvents]
+
+  // Apply query parameter filters
+  if (req.query.user) {
+    filteredEvents = filteredEvents.filter(e => e.user === req.query.user)
+  }
+  if (req.query.action) {
+    filteredEvents = filteredEvents.filter(e => e.action === req.query.action)
+  }
+  if (req.query.resourceType) {
+    filteredEvents = filteredEvents.filter(e => e.resourceType === req.query.resourceType)
+  }
+  if (req.query.severity) {
+    filteredEvents = filteredEvents.filter(e => e.severity === req.query.severity)
+  }
+  if (req.query.success !== undefined) {
+    const success = req.query.success === 'true'
+    filteredEvents = filteredEvents.filter(e => e.success === success)
+  }
+
+  console.log(`✅ Returning ${filteredEvents.length} audit events`)
+
+  res.json({
+    items: filteredEvents,
+    metadata: {
+      totalCount: filteredEvents.length
+    }
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })
