@@ -134,6 +134,43 @@ const notificationsApi = {
     const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test/github`, data)
     return response.data
   },
+
+  // Create a Webhook notification service
+  createWebhookService: async (data: {
+    name: string
+    url: string
+    events?: {
+      onDeployed: boolean
+      onSyncFailed: boolean
+      onHealthDegraded: boolean
+    }
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.post<{ status: string; name: string }>('/notifications/services/webhook', data)
+    return response.data
+  },
+
+  // Update a Webhook notification service
+  updateWebhookService: async (data: {
+    name: string
+    url: string
+    events?: {
+      onDeployed: boolean
+      onSyncFailed: boolean
+      onHealthDegraded: boolean
+    }
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.put<{ status: string; name: string }>(`/notifications/services/webhook/${data.name}`, data)
+    return response.data
+  },
+
+  // Test a Webhook notification service
+  testWebhookService: async (data: {
+    name?: string
+    url: string
+  }): Promise<{ status: string; message: string }> => {
+    const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test/webhook`, data)
+    return response.data
+  },
 }
 
 // Helper to determine service type from name and config
@@ -270,5 +307,52 @@ export function useUpdateGitHubService() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all })
     },
+  })
+}
+
+export function useCreateWebhookService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      url: string
+      events?: {
+        onDeployed: boolean
+        onSyncFailed: boolean
+        onHealthDegraded: boolean
+      }
+    }) => notificationsApi.createWebhookService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useUpdateWebhookService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      url: string
+      events?: {
+        onDeployed: boolean
+        onSyncFailed: boolean
+        onHealthDegraded: boolean
+      }
+    }) => notificationsApi.updateWebhookService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useTestWebhookService() {
+  return useMutation({
+    mutationFn: (data: {
+      name?: string
+      url: string
+    }) => notificationsApi.testWebhookService(data),
   })
 }

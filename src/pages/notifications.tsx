@@ -11,11 +11,15 @@ import {
   useCreateSlackService,
   useTestSlackService,
   useDeleteNotificationService,
-  useUpdateSlackService
+  useUpdateSlackService,
+  useCreateWebhookService,
+  useUpdateWebhookService,
+  useTestWebhookService
 } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
 import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
+import { WebhookServiceForm, type WebhookServiceFormData } from '@/components/notifications/webhook-service-form'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { toast } from 'sonner'
 
@@ -23,12 +27,16 @@ export default function NotificationsPage() {
   const { data: config, isLoading, error, refetch } = useNotificationsConfig()
   const [createPanelOpen, setCreatePanelOpen] = useState(false)
   const [slackFormOpen, setSlackFormOpen] = useState(false)
+  const [webhookFormOpen, setWebhookFormOpen] = useState(false)
   const [editingService, setEditingService] = useState<NotificationService | null>(null)
   const [testingService, setTestingService] = useState<string | null>(null)
 
   const createSlackService = useCreateSlackService()
   const updateSlackService = useUpdateSlackService()
   const testSlackService = useTestSlackService()
+  const createWebhookService = useCreateWebhookService()
+  const updateWebhookService = useUpdateWebhookService()
+  const testWebhookService = useTestWebhookService()
   const deleteNotificationService = useDeleteNotificationService()
 
   const deleteHandler = useDeleteHandler({
@@ -46,6 +54,8 @@ export default function NotificationsPage() {
     // Show the appropriate form based on service type
     if (type === 'slack') {
       setSlackFormOpen(true)
+    } else if (type === 'webhook') {
+      setWebhookFormOpen(true)
     } else {
       // TODO: Handle other service types
       toast.info(`${type} service form not yet implemented`)
@@ -81,6 +91,34 @@ export default function NotificationsPage() {
     }
   }
 
+  const handleWebhookSubmit = async (data: WebhookServiceFormData) => {
+    try {
+      if (editingService) {
+        await updateWebhookService.mutateAsync(data)
+        toast.success(`Webhook service "${data.name}" updated successfully`)
+      } else {
+        await createWebhookService.mutateAsync(data)
+        toast.success(`Webhook service "${data.name}" created successfully`)
+      }
+      setWebhookFormOpen(false)
+      setEditingService(null)
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save service'
+      toast.error(errorMessage)
+    }
+  }
+
+  const handleWebhookTest = async (data: WebhookServiceFormData) => {
+    try {
+      await testWebhookService.mutateAsync(data)
+      toast.success('Test webhook sent successfully')
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send test'
+      toast.error(errorMessage)
+    }
+  }
 
   const handleEditService = (service: NotificationService) => {
     setEditingService(service)
@@ -88,6 +126,8 @@ export default function NotificationsPage() {
     // Open the appropriate form based on service type
     if (service.type === 'slack') {
       setSlackFormOpen(true)
+    } else if (service.type === 'webhook') {
+      setWebhookFormOpen(true)
     } else {
       toast.info(`Edit functionality for "${service.type}" services not yet implemented`)
     }
@@ -100,6 +140,10 @@ export default function NotificationsPage() {
         const data = parseSlackConfig(service.config, service.name)
         await testSlackService.mutateAsync(data)
         toast.success('Test notification sent successfully')
+      } else if (service.type === 'webhook') {
+        const data = parseWebhookConfig(service.config, service.name)
+        await testWebhookService.mutateAsync(data)
+        toast.success('Test webhook sent successfully')
       } else {
         toast.info(`Test functionality for "${service.type}" services not yet implemented`)
       }
@@ -137,6 +181,27 @@ export default function NotificationsPage() {
     return data
   }
 
+  const parseWebhookConfig = (config: string, name: string): WebhookServiceFormData => {
+    const lines = config.split('\n')
+    const data: WebhookServiceFormData = {
+      name,
+      url: '',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
+    }
+
+    lines.forEach(line => {
+      const [key, ...valueParts] = line.split(':')
+      const value = valueParts.join(':').trim()
+
+      if (key.trim() === 'url') data.url = value
+    })
+
+    return data
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -237,6 +302,21 @@ export default function NotificationsPage() {
         isTesting={testSlackService.isPending}
         isEditing={!!editingService && editingService.type === 'slack'}
         initialData={editingService && editingService.type === 'slack' ? parseSlackConfig(editingService.config, editingService.name) : undefined}
+      />
+
+      {/* Webhook Service Form */}
+      <WebhookServiceForm
+        open={webhookFormOpen}
+        onOpenChange={(open) => {
+          setWebhookFormOpen(open)
+          if (!open) setEditingService(null)
+        }}
+        onSubmit={handleWebhookSubmit}
+        onTest={handleWebhookTest}
+        isSubmitting={editingService ? updateWebhookService.isPending : createWebhookService.isPending}
+        isTesting={testWebhookService.isPending}
+        isEditing={!!editingService && editingService.type === 'webhook'}
+        initialData={editingService && editingService.type === 'webhook' ? parseWebhookConfig(editingService.config, editingService.name) : undefined}
       />
 
       {/* Delete Confirmation Dialog */}

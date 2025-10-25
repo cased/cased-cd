@@ -1410,6 +1410,121 @@ app.put('/api/v1/notifications/services/github/:name', (req, res) => {
   res.json({ status: 'success', name })
 })
 
+// Mock create Webhook service endpoint
+app.post('/api/v1/notifications/services/webhook', (req, res) => {
+  const { name, url, events } = req.body
+
+  console.log(`📨 Creating Webhook notification service: ${name}`)
+  console.log(`   URL: ${url}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  const config = `url: ${url}`
+
+  const service = {
+    name,
+    type: 'webhook',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Webhook service "${name}" created with ${triggers.length} triggers`)
+  res.json({ status: 'success', name })
+})
+
+// Mock update Webhook service endpoint
+app.put('/api/v1/notifications/services/webhook/:name', (req, res) => {
+  const { name } = req.params
+  const { url } = req.body
+
+  console.log(`📝 Updating Webhook notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `url: ${url}`
+
+  notificationServices[serviceIndex] = { name, type: 'webhook', config }
+
+  console.log(`✅ Webhook service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
+// Mock test Webhook service endpoint
+app.post('/api/v1/notifications/services/:name/test/webhook', (req, res) => {
+  const { name } = req.params
+  const { url } = req.body
+
+  console.log(`🧪 Testing webhook service: ${name || 'test'}`)
+  console.log(`   URL: ${url}`)
+
+  // In real implementation, this would send a test HTTP POST to the webhook URL
+  // For mock, we just simulate success
+  console.log(`✅ Test webhook would be sent to ${url}`)
+
+  res.json({
+    status: 'success',
+    message: 'Test webhook sent successfully'
+  })
+})
+
 // Mock delete notification service endpoint
 app.delete('/api/v1/notifications/services/:name', (req, res) => {
   const { name } = req.params
