@@ -978,7 +978,7 @@ app.get('/notifications/config', (req, res) => {
 })
 
 // Mock create Slack service endpoint
-app.post('/notifications/services', (req, res) => {
+app.post('/notifications/services/slack', (req, res) => {
   const { name, webhookUrl, channel, username, icon } = req.body
 
   console.log(`📨 Creating Slack notification service: ${name}`)

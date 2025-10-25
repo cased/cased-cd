@@ -71,7 +71,7 @@ const notificationsApi = {
     username?: string
     icon?: string
   }): Promise<{ status: string; name: string }> => {
-    const response = await api.post<{ status: string; name: string }>('/notifications/services', data)
+    const response = await api.post<{ status: string; name: string }>('/notifications/services/slack', data)
     return response.data
   },
 
