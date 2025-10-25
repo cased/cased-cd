@@ -92,6 +92,26 @@ const notificationsApi = {
     const response = await api.delete<{ status: string; name: string }>(`/notifications/services/${name}`)
     return response.data
   },
+
+  // Create a GitHub notification service
+  createGitHubService: async (data: {
+    name: string
+    installationId: string
+    repositories?: string
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.post<{ status: string; name: string }>('/notifications/services/github', data)
+    return response.data
+  },
+
+  // Test a GitHub notification service
+  testGitHubService: async (data: {
+    name?: string
+    installationId: string
+    repositories?: string
+  }): Promise<{ status: string; message: string }> => {
+    const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test/github`, data)
+    return response.data
+  },
 }
 
 // Helper to determine service type from name and config
@@ -171,5 +191,30 @@ export function useDeleteNotificationService() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all })
     },
+  })
+}
+
+export function useCreateGitHubService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      installationId: string
+      repositories?: string
+    }) => notificationsApi.createGitHubService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useTestGitHubService() {
+  return useMutation({
+    mutationFn: (data: {
+      name?: string
+      installationId: string
+      repositories?: string
+    }) => notificationsApi.testGitHubService(data),
   })
 }

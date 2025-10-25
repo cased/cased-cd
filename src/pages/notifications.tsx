@@ -10,21 +10,27 @@ import {
   useNotificationsConfig,
   useCreateSlackService,
   useTestSlackService,
-  useDeleteNotificationService
+  useDeleteNotificationService,
+  useCreateGitHubService,
+  useTestGitHubService
 } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
 import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
+import { GitHubServiceForm, type GitHubServiceFormData } from '@/components/notifications/github-service-form'
 
 export default function NotificationsPage() {
   const { data: config, isLoading, error, refetch } = useNotificationsConfig()
   const [selectedTab, setSelectedTab] = useState('services')
   const [createPanelOpen, setCreatePanelOpen] = useState(false)
   const [slackFormOpen, setSlackFormOpen] = useState(false)
+  const [githubFormOpen, setGithubFormOpen] = useState(false)
 
   const createSlackService = useCreateSlackService()
   const testSlackService = useTestSlackService()
   const deleteNotificationService = useDeleteNotificationService()
+  const createGitHubService = useCreateGitHubService()
+  const testGitHubService = useTestGitHubService()
 
   const handleServiceTypeSelected = (type: ServiceType) => {
     setCreatePanelOpen(false)
@@ -32,6 +38,8 @@ export default function NotificationsPage() {
     // Show the appropriate form based on service type
     if (type === 'slack') {
       setSlackFormOpen(true)
+    } else if (type === 'github') {
+      setGithubFormOpen(true)
     } else {
       // TODO: Handle other service types
       alert(`${type} service form not yet implemented`)
@@ -80,6 +88,29 @@ export default function NotificationsPage() {
     // For now, just alert that this is not yet implemented
     // TODO: Pre-fill the form with existing service data
     alert(`Edit functionality for "${service.name}" not yet implemented`)
+  }
+
+  const handleGitHubSubmit = async (data: GitHubServiceFormData) => {
+    try {
+      await createGitHubService.mutateAsync(data)
+      setGithubFormOpen(false)
+      alert(`✅ GitHub service "${data.name}" created successfully!`)
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create service'
+      alert(`❌ Error: ${errorMessage}`)
+    }
+  }
+
+  const handleGitHubTest = async (data: GitHubServiceFormData) => {
+    try {
+      await testGitHubService.mutateAsync(data)
+      alert('✅ Test commit status sent successfully!')
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send test'
+      alert(`❌ Error: ${errorMessage}`)
+    }
   }
 
   return (
@@ -227,6 +258,16 @@ export default function NotificationsPage() {
         onTest={handleSlackTest}
         isSubmitting={createSlackService.isPending}
         isTesting={testSlackService.isPending}
+      />
+
+      {/* GitHub Service Form */}
+      <GitHubServiceForm
+        open={githubFormOpen}
+        onOpenChange={setGithubFormOpen}
+        onSubmit={handleGitHubSubmit}
+        onTest={handleGitHubTest}
+        isSubmitting={createGitHubService.isPending}
+        isTesting={testGitHubService.isPending}
       />
     </div>
   )
