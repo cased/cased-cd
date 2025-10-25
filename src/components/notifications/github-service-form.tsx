@@ -125,7 +125,7 @@ export function GitHubServiceForm({
               <p className="mb-2">
                 Install the Cased GitHub App to your organization and get your installation ID.{' '}
                 <a
-                  href="https://github.com/apps/cased-integration/installations/new"
+                  href="https://github.com/apps/cased/installations/new"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-blue-600 dark:text-blue-400 hover:underline"
