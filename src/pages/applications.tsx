@@ -50,6 +50,7 @@ export function ApplicationsPage() {
     <div className="flex flex-col h-full">
       <PageHeader
         title="Applications"
+        description="Manage and monitor your GitOps applications"
         actions={
           <>
             <Button

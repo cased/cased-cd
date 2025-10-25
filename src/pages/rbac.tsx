@@ -11,6 +11,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { UpgradeModal } from '@/components/upgrade-modal'
+import { PageHeader } from '@/components/page-header'
 import { toast } from 'sonner'
 import {
   Table,
@@ -240,19 +241,10 @@ export function RBACPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">RBAC Permissions</h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Manage role-based access control permissions for users
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="RBAC Permissions"
+        description="Manage role-based access control permissions for users"
+      />
 
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
         <div className="p-4 space-y-4">

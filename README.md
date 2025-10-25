@@ -27,13 +27,50 @@ Built by [**Cased**](https://cased.com).
 
 ### Enterprise Features
 
-Upgrade to Cased CD Enterprise for advanced team management capabilities:
+Upgrade to Cased CD Enterprise for advanced team management and compliance capabilities:
 
 - **🔐 RBAC Management** - Fine-grained role-based access control per application
 - **👥 User Management** - Create and delete users directly from the UI
 - **📊 Advanced Permissions** - Granular control over deploy, rollback, and delete actions
+- **🔔 Notification Services** - Configure Slack, Webhook, and Email notifications for deployment events
+- **📋 Comprehensive Audit Trail** - Track all user actions with detailed before/after change logs stored in Kubernetes ConfigMaps
 
 [Contact us](https://cased.com) to learn about Cased CD Enterprise.
+
+#### Audit Trail Deep Dive
+
+The enterprise audit trail provides comprehensive tracking of all user actions for compliance and security:
+
+**What's Tracked:**
+- **Login Activity**: All login attempts (success and failure) with username, timestamp, and IP address
+- **RBAC Changes**: Before/after snapshots of policy modifications
+- **User Management**: Account creation and deletion with full details
+- **Notification Services**: Creation, updates, and deletion of notification configurations
+- **Resource Deletions**: Application and project deletions (high-risk operations)
+
+**How It Works:**
+The audit backend intercepts specific API requests, logs the action details, then forwards to ArgoCD. This allows capturing:
+- **Before state**: What the resource looked like before the change
+- **After state**: What it looks like after the change
+- **Metadata**: Who made the change, when, from what IP address
+- **Success/Failure**: Whether the operation succeeded or failed
+
+**Storage & Compliance:**
+- Audit events are stored in a Kubernetes ConfigMap (`cased-audit`)
+- Limited to 1000 most recent events (configurable)
+- Stored as JSON for easy parsing and analysis
+- Can be backed up using standard Kubernetes backup tools
+- Accessible via `kubectl get configmap cased-audit -n argocd -o yaml`
+
+**Why a Backend?**
+ArgoCD itself doesn't provide detailed audit logging for most operations. To capture this information, we need to:
+1. Intercept requests (especially login and deletes)
+2. Record the before state
+3. Forward to ArgoCD
+4. Record the after state and result
+5. Store in persistent storage
+
+This is only possible with a backend component that sits between the UI and ArgoCD.
 
 ### Feature Comparison
 
@@ -50,6 +87,10 @@ Upgrade to Cased CD Enterprise for advanced team management capabilities:
 | **Create/Delete Users** | ❌ | ✅ |
 | **RBAC Permission Management** | ❌ | ✅ |
 | **Per-App Access Control** | ❌ | ✅ |
+| **Notification Services (Slack/Webhook/Email)** | ❌ | ✅ |
+| **Audit Trail** | ❌ | ✅ |
+| **Login Tracking** | ❌ | ✅ |
+| **Change History (Before/After)** | ❌ | ✅ |
 
 ## Quick Start
 
@@ -170,7 +211,7 @@ Cased CD is a React single-page application that communicates directly with the 
                              └─ Proxies /api/* to ArgoCD (adds CORS)
 ```
 
-### Enterprise Deployment (with RBAC Backend)
+### Enterprise Deployment (with Audit Backend)
 
 Enterprise customers receive an additional backend component for advanced features:
 
@@ -181,19 +222,35 @@ Enterprise customers receive an additional backend component for advanced featur
 │             │         │   (nginx)    │    │    │   Server    │
 └─────────────┘         └──────────────┘    │    └─────────────┘
                              │               │
-                             │               └───► ┌─────────────────┐
-                             │                     │  RBAC Backend   │
-                             │                     │  (Go service)   │
-                             │                     └─────────────────┘
+                             │               └───► ┌──────────────────┐
+                             │                     │  Audit Backend   │
+                             │                     │  (Go service)    │
+                             │                     └──────────────────┘
                              │                            │
                              ├─ Serves static UI         │
                              ├─ /api/v1/* → ArgoCD      │
-                             └─ /api/v1/settings/* ─────┘
-                                /api/v1/license ─────────┘
+                             └─ Enterprise endpoints ────┘
+                                  - /api/v1/settings/rbac
+                                  - /api/v1/settings/audit
+                                  - /api/v1/session (login auditing)
+                                  - /api/v1/account
+                                  - /api/v1/notifications
+                                  - /api/v1/license
                                      │
-                                     └─ Direct Kubernetes API access
-                                        for RBAC ConfigMap management
+                                     └─ Kubernetes API access
+                                        - Reads/writes ConfigMaps (RBAC, audit, notifications)
+                                        - Manages Secrets (passwords, tokens)
+                                        - Stores audit events (cased-audit ConfigMap)
 ```
+
+**Why the backend?**
+
+The backend is necessary for enterprise features because:
+1. **Audit Trail**: Intercepts requests (login, deletes) to log before/after state
+2. **Compliance**: Stores immutable audit logs in Kubernetes ConfigMaps
+3. **RBAC Management**: Direct ConfigMap manipulation for ArgoCD RBAC policies
+4. **User Management**: Creates users with bcrypt password hashing
+5. **License Validation**: Enforces enterprise feature access
 
 **Standard Components:**
 - **Frontend**: React 18 + TypeScript + Tailwind CSS v4
@@ -201,9 +258,10 @@ Enterprise customers receive an additional backend component for advanced featur
 - **State Management**: TanStack Query for server state
 
 **Enterprise Components:**
-- **RBAC Backend**: Go service for user/permission management
+- **Audit Backend**: Go service for user/permission management and audit logging
 - **Kubernetes Access**: Direct ConfigMap/Secret manipulation
 - **License Validation**: Enterprise feature gating
+- **Audit Storage**: Kubernetes ConfigMaps (`cased-audit`) for compliance
 
 
 ## Requirements
@@ -226,13 +284,13 @@ kubectl config current-context
 # 2. Switch to k3d cluster
 kubectl config use-context k3d-cased-cd
 
-# 3. Restart port-forward (nginx expects this on port 9000)
-kubectl port-forward svc/argocd-server -n argocd 9000:80 &
+# 3. Restart port-forward (ArgoCD server on port 8090)
+kubectl port-forward svc/argocd-server -n argocd 8090:443 &
 
-# 4. Restart RBAC proxy (if using enterprise features)
+# 4. Restart audit backend (if using enterprise features)
 cd backend
 lsof -ti:8081 | xargs kill
-./rbac-proxy &
+./cased-backend &
 ```
 
 **Common cause**: Switching between production and local k3d clusters without restarting dependent services.
@@ -381,14 +439,63 @@ npm run dev:real             # Start Vite with real ArgoCD API
 ### Available Commands
 
 ```bash
-npm run dev          # Start dev server (uses mock API)
-npm run dev:mock     # Start mock API server only
-npm run dev:real     # Start dev server (uses real ArgoCD)
-npm run build        # Build for production
-npm run preview      # Preview production build
-npm run lint         # Run ESLint
-npm run type-check   # Run TypeScript compiler check
+npm run dev              # Start dev server (uses mock API)
+npm run dev:mock         # Start mock API server only
+npm run dev:real         # Start dev server (uses real ArgoCD, no backend)
+npm run dev:enterprise   # Start dev server (real ArgoCD + enterprise backend)
+npm run build            # Build for production
+npm run preview          # Preview production build
+npm run lint             # Run ESLint
+npm run type-check       # Run TypeScript compiler check
 ```
+
+### Development Modes
+
+Cased CD supports three development modes:
+
+#### 1. Mock Mode (Default)
+```bash
+npm run dev:mock    # Terminal 1: Start mock API
+npm run dev         # Terminal 2: Start Vite
+```
+- **Use case**: Quick UI development without ArgoCD
+- **Requirements**: None
+- **Features**: Mock data, no real ArgoCD
+- **Login**: Any username/password
+
+#### 2. Real ArgoCD (Community Features)
+```bash
+./scripts/setup-argocd.sh   # One-time: Setup k3d cluster
+npm run dev:real            # Start Vite with real ArgoCD
+```
+- **Use case**: Testing with real ArgoCD, community features only
+- **Requirements**: Docker Desktop, k3d cluster running
+- **Features**: Full ArgoCD integration, no audit trail
+- **Login**: ArgoCD credentials (admin/password from setup)
+- **Backend**: Not required (requests go directly to ArgoCD)
+
+#### 3. Enterprise Mode (Full Features + Audit Trail)
+```bash
+./scripts/setup-argocd.sh        # One-time: Setup k3d cluster
+cd backend && go build .         # Build backend
+./backend/cased-backend &        # Terminal 1: Start backend (port 8081)
+npm run dev:enterprise           # Terminal 2: Start Vite with enterprise mode
+```
+- **Use case**: Testing enterprise features and audit trail
+- **Requirements**: Docker Desktop, k3d cluster, Go 1.21+
+- **Features**: Everything + RBAC management, user management, audit trail
+- **Login**: ArgoCD credentials (admin/password from setup)
+- **Backend**: **Required** on port 8081
+
+**Key Difference**: `dev:real` vs `dev:enterprise`
+- `dev:real`: Direct ArgoCD connection, no backend, free tier features
+- `dev:enterprise`: Routes enterprise endpoints through backend for audit logging
+
+**Environment Variables:**
+- `VITE_USE_REAL_API=true` - Connect to real ArgoCD instead of mock
+- `VITE_ENTERPRISE_BACKEND=true` - Enable enterprise backend proxying
+
+The `dev:enterprise` script sets both variables automatically.
 
 ### Prerequisites
 

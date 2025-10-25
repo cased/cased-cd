@@ -48,4 +48,8 @@ dist-ssr
 
 # Test coverage
 coverage
-.nyc_outputCLAUDE.md
+.nyc_output
+
+# Backend build artifacts
+backend/cased-backend
+backend/rbac-proxy

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import {
   IconDocument,
   IconDownload,
@@ -7,16 +7,22 @@ import {
   IconCircleCheck,
   IconCircleWarning,
   IconCircleClose,
+  IconChevronDown,
+  IconChevronRight,
 } from 'obra-icons-react'
-import { useHasFeature } from '@/services/license'
 import { useAuditEvents } from '@/services/audit'
 import { useDebounce } from '@/hooks/useDebounce'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
-import { UpgradeModal } from '@/components/upgrade-modal'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Select,
   SelectContent,
@@ -37,15 +43,15 @@ import { PageContent } from '@/components/ui/page-content'
 import type { AuditAction, AuditResourceType, AuditSeverity } from '@/types/api'
 
 export function AuditTrailPage() {
-  const hasAudit = useHasFeature('audit')
-  const [showUpgrade, setShowUpgrade] = useState(!hasAudit)
-
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [actionFilter, setActionFilter] = useState<AuditAction | 'all'>('all')
   const [resourceTypeFilter, setResourceTypeFilter] = useState<AuditResourceType | 'all'>('all')
   const [severityFilter, setSeverityFilter] = useState<AuditSeverity | 'all'>('all')
   const [successFilter, setSuccessFilter] = useState<'all' | 'true' | 'false'>('all')
+
+  // Track expanded rows
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set())
 
   // Debounce search
   const debouncedSearch = useDebounce(searchQuery, 300)
@@ -59,18 +65,6 @@ export function AuditTrailPage() {
   }
 
   const { data, isLoading, error, refetch } = useAuditEvents(filters)
-
-  // If user doesn't have audit feature, show upgrade modal
-  if (!hasAudit) {
-    return (
-      <UpgradeModal
-        open={showUpgrade}
-        onOpenChange={setShowUpgrade}
-        feature="Audit Trail"
-        featureDescription="Comprehensive audit logging is available on the Enterprise plan. Track all actions across applications, clusters, repositories, and more."
-      />
-    )
-  }
 
   // Filter events based on search query (client-side for user/resource name)
   const filteredEvents = data?.items?.filter((event) => {
@@ -144,6 +138,19 @@ export function AuditTrailPage() {
     })
   }
 
+  // Toggle row expansion
+  const toggleRow = (eventId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(eventId)) {
+        newSet.delete(eventId)
+      } else {
+        newSet.add(eventId)
+      }
+      return newSet
+    })
+  }
+
   // Get icon for severity
   const getSeverityIcon = (severity: AuditSeverity) => {
     switch (severity) {
@@ -154,6 +161,36 @@ export function AuditTrailPage() {
       case 'error':
         return <IconCircleClose size={16} className="text-red-500" />
     }
+  }
+
+  // Render change details
+  const renderDetails = (details: Record<string, unknown> | undefined) => {
+    if (!details || (!details.before && !details.after)) {
+      return null
+    }
+
+    return (
+      <div className="mt-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
+        <div className="grid grid-cols-2 gap-4">
+          {details.before && (
+            <div>
+              <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Before</h4>
+              <pre className="text-xs font-mono text-neutral-600 dark:text-neutral-400 overflow-auto">
+                {JSON.stringify(details.before, null, 2)}
+              </pre>
+            </div>
+          )}
+          {details.after && (
+            <div>
+              <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">After</h4>
+              <pre className="text-xs font-mono text-neutral-600 dark:text-neutral-400 overflow-auto">
+                {JSON.stringify(details.after, null, 2)}
+              </pre>
+            </div>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -174,18 +211,22 @@ export function AuditTrailPage() {
               />
               Refresh
             </Button>
-            <Select value="csv" onValueChange={(value) => value === 'csv' ? handleExportCSV() : handleExportJSON()}>
-              <SelectTrigger className="w-[140px]">
-                <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
                   <IconDownload size={16} />
-                  <span>Export</span>
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="csv">Export as CSV</SelectItem>
-                <SelectItem value="json">Export as JSON</SelectItem>
-              </SelectContent>
-            </Select>
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  Export as CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportJSON}>
+                  Export as JSON
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         }
       />
@@ -310,6 +351,9 @@ export function AuditTrailPage() {
             <Table>
               <TableHeader>
                 <TableRow className="bg-neutral-100 dark:bg-neutral-900">
+                  <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider w-8">
+
+                  </TableHead>
                   <TableHead className="text-xs font-medium text-neutral-400 uppercase tracking-wider">
                     Timestamp
                   </TableHead>
@@ -331,48 +375,76 @@ export function AuditTrailPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredEvents.map((event) => (
-                  <TableRow key={event.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-900">
-                    <TableCell className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {formatTimestamp(event.timestamp)}
-                    </TableCell>
-                    <TableCell className="font-medium text-sm">
-                      {event.user}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <code className="text-xs font-mono text-neutral-600 dark:text-neutral-400">
-                          {event.action}
-                        </code>
-                        <div className="flex items-center gap-1">
-                          {getSeverityIcon(event.severity)}
-                          <span className="text-xs text-neutral-500 capitalize">
-                            {event.severity}
-                          </span>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-sm font-medium">{event.resourceName}</span>
-                        <Badge variant="outline" className="text-xs w-fit">
-                          {event.resourceType}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={event.success ? 'default' : 'destructive'}
-                        className="text-xs"
-                      >
-                        {event.success ? 'Success' : 'Failed'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
-                      {event.ipAddress || 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredEvents.map((event) => {
+                  const isExpanded = expandedRows.has(event.id)
+                  const hasDetails = event.details && (event.details.before || event.details.after)
+
+                  return (
+                    <React.Fragment key={event.id}>
+                      <TableRow className="hover:bg-neutral-50 dark:hover:bg-neutral-900">
+                        <TableCell className="w-8">
+                          {hasDetails && (
+                            <button
+                              onClick={() => toggleRow(event.id)}
+                              className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                            >
+                              {isExpanded ? (
+                                <IconChevronDown size={16} />
+                              ) : (
+                                <IconChevronRight size={16} />
+                              )}
+                            </button>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {formatTimestamp(event.timestamp)}
+                        </TableCell>
+                        <TableCell className="font-medium text-sm">
+                          {event.user}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <code className="text-xs font-mono text-neutral-600 dark:text-neutral-400">
+                              {event.action}
+                            </code>
+                            <div className="flex items-center gap-1">
+                              {getSeverityIcon(event.severity)}
+                              <span className="text-xs text-neutral-500 capitalize">
+                                {event.severity}
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <span className="text-sm font-medium">{event.resourceName}</span>
+                            <Badge variant="outline" className="text-xs w-fit">
+                              {event.resourceType}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={event.success ? 'default' : 'destructive'}
+                            className="text-xs"
+                          >
+                            {event.success ? 'Success' : 'Failed'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-neutral-600 dark:text-neutral-400">
+                          {event.ipAddress || 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                      {isExpanded && hasDetails && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="bg-neutral-50 dark:bg-neutral-900">
+                            {renderDetails(event.details)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>

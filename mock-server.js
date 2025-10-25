@@ -957,6 +957,9 @@ app.put('/api/v1/settings/rbac', (req, res) => {
   console.log('✅ RBAC config updated')
   console.log('New policy length:', rbacConfig.policy?.length || 0)
 
+  // Create audit event for RBAC update
+  createAuditEvent('admin', 'rbac.update', 'rbac', 'permissions', 'info', true, req)
+
   // Return the updated config
   res.json(rbacConfig)
 })
@@ -1765,6 +1768,38 @@ const generateAuditEvents = () => {
 }
 
 let auditEvents = generateAuditEvents()
+
+// Helper function to create real audit events
+const createAuditEvent = (user, action, resourceType, resourceName, severity, success, req) => {
+  const event = {
+    id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    timestamp: new Date().toISOString(),
+    user,
+    action,
+    resourceType,
+    resourceName,
+    severity,
+    success,
+    ipAddress: req.ip || req.connection.remoteAddress || 'unknown',
+    userAgent: req.get('user-agent') || 'unknown',
+    details: {
+      metadata: {
+        triggeredBy: 'manual',
+      }
+    }
+  }
+
+  // Prepend to keep newest first
+  auditEvents.unshift(event)
+
+  // Keep only last 1000 events
+  if (auditEvents.length > 1000) {
+    auditEvents = auditEvents.slice(0, 1000)
+  }
+
+  console.log(`📋 Audit event created: ${action} on ${resourceType}/${resourceName} by ${user}`)
+  return event
+}
 
 // GET /api/v1/settings/audit - Get audit events
 app.get('/api/v1/settings/audit', (req, res) => {
