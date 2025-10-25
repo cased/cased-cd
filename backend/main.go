@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httputil"
+	"net/smtp"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -1118,12 +1120,82 @@ func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
-	// For now, just return success without actually sending an email
-	// In a production environment, you would use net/smtp or a library like gomail
-	// to send a test email
+	// Test SMTP connection by attempting to authenticate
+	addr := fmt.Sprintf("%s:%s", req.SMTPHost, req.SMTPPort)
+
+	conn, err := smtp.Dial(addr)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to connect to SMTP server: %v", err), http.StatusBadGateway)
+		return
+	}
+	defer conn.Close()
+
+	// Send EHLO/HELO
+	if err = conn.Hello("localhost"); err != nil {
+		http.Error(w, fmt.Sprintf("SMTP HELLO failed: %v", err), http.StatusBadGateway)
+		return
+	}
+
+	// Start TLS if supported (port 587 typically uses STARTTLS)
+	if ok, _ := conn.Extension("STARTTLS"); ok {
+		config := &tls.Config{ServerName: req.SMTPHost}
+		if err = conn.StartTLS(config); err != nil {
+			http.Error(w, fmt.Sprintf("STARTTLS failed: %v", err), http.StatusBadGateway)
+			return
+		}
+	}
+
+	// Test authentication
+	auth := smtp.PlainAuth("", req.Username, req.Password, req.SMTPHost)
+	if err = conn.Auth(auth); err != nil {
+		http.Error(w, fmt.Sprintf("SMTP authentication failed: %v", err), http.StatusUnauthorized)
+		return
+	}
+
+	// Optionally send a test email if 'to' is provided
+	if req.To != "" {
+		if err = conn.Mail(req.From); err != nil {
+			http.Error(w, fmt.Sprintf("MAIL FROM failed: %v", err), http.StatusBadGateway)
+			return
+		}
+		if err = conn.Rcpt(req.To); err != nil {
+			http.Error(w, fmt.Sprintf("RCPT TO failed: %v", err), http.StatusBadGateway)
+			return
+		}
+
+		// Send test message
+		wc, err := conn.Data()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("DATA command failed: %v", err), http.StatusBadGateway)
+			return
+		}
+		defer wc.Close()
+
+		message := fmt.Sprintf("From: %s\r\n"+
+			"To: %s\r\n"+
+			"Subject: Test Email from Cased Deploy\r\n"+
+			"\r\n"+
+			"This is a test email to verify your SMTP configuration.\r\n"+
+			"\r\n"+
+			"If you received this, your email notifications are configured correctly!\r\n"+
+			"\r\n"+
+			"--\r\n"+
+			"Cased Deploy Notifications\r\n",
+			req.From, req.To)
+
+		if _, err = fmt.Fprintf(wc, message); err != nil {
+			http.Error(w, fmt.Sprintf("Failed to write message: %v", err), http.StatusBadGateway)
+			return
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
+	successMessage := "SMTP connection and authentication successful"
+	if req.To != "" {
+		successMessage = "Test email sent successfully"
+	}
 	json.NewEncoder(w).Encode(map[string]string{
 		"status":  "success",
-		"message": fmt.Sprintf("Test email configuration validated for %s (actual sending not implemented in backend)", serviceName),
+		"message": successMessage,
 	})
 }
