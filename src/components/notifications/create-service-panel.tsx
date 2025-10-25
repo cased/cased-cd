@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { IconMessage, IconBrandGithubFill, IconWebhook, IconEmail } from 'obra-icons-react'
+import { IconMessage, IconWebhook, IconEmail } from 'obra-icons-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Dialog,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
-export type ServiceType = 'slack' | 'github' | 'webhook' | 'email'
+export type ServiceType = 'slack' | 'webhook' | 'email'
 
 interface CreateServicePanelProps {
   open: boolean
@@ -31,13 +31,6 @@ export function CreateServicePanel({
       description: 'Send notifications to Slack channels',
       icon: IconMessage,
       color: 'text-purple-600',
-    },
-    {
-      type: 'github' as ServiceType,
-      name: 'GitHub',
-      description: 'Update commit statuses and create comments',
-      icon: IconBrandGithubFill,
-      color: 'text-neutral-900 dark:text-neutral-100',
     },
     {
       type: 'webhook' as ServiceType,

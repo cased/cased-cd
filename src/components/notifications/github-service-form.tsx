@@ -178,12 +178,34 @@ export function GitHubServiceForm({
             <Label htmlFor="repositories">Repository Filter (optional)</Label>
             <Input
               id="repositories"
-              placeholder="owner/repo1,owner/repo2"
+              placeholder="myorg/frontend,myorg/backend"
               {...register('repositories')}
             />
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Comma-separated list of repositories to send notifications for. Leave empty for all repositories.
-            </p>
+            <div className="text-xs text-neutral-600 dark:text-neutral-400 space-y-2">
+              <p>
+                Limit commit status updates to specific repositories. Leave empty to send to all repositories the GitHub App has access to.
+              </p>
+              <details className="mt-2">
+                <summary className="cursor-pointer text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                  How repository filtering works
+                </summary>
+                <div className="mt-3 space-y-2 text-neutral-700 dark:text-neutral-300 pl-2">
+                  <p>
+                    When you install the Cased GitHub App, you choose which repos it can access (all repos or selected repos).
+                  </p>
+                  <p>
+                    This filter lets you <strong>further limit</strong> which repos get commit status updates:
+                  </p>
+                  <ul className="list-disc list-inside ml-2 space-y-1">
+                    <li><strong>Empty</strong>: Updates sent to all repos the app has access to</li>
+                    <li><strong>Filtered</strong>: Updates only sent to the repos you specify (format: <code className="bg-neutral-100 dark:bg-neutral-800 px-1 rounded">owner/repo1,owner/repo2</code>)</li>
+                  </ul>
+                  <p className="text-xs italic">
+                    Example: If your GitHub App can access 50 repos but ArgoCD only deploys 3 of them, you can list just those 3 here.
+                  </p>
+                </div>
+              </details>
+            </div>
           </div>
 
           {/* Notification Events */}
