@@ -1,50 +1,55 @@
+import { createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
 import {
   IconSearch,
   IconAdd,
   IconCircleForward,
   IconGrid,
-} from "obra-icons-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from 'obra-icons-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   useApplications,
   useRefreshApplication,
   useSyncApplication,
-} from "@/services/applications";
-import { CreateApplicationPanel } from "@/components/create-application-panel";
-import { ErrorAlert } from "@/components/ui/error-alert";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { ApplicationCard } from "@/components/-applications/application-card";
-import { PageHeader } from "@/components/ui/page-header";
-import { PageContent } from "@/components/ui/page-content";
-import { useState } from "react";
+} from '@/services/applications'
+import { CreateApplicationPanel } from '@/components/create-application-panel'
+import { ErrorAlert } from '@/components/ui/error-alert'
+import { LoadingSpinner } from '@/components/ui/loading-spinner'
+import { ApplicationCard } from '@/components/-applications/application-card'
+import { PageHeader } from '@/components/ui/page-header'
+import { PageContent } from '@/components/ui/page-content'
 
-export function ApplicationsPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showCreatePanel, setShowCreatePanel] = useState(false);
-  const { data, isLoading, error, refetch } = useApplications();
-  const refreshMutation = useRefreshApplication();
-  const syncMutation = useSyncApplication();
+export const Route = createFileRoute('/_authenticated/applications/')({
+  component: ApplicationsPage,
+})
+
+function ApplicationsPage() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showCreatePanel, setShowCreatePanel] = useState(false)
+  const { data, isLoading, error, refetch } = useApplications()
+  const refreshMutation = useRefreshApplication()
+  const syncMutation = useSyncApplication()
 
   // Filter applications based on search
   const filteredApps =
     data?.items?.filter((app) =>
       app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase()),
-    ) || [];
+    ) || []
 
   const handleRefresh = async (name: string) => {
-    await refreshMutation.mutateAsync(name);
+    await refreshMutation.mutateAsync(name)
     // No need to manually refetch - React Query invalidation handles it
-  };
+  }
 
   const handleSync = async (name: string) => {
     try {
-      await syncMutation.mutateAsync({ name, prune: true });
+      await syncMutation.mutateAsync({ name, prune: true })
       // No need to manually refetch - React Query invalidation + polling handles it
     } catch (error) {
-      console.error("Sync failed:", error);
+      console.error('Sync failed:', error)
     }
-  };
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -59,7 +64,7 @@ export function ApplicationsPage() {
             >
               <IconCircleForward
                 size={16}
-                className={isLoading ? "animate-spin" : ""}
+                className={isLoading ? 'animate-spin' : ''}
               />
               Refresh
             </Button>
@@ -116,13 +121,13 @@ export function ApplicationsPage() {
               </div>
               <h3 className="text-sm font-medium text-black dark:text-white mb-1">
                 {searchQuery
-                  ? "No applications found"
-                  : "No applications yet"}
+                  ? 'No applications found'
+                  : 'No applications yet'}
               </h3>
               <p className="text-xs text-neutral-600 dark:text-neutral-400 mb-4">
                 {searchQuery
-                  ? "Try adjusting your search or filters"
-                  : "Create your first application to get started with GitOps deployments"}
+                  ? 'Try adjusting your search or filters'
+                  : 'Create your first application to get started with GitOps deployments'}
               </p>
               {!searchQuery && (
                 <Button
@@ -180,5 +185,5 @@ export function ApplicationsPage() {
         />
       )}
     </div>
-  );
+  )
 }

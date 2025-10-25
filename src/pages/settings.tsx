@@ -5,7 +5,7 @@ import {
   IconArrowRight,
   IconServer,
 } from "obra-icons-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { useAppearance } from "@/lib/theme";
 import {
   Card,
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { PageHeader } from "@/components/page-header";
+import { PageContent } from "@/components/ui/page-content";
 import { useApplications } from "@/services/applications";
 import { useCertificates } from "@/services/certificates";
 import { useGPGKeys } from "@/services/gpgkeys";
@@ -88,16 +89,15 @@ export function SettingsPage() {
       />
 
       {/* Content */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <div className="p-4">
-          <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+      <PageContent>
+        <div className="grid gap-2 md:grid-cols-2 lg:grid-cols-3">
             {settingsCards.map((card) => {
               const Icon = card.icon;
 
               return (
                 <div
                   key={card.title}
-                  onClick={() => card.path && navigate(card.path)}
+                  onClick={() => card.path && navigate({ to: card.path })}
                   className="group rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-900 cursor-pointer"
                 >
                   {/* Icon */}
@@ -280,8 +280,7 @@ export function SettingsPage() {
               </div>
             </>
           )}
-        </div>
-      </div>
+      </PageContent>
     </div>
   );
 }
