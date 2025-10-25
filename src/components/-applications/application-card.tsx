@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { getHealthIcon } from "@/lib/status-icons";
 import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
-import { Link } from "react-router-dom";
+import { Link } from "@tanstack/react-router";
 
 interface ApplicationCardProps {
   app: Application;
@@ -26,7 +26,8 @@ export function ApplicationCard({ app }: ApplicationCardProps) {
 
   return (
     <Link
-      to={`/applications/${app.metadata.name}`}
+      to="/applications/$name/tree"
+      params={{ name: app.metadata.name }}
       className="group rounded- border border-border bg-card transition-colors hover:bg-accent block"
     >
       {/* Header */}

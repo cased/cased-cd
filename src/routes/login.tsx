@@ -1,21 +1,22 @@
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
 import { IconSpinnerBall, IconCircleWarning } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/lib/auth'
 
-export function LoginPage() {
+export const Route = createFileRoute('/login')({
+  component: LoginPage,
+})
+
+function LoginPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
   const { login } = useAuth()
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-
-  const returnUrl = searchParams.get('return_url') || '/applications'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,7 +25,7 @@ export function LoginPage() {
 
     try {
       await login(username, password)
-      navigate(returnUrl, { replace: true })
+      navigate({ to: '/applications' })
     } catch (err) {
       if (err instanceof Error && 'response' in err) {
         const response = err.response as { data?: { error?: string } }
