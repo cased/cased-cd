@@ -961,6 +961,109 @@ app.put('/api/v1/settings/rbac', (req, res) => {
   res.json(rbacConfig)
 })
 
+// In-memory notifications store
+let notificationServices = []
+
+// Mock notifications config endpoint - GET
+app.get('/notifications/config', (req, res) => {
+  // Return services in ConfigMap format
+  const data = {}
+
+  notificationServices.forEach(service => {
+    const key = `service.${service.name}`
+    data[key] = service.config
+  })
+
+  res.json({ data })
+})
+
+// Mock create Slack service endpoint
+app.post('/notifications/services', (req, res) => {
+  const { name, webhookUrl, channel, username, icon } = req.body
+
+  console.log(`📨 Creating Slack notification service: ${name}`)
+
+  // Create service config in YAML-like format
+  const config = `webhookUrl: ${webhookUrl}${channel ? `\nchannel: ${channel}` : ''}${username ? `\nusername: ${username}` : ''}${icon ? `\nicon: ${icon}` : ''}`
+
+  const service = {
+    name,
+    type: 'slack',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  console.log(`✅ Slack service "${name}" created`)
+  res.json({ status: 'success', name })
+})
+
+// Mock create GitHub service endpoint
+app.post('/notifications/services/github', (req, res) => {
+  const { name, installationId, repositories } = req.body
+
+  console.log(`📨 Creating GitHub notification service: ${name}`)
+
+  // Create service config in YAML-like format
+  const config = `installationId: ${installationId}${repositories ? `\nrepositories: ${repositories}` : ''}`
+
+  const service = {
+    name,
+    type: 'github',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  console.log(`✅ GitHub service "${name}" created`)
+  res.json({ status: 'success', name })
+})
+
+// Mock test Slack service endpoint
+app.post('/notifications/services/:name/test', (req, res) => {
+  const { name } = req.params
+  const { webhookUrl } = req.body
+
+  console.log(`🧪 Testing Slack notification service: ${name}`)
+  console.log(`   Webhook URL: ${webhookUrl.substring(0, 40)}...`)
+
+  // Simulate successful test
+  res.json({ status: 'success', message: 'Test notification sent successfully' })
+})
+
+// Mock test GitHub service endpoint
+app.post('/notifications/services/:name/test/github', (req, res) => {
+  const { name } = req.params
+  const { installationId } = req.body
+
+  console.log(`🧪 Testing GitHub notification service: ${name}`)
+  console.log(`   Installation ID: ${installationId}`)
+
+  // Simulate successful test
+  res.json({ status: 'success', message: 'Test commit status sent successfully' })
+})
+
+// Mock delete notification service endpoint
+app.delete('/notifications/services/:name', (req, res) => {
+  const { name } = req.params
+
+  console.log(`🗑️  Deleting notification service: ${name}`)
+
+  const initialLength = notificationServices.length
+  notificationServices = notificationServices.filter(s => s.name !== name)
+
+  if (notificationServices.length < initialLength) {
+    console.log(`✅ Service "${name}" deleted`)
+    res.json({ status: 'success', name })
+  } else {
+    res.status(404).json({ error: 'Service not found' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })
