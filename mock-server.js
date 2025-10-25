@@ -963,10 +963,12 @@ app.put('/api/v1/settings/rbac', (req, res) => {
 
 // In-memory notifications store
 let notificationServices = []
+let notificationTemplates = []
+let notificationTriggers = []
 
 // Mock notifications config endpoint - GET
 app.get('/api/v1/notifications/config', (req, res) => {
-  // Return services in ConfigMap format
+  // Return services, templates, and triggers in ConfigMap format
   const data = {}
 
   notificationServices.forEach(service => {
@@ -974,14 +976,25 @@ app.get('/api/v1/notifications/config', (req, res) => {
     data[key] = service.config
   })
 
+  notificationTemplates.forEach(template => {
+    const key = `template.${template.name}`
+    data[key] = template.config
+  })
+
+  notificationTriggers.forEach(trigger => {
+    const key = `trigger.${trigger.name}`
+    data[key] = trigger.config
+  })
+
   res.json({ data })
 })
 
 // Mock create Slack service endpoint
 app.post('/api/v1/notifications/services/slack', (req, res) => {
-  const { name, webhookUrl, channel, username, icon } = req.body
+  const { name, webhookUrl, channel, username, icon, events } = req.body
 
   console.log(`📨 Creating Slack notification service: ${name}`)
+  console.log(`   Events:`, events)
 
   // Create service config in YAML-like format
   const config = `webhookUrl: ${webhookUrl}${channel ? `\nchannel: ${channel}` : ''}${username ? `\nusername: ${username}` : ''}${icon ? `\nicon: ${icon}` : ''}`
@@ -996,15 +1009,165 @@ app.post('/api/v1/notifications/services/slack', (req, res) => {
   notificationServices = notificationServices.filter(s => s.name !== name)
   notificationServices.push(service)
 
-  console.log(`✅ Slack service "${name}" created`)
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create default templates for Slack (always create all templates)
+  const templates = [
+    {
+      name: 'app-deployed',
+      config: `message: |
+  Application {{.app.metadata.name}} has been successfully deployed.
+slack:
+  attachments: |
+    [{
+      "title": "✅ Application Deployed",
+      "color": "good",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Sync Status",
+          "value": "{{.app.status.sync.status}}",
+          "short": true
+        },
+        {
+          "title": "Health Status",
+          "value": "{{.app.status.health.status}}",
+          "short": true
+        },
+        {
+          "title": "Revision",
+          "value": "{{.app.status.sync.revision}}",
+          "short": true
+        }
+      ]
+    }]`
+    },
+    {
+      name: 'app-sync-failed',
+      config: `message: |
+  Application {{.app.metadata.name}} sync failed.
+slack:
+  attachments: |
+    [{
+      "title": "❌ Application Sync Failed",
+      "color": "danger",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Sync Status",
+          "value": "{{.app.status.sync.status}}",
+          "short": true
+        },
+        {
+          "title": "Error",
+          "value": "{{.app.status.operationState.message}}",
+          "short": false
+        }
+      ]
+    }]`
+    },
+    {
+      name: 'app-health-degraded',
+      config: `message: |
+  Application {{.app.metadata.name}} health is degraded.
+slack:
+  attachments: |
+    [{
+      "title": "⚠️ Application Health Degraded",
+      "color": "warning",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Health Status",
+          "value": "{{.app.status.health.status}}",
+          "short": true
+        },
+        {
+          "title": "Message",
+          "value": "{{.app.status.health.message}}",
+          "short": false
+        }
+      ]
+    }]`
+    }
+  ]
+
+  // Remove any existing templates with the same names
+  templates.forEach(template => {
+    notificationTemplates = notificationTemplates.filter(t => t.name !== template.name)
+    notificationTemplates.push(template)
+  })
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Slack service "${name}" created with ${templates.length} templates and ${triggers.length} triggers`)
   res.json({ status: 'success', name })
 })
 
 // Mock create GitHub service endpoint
 app.post('/api/v1/notifications/services/github', (req, res) => {
-  const { name, installationId, repositories } = req.body
+  const { name, installationId, repositories, events } = req.body
 
   console.log(`📨 Creating GitHub notification service: ${name}`)
+  console.log(`   Events:`, events)
 
   // Create service config in YAML-like format
   const config = `installationId: ${installationId}${repositories ? `\nrepositories: ${repositories}` : ''}`
@@ -1019,7 +1182,101 @@ app.post('/api/v1/notifications/services/github', (req, res) => {
   notificationServices = notificationServices.filter(s => s.name !== name)
   notificationServices.push(service)
 
-  console.log(`✅ GitHub service "${name}" created`)
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create default templates for GitHub (always create all templates)
+  const templates = [
+    {
+      name: 'github-app-deployed',
+      config: `message: |
+  Application {{.app.metadata.name}} has been successfully deployed.
+github:
+  status:
+    state: success
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"
+  deployment:
+    state: success
+    environment: production
+    environmentURL: "https://{{.app.metadata.name}}.example.com"`
+    },
+    {
+      name: 'github-app-sync-failed',
+      config: `message: |
+  Application {{.app.metadata.name}} sync failed.
+github:
+  status:
+    state: failure
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"`
+    },
+    {
+      name: 'github-app-health-degraded',
+      config: `message: |
+  Application {{.app.metadata.name}} health is degraded.
+github:
+  status:
+    state: failure
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"`
+    }
+  ]
+
+  // Remove any existing templates with the same names
+  templates.forEach(template => {
+    notificationTemplates = notificationTemplates.filter(t => t.name !== template.name)
+    notificationTemplates.push(template)
+  })
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [github-app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [github-app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [github-app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ GitHub service "${name}" created with ${templates.length} templates and ${triggers.length} triggers`)
   res.json({ status: 'success', name })
 })
 

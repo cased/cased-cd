@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,11 @@ export interface GitHubServiceFormData {
   name: string
   installationId: string
   repositories?: string
+  events?: {
+    onDeployed: boolean
+    onSyncFailed: boolean
+    onHealthDegraded: boolean
+  }
 }
 
 interface GitHubServiceFormProps {
@@ -49,6 +55,11 @@ export function GitHubServiceForm({
   } = useForm<GitHubServiceFormData>({
     defaultValues: initialData || {
       name: 'github',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
     },
   })
 
@@ -172,6 +183,52 @@ export function GitHubServiceForm({
             />
             <p className="text-xs text-neutral-600 dark:text-neutral-400">
               Comma-separated list of repositories to send notifications for. Leave empty for all repositories.
+            </p>
+          </div>
+
+          {/* Notification Events */}
+          <div className="space-y-2">
+            <Label>Notification Events</Label>
+            <div className="space-y-3 bg-neutral-50 dark:bg-neutral-900 p-4 rounded border border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onDeployed"
+                  {...register('events.onDeployed')}
+                />
+                <label
+                  htmlFor="events.onDeployed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Deployment succeeded
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onSyncFailed"
+                  {...register('events.onSyncFailed')}
+                />
+                <label
+                  htmlFor="events.onSyncFailed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Deployment failed
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onHealthDegraded"
+                  {...register('events.onHealthDegraded')}
+                />
+                <label
+                  htmlFor="events.onHealthDegraded"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Health degraded
+                </label>
+              </div>
+            </div>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400">
+              Select which events should trigger GitHub commit status updates
             </p>
           </div>
 

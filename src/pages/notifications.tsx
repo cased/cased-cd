@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { IconCircleForward, IconMessage, IconEmail, IconWebhook, IconAdd, IconEdit, IconDelete } from 'obra-icons-react'
+import { IconCircleForward, IconMessage, IconEmail, IconWebhook, IconAdd, IconEdit, IconDelete, IconFlask } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorAlert } from '@/components/ui/error-alert'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import {
   useNotificationsConfig,
   useCreateSlackService,
@@ -20,15 +20,16 @@ import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
 import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
 import { GitHubServiceForm, type GitHubServiceFormData } from '@/components/notifications/github-service-form'
+import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { toast } from 'sonner'
 
 export default function NotificationsPage() {
   const { data: config, isLoading, error, refetch } = useNotificationsConfig()
-  const [selectedTab, setSelectedTab] = useState('services')
   const [createPanelOpen, setCreatePanelOpen] = useState(false)
   const [slackFormOpen, setSlackFormOpen] = useState(false)
   const [githubFormOpen, setGithubFormOpen] = useState(false)
   const [editingService, setEditingService] = useState<NotificationService | null>(null)
+  const [testingService, setTestingService] = useState<string | null>(null)
 
   const createSlackService = useCreateSlackService()
   const updateSlackService = useUpdateSlackService()
@@ -37,6 +38,15 @@ export default function NotificationsPage() {
   const createGitHubService = useCreateGitHubService()
   const updateGitHubService = useUpdateGitHubService()
   const testGitHubService = useTestGitHubService()
+
+  const deleteHandler = useDeleteHandler({
+    deleteFn: deleteNotificationService.mutateAsync,
+    resourceType: 'Service',
+    getId: (service: NotificationService) => service.name,
+    getDisplayName: (service: NotificationService) => service.name,
+    onSuccess: () => refetch(),
+    isDeleting: deleteNotificationService.isPending,
+  })
 
   const handleServiceTypeSelected = (type: ServiceType) => {
     setCreatePanelOpen(false)
@@ -81,31 +91,6 @@ export default function NotificationsPage() {
     }
   }
 
-  const handleDeleteService = (serviceName: string) => {
-    toast(`Delete service "${serviceName}"?`, {
-      description: 'This action cannot be undone.',
-      action: {
-        label: 'Delete',
-        onClick: async () => {
-          toast.promise(
-            deleteNotificationService.mutateAsync(serviceName),
-            {
-              loading: `Deleting service "${serviceName}"...`,
-              success: `Service "${serviceName}" deleted successfully`,
-              error: (err) => {
-                const error = err as { response?: { data?: { message?: string } }; message?: string }
-                return error.response?.data?.message || error.message || 'Failed to delete service'
-              },
-            }
-          )
-        },
-      },
-      cancel: {
-        label: 'Cancel',
-        onClick: () => {},
-      },
-    })
-  }
 
   const handleEditService = (service: NotificationService) => {
     setEditingService(service)
@@ -120,9 +105,40 @@ export default function NotificationsPage() {
     }
   }
 
+  const handleTestService = async (service: NotificationService) => {
+    setTestingService(service.name)
+    try {
+      if (service.type === 'slack') {
+        const data = parseSlackConfig(service.config, service.name)
+        await testSlackService.mutateAsync(data)
+        toast.success('Test notification sent successfully')
+      } else if (service.type === 'github') {
+        const data = parseGitHubConfig(service.config, service.name)
+        await testGitHubService.mutateAsync(data)
+        toast.success('Test commit status sent successfully')
+      } else {
+        toast.info(`Test functionality for "${service.type}" services not yet implemented`)
+      }
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send test'
+      toast.error(errorMessage)
+    } finally {
+      setTestingService(null)
+    }
+  }
+
   const parseSlackConfig = (config: string, name: string): SlackServiceFormData => {
     const lines = config.split('\n')
-    const data: SlackServiceFormData = { name, webhookUrl: '' }
+    const data: SlackServiceFormData = {
+      name,
+      webhookUrl: '',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
+    }
 
     lines.forEach(line => {
       const [key, ...valueParts] = line.split(':')
@@ -139,7 +155,15 @@ export default function NotificationsPage() {
 
   const parseGitHubConfig = (config: string, name: string): GitHubServiceFormData => {
     const lines = config.split('\n')
-    const data: GitHubServiceFormData = { name, installationId: '' }
+    const data: GitHubServiceFormData = {
+      name,
+      installationId: '',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
+    }
 
     lines.forEach(line => {
       const [key, ...valueParts] = line.split(':')
@@ -190,7 +214,7 @@ export default function NotificationsPage() {
             <div>
               <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Notifications</h1>
               <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Configure notification services, templates, and triggers for your applications
+                Configure notification services to receive alerts about your deployments
               </p>
             </div>
             <div className="flex gap-2">
@@ -232,81 +256,30 @@ export default function NotificationsPage() {
 
           {/* Notifications Content */}
           {!isLoading && !error && config && (
-            <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList>
-                <TabsTrigger value="services">
-                  Services ({config.services.length})
-                </TabsTrigger>
-                <TabsTrigger value="templates">
-                  Templates ({config.templates.length})
-                </TabsTrigger>
-                <TabsTrigger value="triggers">
-                  Triggers ({config.triggers.length})
-                </TabsTrigger>
-              </TabsList>
-
-              {/* Services Tab */}
-              <TabsContent value="services" className="space-y-4 mt-4">
-                {config.services.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
-                        No notification services configured
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4">
-                    {config.services.map((service) => (
-                      <ServiceCard
-                        key={service.name}
-                        service={service}
-                        onEdit={() => handleEditService(service)}
-                        onDelete={() => handleDeleteService(service.name)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Templates Tab */}
-              <TabsContent value="templates" className="space-y-4 mt-4">
-                {config.templates.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
-                        No notification templates configured
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4">
-                    {config.templates.map((template) => (
-                      <TemplateCard key={template.name} template={template} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-
-              {/* Triggers Tab */}
-              <TabsContent value="triggers" className="space-y-4 mt-4">
-                {config.triggers.length === 0 ? (
-                  <Card>
-                    <CardContent className="pt-6">
-                      <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
-                        No notification triggers configured
-                      </p>
-                    </CardContent>
-                  </Card>
-                ) : (
-                  <div className="grid gap-4">
-                    {config.triggers.map((trigger) => (
-                      <TriggerCard key={trigger.name} trigger={trigger} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
+            <div className="space-y-4">
+              {config.services.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-neutral-600 dark:text-neutral-400 text-center text-sm">
+                      No notification services configured. Click "Add Service" to get started.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4">
+                  {config.services.map((service) => (
+                    <ServiceCard
+                      key={service.name}
+                      service={service}
+                      onTest={() => handleTestService(service)}
+                      onEdit={() => handleEditService(service)}
+                      onDelete={() => deleteHandler.handleDeleteClick(service)}
+                      isTesting={testingService === service.name}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -347,6 +320,19 @@ export default function NotificationsPage() {
         isEditing={!!editingService && editingService.type === 'github'}
         initialData={editingService && editingService.type === 'github' ? parseGitHubConfig(editingService.config, editingService.name) : undefined}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteHandler.dialogOpen}
+        onOpenChange={deleteHandler.setDialogOpen}
+        title="Delete notification service"
+        description={`Are you sure you want to delete "${deleteHandler.resourceToDelete?.name}"? This will remove the service configuration.`}
+        resourceName={deleteHandler.resourceToDelete?.name || ''}
+        resourceType="notification service"
+        onConfirm={deleteHandler.handleDeleteConfirm}
+        isLoading={deleteHandler.isDeleting}
+        requireTyping={false}
+      />
     </div>
   )
 }
@@ -354,12 +340,16 @@ export default function NotificationsPage() {
 // Service card component
 function ServiceCard({
   service,
+  onTest,
   onEdit,
   onDelete,
+  isTesting,
 }: {
   service: NotificationService
+  onTest: () => void
   onEdit: () => void
   onDelete: () => void
+  isTesting: boolean
 }) {
   const icon = getServiceIcon(service.type)
 
@@ -377,6 +367,16 @@ function ServiceCard({
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onTest}
+              disabled={isTesting}
+              className="h-8"
+            >
+              <IconFlask size={14} className={isTesting ? 'animate-pulse' : ''} />
+              Test
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -399,41 +399,6 @@ function ServiceCard({
       <CardContent>
         <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
           <code>{service.config}</code>
-        </pre>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Template card component
-function TemplateCard({ template }: { template: { name: string; config: string } }) {
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <IconMessage size={20} />
-          <CardTitle className="text-base">{template.name}</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-          <code>{template.config}</code>
-        </pre>
-      </CardContent>
-    </Card>
-  )
-}
-
-// Trigger card component
-function TriggerCard({ trigger }: { trigger: { name: string; config: string } }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{trigger.name}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <pre className="text-xs bg-neutral-50 dark:bg-neutral-900 p-3 rounded border border-neutral-200 dark:border-neutral-800 overflow-x-auto">
-          <code>{trigger.config}</code>
         </pre>
       </CardContent>
     </Card>

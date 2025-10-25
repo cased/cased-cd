@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,11 @@ export interface SlackServiceFormData {
   channel?: string
   username?: string
   icon?: string
+  events?: {
+    onDeployed: boolean
+    onSyncFailed: boolean
+    onHealthDegraded: boolean
+  }
 }
 
 interface SlackServiceFormProps {
@@ -54,6 +60,11 @@ export function SlackServiceForm({
       name: 'slack',
       username: 'Cased Deploy',
       icon: ':rocket:',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
     },
   })
 
@@ -138,7 +149,7 @@ export function SlackServiceForm({
                       try {
                         await navigator.clipboard.writeText(manifest)
                         toast.success('Manifest copied! Now paste it in Slack when creating your app.')
-                      } catch (err) {
+                      } catch {
                         toast.error('Failed to copy manifest. Please copy it manually from the file.')
                       }
                     }}
@@ -190,6 +201,7 @@ export function SlackServiceForm({
                 id="webhookUrl"
                 type={showWebhookUrl ? 'text' : 'password'}
                 placeholder="https://hooks.slack.com/services/..."
+                className="pr-16"
                 {...register('webhookUrl', {
                   required: 'Webhook URL is required',
                   pattern: {
@@ -227,66 +239,120 @@ export function SlackServiceForm({
             </div>
           </div>
 
-          {/* Default Channel */}
+          {/* Notification Events */}
           <div className="space-y-2">
-            <Label htmlFor="channel">Default Channel (optional)</Label>
-            <Input
-              id="channel"
-              placeholder="#deployments"
-              {...register('channel', {
-                pattern: {
-                  value: /^#[a-z0-9-_]+$/,
-                  message: 'Channel must start with # and contain only lowercase letters, numbers, hyphens, and underscores',
-                },
-              })}
-            />
-            {errors.channel && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <IconCircleWarning size={12} />
-                {errors.channel.message}
-              </p>
-            )}
+            <Label>Notification Events</Label>
+            <div className="space-y-3 bg-neutral-50 dark:bg-neutral-900 p-4 rounded border border-neutral-200 dark:border-neutral-800">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onDeployed"
+                  {...register('events.onDeployed')}
+                />
+                <label
+                  htmlFor="events.onDeployed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Deployment succeeded
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onSyncFailed"
+                  {...register('events.onSyncFailed')}
+                />
+                <label
+                  htmlFor="events.onSyncFailed"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Deployment failed
+                </label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="events.onHealthDegraded"
+                  {...register('events.onHealthDegraded')}
+                />
+                <label
+                  htmlFor="events.onHealthDegraded"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Health degraded
+                </label>
+              </div>
+            </div>
             <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Override the webhook's default channel
+              Select which events should trigger notifications to this Slack service
             </p>
           </div>
 
-          {/* Username */}
-          <div className="space-y-2">
-            <Label htmlFor="username">Bot Username (optional)</Label>
-            <Input
-              id="username"
-              placeholder="Cased Deploy"
-              {...register('username')}
-            />
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Display name for the bot in Slack
-            </p>
-          </div>
+          {/* Advanced Options */}
+          <details className="border border-neutral-200 dark:border-neutral-800 rounded-lg">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-900/50">
+              Advanced Options
+            </summary>
+            <div className="px-4 pb-4 pt-2 space-y-6">
+              {/* Default Channel */}
+              <div className="space-y-2">
+                <Label htmlFor="channel">Default Channel (optional)</Label>
+                <Input
+                  id="channel"
+                  placeholder="#deployments"
+                  {...register('channel', {
+                    pattern: {
+                      value: /^#[a-z0-9-_]+$/,
+                      message: 'Channel must start with # and contain only lowercase letters, numbers, hyphens, and underscores',
+                    },
+                  })}
+                />
+                {errors.channel && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <IconCircleWarning size={12} />
+                    {errors.channel.message}
+                  </p>
+                )}
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                  Override the webhook's default channel
+                </p>
+              </div>
 
-          {/* Icon */}
-          <div className="space-y-2">
-            <Label htmlFor="icon">Bot Icon (optional)</Label>
-            <Input
-              id="icon"
-              placeholder=":rocket:"
-              {...register('icon', {
-                pattern: {
-                  value: /^:[a-z0-9_+-]+:$/,
-                  message: 'Icon must be in emoji format (e.g., :rocket:)',
-                },
-              })}
-            />
-            {errors.icon && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <IconCircleWarning size={12} />
-                {errors.icon.message}
-              </p>
-            )}
-            <p className="text-xs text-neutral-600 dark:text-neutral-400">
-              Slack emoji code (e.g., :rocket:, :white_check_mark:)
-            </p>
-          </div>
+              {/* Username */}
+              <div className="space-y-2">
+                <Label htmlFor="username">Bot Username (optional)</Label>
+                <Input
+                  id="username"
+                  placeholder="Cased Deploy"
+                  {...register('username')}
+                />
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                  Display name for the bot in Slack
+                </p>
+              </div>
+
+              {/* Icon */}
+              <div className="space-y-2">
+                <Label htmlFor="icon">Bot Icon (optional)</Label>
+                <Input
+                  id="icon"
+                  placeholder=":rocket:"
+                  {...register('icon', {
+                    pattern: {
+                      value: /^:[a-z0-9_+-]+:$/,
+                      message: 'Icon must be in emoji format (e.g., :rocket:)',
+                    },
+                  })}
+                />
+                {errors.icon && (
+                  <p className="text-xs text-red-500 flex items-center gap-1">
+                    <IconCircleWarning size={12} />
+                    {errors.icon.message}
+                  </p>
+                )}
+                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                  Slack emoji code (e.g., :rocket:, :white_check_mark:)
+                </p>
+              </div>
+            </div>
+          </details>
 
           <DialogFooter className="gap-2">
             <Button
