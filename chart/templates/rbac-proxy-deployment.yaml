@@ -50,5 +50,12 @@ spec:
             capabilities:
               drop:
                 - ALL
-            readOnlyRootFilesystem: true
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - name: audit-logs
+              mountPath: /data/audit
+      volumes:
+        - name: audit-logs
+          persistentVolumeClaim:
+            claimName: {{ include "cased-cd.fullname" . }}-audit-logs
 {{- end }}

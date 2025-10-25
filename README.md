@@ -58,8 +58,9 @@ The audit backend intercepts specific API requests, logs the action details, the
 **Storage & Compliance:**
 - Audit events are stored in a PersistentVolume at `/data/audit/events.jsonl`
 - JSONL format (newline-delimited JSON) for efficient streaming and parsing
-- Default storage: 10GB (configurable) - supports millions of events vs 1000 in ConfigMaps
-- Automatically provisioned via PVC when using Helm deployment
+- Default storage: 10GB (configurable via `rbacProxy.persistence.size` in Helm values)
+- **Automatically provisioned** - PVC is created automatically when deploying via Helm (no manual setup required)
+- Supports ~20 million events at default 10GB size
 - Can be backed up using standard Kubernetes PVC backup tools (Velero, etc.)
 - Events persist across pod restarts
 - Accessible via `kubectl exec` for inspection or export

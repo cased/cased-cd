@@ -43,6 +43,12 @@ rbacProxy:
     requests:
       cpu: 50m
       memory: 64Mi
+  # Persistent storage for audit logs
+  persistence:
+    # Storage size for audit logs (supports ~20M events at 10GB)
+    size: 10Gi
+    # Storage class (leave empty to use cluster default)
+    storageClass: ""
 
 service:
   # Service type (ClusterIP, NodePort, LoadBalancer)
