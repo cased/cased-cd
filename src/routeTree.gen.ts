@@ -17,6 +17,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedRepositoriesRouteImport } from './routes/_authenticated/repositories'
 import { Route as AuthenticatedRbacRouteImport } from './routes/_authenticated/rbac'
 import { Route as AuthenticatedProjectsRouteImport } from './routes/_authenticated/projects'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/help'
 import { Route as AuthenticatedGpgkeysRouteImport } from './routes/_authenticated/gpgkeys'
 import { Route as AuthenticatedClustersRouteImport } from './routes/_authenticated/clusters'
@@ -73,6 +74,12 @@ const AuthenticatedProjectsRoute = AuthenticatedProjectsRouteImport.update({
   path: '/projects',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedHelpRoute = AuthenticatedHelpRouteImport.update({
   id: '/help',
   path: '/help',
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/clusters': typeof AuthenticatedClustersRoute
   '/gpgkeys': typeof AuthenticatedGpgkeysRoute
   '/help': typeof AuthenticatedHelpRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/rbac': typeof AuthenticatedRbacRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
@@ -191,6 +199,7 @@ export interface FileRoutesByTo {
   '/clusters': typeof AuthenticatedClustersRoute
   '/gpgkeys': typeof AuthenticatedGpgkeysRoute
   '/help': typeof AuthenticatedHelpRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/projects': typeof AuthenticatedProjectsRoute
   '/rbac': typeof AuthenticatedRbacRoute
   '/repositories': typeof AuthenticatedRepositoriesRoute
@@ -216,6 +225,7 @@ export interface FileRoutesById {
   '/_authenticated/clusters': typeof AuthenticatedClustersRoute
   '/_authenticated/gpgkeys': typeof AuthenticatedGpgkeysRoute
   '/_authenticated/help': typeof AuthenticatedHelpRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/projects': typeof AuthenticatedProjectsRoute
   '/_authenticated/rbac': typeof AuthenticatedRbacRoute
   '/_authenticated/repositories': typeof AuthenticatedRepositoriesRoute
@@ -242,6 +252,7 @@ export interface FileRouteTypes {
     | '/clusters'
     | '/gpgkeys'
     | '/help'
+    | '/notifications'
     | '/projects'
     | '/rbac'
     | '/repositories'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/clusters'
     | '/gpgkeys'
     | '/help'
+    | '/notifications'
     | '/projects'
     | '/rbac'
     | '/repositories'
@@ -289,6 +301,7 @@ export interface FileRouteTypes {
     | '/_authenticated/clusters'
     | '/_authenticated/gpgkeys'
     | '/_authenticated/help'
+    | '/_authenticated/notifications'
     | '/_authenticated/projects'
     | '/_authenticated/rbac'
     | '/_authenticated/repositories'
@@ -367,6 +380,13 @@ declare module '@tanstack/react-router' {
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof AuthenticatedProjectsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/help': {
@@ -534,6 +554,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedClustersRoute: typeof AuthenticatedClustersRoute
   AuthenticatedGpgkeysRoute: typeof AuthenticatedGpgkeysRoute
   AuthenticatedHelpRoute: typeof AuthenticatedHelpRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedProjectsRoute: typeof AuthenticatedProjectsRoute
   AuthenticatedRbacRoute: typeof AuthenticatedRbacRoute
   AuthenticatedRepositoriesRoute: typeof AuthenticatedRepositoriesRoute
@@ -549,6 +570,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedClustersRoute: AuthenticatedClustersRoute,
   AuthenticatedGpgkeysRoute: AuthenticatedGpgkeysRoute,
   AuthenticatedHelpRoute: AuthenticatedHelpRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedProjectsRoute: AuthenticatedProjectsRoute,
   AuthenticatedRbacRoute: AuthenticatedRbacRoute,
   AuthenticatedRepositoriesRoute: AuthenticatedRepositoriesRoute,
