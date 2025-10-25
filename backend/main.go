@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -16,7 +17,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -73,9 +76,22 @@ func main() {
 		log.Fatalf("Failed to create Kubernetes client: %v", err)
 	}
 
+	// Get audit file path from environment or use default
+	auditFile := os.Getenv("AUDIT_FILE_PATH")
+	if auditFile == "" {
+		auditFile = "/data/audit/events.jsonl"
+	}
+
+	// Ensure audit directory exists
+	auditDir := filepath.Dir(auditFile)
+	if err := os.MkdirAll(auditDir, 0755); err != nil {
+		log.Printf("Warning: Failed to create audit directory %s: %v", auditDir, err)
+	}
+
 	handler := &Handler{
 		clientset: clientset,
 		namespace: "argocd",
+		auditFile: auditFile,
 	}
 
 	// Set up reverse proxy to ArgoCD for all API requests (except /api/v1/settings/*)
@@ -165,8 +181,10 @@ func main() {
 }
 
 type Handler struct {
-	clientset *kubernetes.Clientset
-	namespace string
+	clientset  *kubernetes.Clientset
+	namespace  string
+	auditFile  string
+	auditMutex sync.Mutex
 }
 
 func (h *Handler) handleRBAC(w http.ResponseWriter, r *http.Request) {
@@ -1692,32 +1710,42 @@ func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r
 }
 
 func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) {
-	// Get the cased-audit ConfigMap (stores audit events as JSON array)
-	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "cased-audit", metav1.GetOptions{})
+	// Read audit events from JSONL file
+	file, err := os.Open(h.auditFile)
 	if err != nil {
-		// If ConfigMap doesn't exist, return empty list
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(AuditEventList{
-			Items: []AuditEvent{},
-		})
+		// If file doesn't exist, return empty list
+		if os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(AuditEventList{
+				Items: []AuditEvent{},
+			})
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
 		return
 	}
+	defer file.Close()
 
-	// Parse events from ConfigMap data
-	eventsJSON := configMap.Data["events"]
-	if eventsJSON == "" {
-		// No events yet
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(AuditEventList{
-			Items: []AuditEvent{},
-		})
-		return
-	}
-
+	// Read all events from JSONL file (one JSON object per line)
 	var events []AuditEvent
-	if err := json.Unmarshal([]byte(eventsJSON), &events); err != nil {
-		http.Error(w, fmt.Sprintf("Failed to parse audit events: %v", err), http.StatusInternalServerError)
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var event AuditEvent
+		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
+			log.Printf("Failed to parse audit event: %v", err)
+			continue // Skip malformed lines
+		}
+		events = append(events, event)
+	}
+
+	if err := scanner.Err(); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read audit file: %v", err), http.StatusInternalServerError)
 		return
+	}
+
+	// Reverse to show newest first (file is append-only, so oldest are first)
+	for i, j := 0, len(events)-1; i < j; i, j = i+1, j-1 {
+		events[i], events[j] = events[j], events[i]
 	}
 
 	// Apply query parameter filters
@@ -1780,11 +1808,46 @@ func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *
 		filteredEvents = filtered
 	}
 
+	// Pagination
+	totalCount := len(filteredEvents)
+	limit := 50 // Default page size
+	offset := 0
+
+	if limitStr := queryParams.Get("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+			if limit > 100 {
+				limit = 100 // Max page size
+			}
+		}
+	}
+
+	if offsetStr := queryParams.Get("offset"); offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	// Apply pagination
+	start := offset
+	end := offset + limit
+	if start > totalCount {
+		start = totalCount
+	}
+	if end > totalCount {
+		end = totalCount
+	}
+
+	paginatedEvents := filteredEvents[start:end]
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(AuditEventList{
-		Items: filteredEvents,
+		Items: paginatedEvents,
 		Metadata: map[string]interface{}{
-			"totalCount": len(filteredEvents),
+			"totalCount": totalCount,
+			"offset":     offset,
+			"limit":      limit,
+			"pageSize":   len(paginatedEvents),
 		},
 	})
 }
@@ -1813,46 +1876,22 @@ func (h *Handler) createAuditEvent(ctx context.Context, user, action, resourceTy
 		Details:      detailsMap,
 	}
 
-	// Get existing events from ConfigMap
-	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "cased-audit", metav1.GetOptions{})
-	var events []AuditEvent
+	// Append to audit file (JSONL format - one JSON object per line)
+	h.auditMutex.Lock()
+	defer h.auditMutex.Unlock()
 
+	file, err := os.OpenFile(h.auditFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		// ConfigMap doesn't exist, create it
-		events = []AuditEvent{event}
-		eventsJSON, _ := json.Marshal(events)
+		log.Printf("Failed to open audit file: %v", err)
+		return err
+	}
+	defer file.Close()
 
-		configMap = &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "cased-audit",
-				Namespace: h.namespace,
-			},
-			Data: map[string]string{
-				"events": string(eventsJSON),
-			},
-		}
-
-		_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Create(ctx, configMap, metav1.CreateOptions{})
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(event); err != nil {
+		log.Printf("Failed to write audit event: %v", err)
 		return err
 	}
 
-	// Parse existing events
-	if eventsJSON := configMap.Data["events"]; eventsJSON != "" {
-		json.Unmarshal([]byte(eventsJSON), &events)
-	}
-
-	// Prepend new event to keep newest first
-	events = append([]AuditEvent{event}, events...)
-
-	// Keep only last 1000 events to prevent unbounded growth
-	if len(events) > 1000 {
-		events = events[:1000]
-	}
-
-	// Save back to ConfigMap
-	eventsJSON, _ := json.Marshal(events)
-	configMap.Data["events"] = string(eventsJSON)
-
-	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
-	return err
+	return nil
 }

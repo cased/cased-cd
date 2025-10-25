@@ -33,7 +33,7 @@ Upgrade to Cased CD Enterprise for advanced team management and compliance capab
 - **👥 User Management** - Create and delete users directly from the UI
 - **📊 Advanced Permissions** - Granular control over deploy, rollback, and delete actions
 - **🔔 Notification Services** - Configure Slack, Webhook, and Email notifications for deployment events
-- **📋 Comprehensive Audit Trail** - Track all user actions with detailed before/after change logs stored in Kubernetes ConfigMaps
+- **📋 Comprehensive Audit Trail** - Track all user actions with detailed before/after change logs stored in persistent volumes (JSONL format)
 
 [Contact us](https://cased.com) to learn about Cased CD Enterprise.
 
@@ -56,11 +56,13 @@ The audit backend intercepts specific API requests, logs the action details, the
 - **Success/Failure**: Whether the operation succeeded or failed
 
 **Storage & Compliance:**
-- Audit events are stored in a Kubernetes ConfigMap (`cased-audit`)
-- Limited to 1000 most recent events (configurable)
-- Stored as JSON for easy parsing and analysis
-- Can be backed up using standard Kubernetes backup tools
-- Accessible via `kubectl get configmap cased-audit -n argocd -o yaml`
+- Audit events are stored in a PersistentVolume at `/data/audit/events.jsonl`
+- JSONL format (newline-delimited JSON) for efficient streaming and parsing
+- Default storage: 10GB (configurable) - supports millions of events vs 1000 in ConfigMaps
+- Automatically provisioned via PVC when using Helm deployment
+- Can be backed up using standard Kubernetes PVC backup tools (Velero, etc.)
+- Events persist across pod restarts
+- Accessible via `kubectl exec` for inspection or export
 
 **Why a Backend?**
 ArgoCD itself doesn't provide detailed audit logging for most operations. To capture this information, we need to:
@@ -237,17 +239,17 @@ Enterprise customers receive an additional backend component for advanced featur
                                   - /api/v1/notifications
                                   - /api/v1/license
                                      │
-                                     └─ Kubernetes API access
-                                        - Reads/writes ConfigMaps (RBAC, audit, notifications)
+                                     └─ Kubernetes API access + PVC
+                                        - Reads/writes ConfigMaps (RBAC, notifications)
                                         - Manages Secrets (passwords, tokens)
-                                        - Stores audit events (cased-audit ConfigMap)
+                                        - Stores audit events (PVC at /data/audit/events.jsonl)
 ```
 
 **Why the backend?**
 
 The backend is necessary for enterprise features because:
 1. **Audit Trail**: Intercepts requests (login, deletes) to log before/after state
-2. **Compliance**: Stores immutable audit logs in Kubernetes ConfigMaps
+2. **Compliance**: Stores audit logs in persistent storage (JSONL on PVC)
 3. **RBAC Management**: Direct ConfigMap manipulation for ArgoCD RBAC policies
 4. **User Management**: Creates users with bcrypt password hashing
 5. **License Validation**: Enforces enterprise feature access
@@ -261,7 +263,7 @@ The backend is necessary for enterprise features because:
 - **Audit Backend**: Go service for user/permission management and audit logging
 - **Kubernetes Access**: Direct ConfigMap/Secret manipulation
 - **License Validation**: Enterprise feature gating
-- **Audit Storage**: Kubernetes ConfigMaps (`cased-audit`) for compliance
+- **Audit Storage**: PersistentVolume (10GB default) storing JSONL format at `/data/audit/events.jsonl`
 
 
 ## Requirements
