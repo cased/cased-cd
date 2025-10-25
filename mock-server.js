@@ -961,6 +961,759 @@ app.put('/api/v1/settings/rbac', (req, res) => {
   res.json(rbacConfig)
 })
 
+// In-memory notifications store
+let notificationServices = []
+let notificationTemplates = []
+let notificationTriggers = []
+
+// Mock notifications config endpoint - GET
+app.get('/api/v1/notifications/config', (req, res) => {
+  // Return services, templates, and triggers in ConfigMap format
+  const data = {}
+
+  notificationServices.forEach(service => {
+    const key = `service.${service.name}`
+    data[key] = service.config
+  })
+
+  notificationTemplates.forEach(template => {
+    const key = `template.${template.name}`
+    data[key] = template.config
+  })
+
+  notificationTriggers.forEach(trigger => {
+    const key = `trigger.${trigger.name}`
+    data[key] = trigger.config
+  })
+
+  res.json({ data })
+})
+
+// Mock create Slack service endpoint
+app.post('/api/v1/notifications/services/slack', (req, res) => {
+  const { name, webhookUrl, channel, username, icon, events } = req.body
+
+  console.log(`📨 Creating Slack notification service: ${name}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  const config = `webhookUrl: ${webhookUrl}${channel ? `\nchannel: ${channel}` : ''}${username ? `\nusername: ${username}` : ''}${icon ? `\nicon: ${icon}` : ''}`
+
+  const service = {
+    name,
+    type: 'slack',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create default templates for Slack (always create all templates)
+  const templates = [
+    {
+      name: 'app-deployed',
+      config: `message: |
+  Application {{.app.metadata.name}} has been successfully deployed.
+slack:
+  attachments: |
+    [{
+      "title": "✅ Application Deployed",
+      "color": "good",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Sync Status",
+          "value": "{{.app.status.sync.status}}",
+          "short": true
+        },
+        {
+          "title": "Health Status",
+          "value": "{{.app.status.health.status}}",
+          "short": true
+        },
+        {
+          "title": "Revision",
+          "value": "{{.app.status.sync.revision}}",
+          "short": true
+        }
+      ]
+    }]`
+    },
+    {
+      name: 'app-sync-failed',
+      config: `message: |
+  Application {{.app.metadata.name}} sync failed.
+slack:
+  attachments: |
+    [{
+      "title": "❌ Application Sync Failed",
+      "color": "danger",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Sync Status",
+          "value": "{{.app.status.sync.status}}",
+          "short": true
+        },
+        {
+          "title": "Error",
+          "value": "{{.app.status.operationState.message}}",
+          "short": false
+        }
+      ]
+    }]`
+    },
+    {
+      name: 'app-health-degraded',
+      config: `message: |
+  Application {{.app.metadata.name}} health is degraded.
+slack:
+  attachments: |
+    [{
+      "title": "⚠️ Application Health Degraded",
+      "color": "warning",
+      "fields": [
+        {
+          "title": "Application",
+          "value": "{{.app.metadata.name}}",
+          "short": true
+        },
+        {
+          "title": "Health Status",
+          "value": "{{.app.status.health.status}}",
+          "short": true
+        },
+        {
+          "title": "Message",
+          "value": "{{.app.status.health.message}}",
+          "short": false
+        }
+      ]
+    }]`
+    }
+  ]
+
+  // Remove any existing templates with the same names
+  templates.forEach(template => {
+    notificationTemplates = notificationTemplates.filter(t => t.name !== template.name)
+    notificationTemplates.push(template)
+  })
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Slack service "${name}" created with ${templates.length} templates and ${triggers.length} triggers`)
+  res.json({ status: 'success', name })
+})
+
+// Mock create GitHub service endpoint
+app.post('/api/v1/notifications/services/github', (req, res) => {
+  const { name, installationId, repositories, events } = req.body
+
+  console.log(`📨 Creating GitHub notification service: ${name}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  const config = `installationId: ${installationId}${repositories ? `\nrepositories: ${repositories}` : ''}`
+
+  const service = {
+    name,
+    type: 'github',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create default templates for GitHub (always create all templates)
+  const templates = [
+    {
+      name: 'github-app-deployed',
+      config: `message: |
+  Application {{.app.metadata.name}} has been successfully deployed.
+github:
+  status:
+    state: success
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"
+  deployment:
+    state: success
+    environment: production
+    environmentURL: "https://{{.app.metadata.name}}.example.com"`
+    },
+    {
+      name: 'github-app-sync-failed',
+      config: `message: |
+  Application {{.app.metadata.name}} sync failed.
+github:
+  status:
+    state: failure
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"`
+    },
+    {
+      name: 'github-app-health-degraded',
+      config: `message: |
+  Application {{.app.metadata.name}} health is degraded.
+github:
+  status:
+    state: failure
+    label: "continuous-delivery/{{.app.metadata.name}}"
+    targetURL: "https://argocd.example.com/applications/{{.app.metadata.name}}"`
+    }
+  ]
+
+  // Remove any existing templates with the same names
+  templates.forEach(template => {
+    notificationTemplates = notificationTemplates.filter(t => t.name !== template.name)
+    notificationTemplates.push(template)
+  })
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [github-app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [github-app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [github-app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ GitHub service "${name}" created with ${templates.length} templates and ${triggers.length} triggers`)
+  res.json({ status: 'success', name })
+})
+
+// Test Slack service endpoint - sends REAL message
+app.post('/api/v1/notifications/services/:name/test', async (req, res) => {
+  const { name } = req.params
+  const { webhookUrl, channel, username, icon } = req.body
+
+  console.log(`🧪 Testing Slack notification service: ${name}`)
+  console.log(`   Webhook URL: ${webhookUrl.substring(0, 40)}...`)
+
+  try {
+    // Build Slack message payload
+    const payload = {
+      text: '🧪 *Test Notification from Cased Deploy*',
+      blocks: [
+        {
+          type: 'header',
+          text: {
+            type: 'plain_text',
+            text: '🧪 Test Notification',
+            emoji: true
+          }
+        },
+        {
+          type: 'section',
+          text: {
+            type: 'mrkdwn',
+            text: `This is a test notification from the *${name}* service.\n\nIf you're seeing this message, your Slack integration is working correctly! :tada:`
+          }
+        },
+        {
+          type: 'context',
+          elements: [
+            {
+              type: 'mrkdwn',
+              text: `Sent at: <!date^${Math.floor(Date.now() / 1000)}^{date_pretty} at {time}|${new Date().toISOString()}>`
+            }
+          ]
+        }
+      ]
+    }
+
+    // Add optional overrides
+    if (channel) payload.channel = channel
+    if (username) payload.username = username
+    if (icon) payload.icon_emoji = icon
+
+    // Send actual HTTP request to Slack webhook
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`❌ Slack webhook failed: ${response.status} ${errorText}`)
+      return res.status(response.status).json({
+        status: 'error',
+        message: `Slack API error: ${errorText || response.statusText}`
+      })
+    }
+
+    console.log(`✅ Test notification sent successfully to Slack`)
+    res.json({ status: 'success', message: 'Test notification sent successfully' })
+  } catch (error) {
+    console.error(`❌ Error sending Slack notification:`, error)
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'Failed to send test notification'
+    })
+  }
+})
+
+// Mock test GitHub service endpoint
+app.post('/api/v1/notifications/services/:name/test/github', (req, res) => {
+  const { name } = req.params
+  const { installationId } = req.body
+
+  console.log(`🧪 Testing GitHub notification service: ${name}`)
+  console.log(`   Installation ID: ${installationId}`)
+
+  // Simulate successful test
+  res.json({ status: 'success', message: 'Test commit status sent successfully' })
+})
+
+// Mock update Slack service endpoint
+app.put('/api/v1/notifications/services/slack/:name', (req, res) => {
+  const { name } = req.params
+  const { webhookUrl, channel, username, icon } = req.body
+
+  console.log(`📝 Updating Slack notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `webhookUrl: ${webhookUrl}${channel ? `\nchannel: ${channel}` : ''}${username ? `\nusername: ${username}` : ''}${icon ? `\nicon: ${icon}` : ''}`
+
+  notificationServices[serviceIndex] = { name, type: 'slack', config }
+
+  console.log(`✅ Slack service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
+// Mock update GitHub service endpoint
+app.put('/api/v1/notifications/services/github/:name', (req, res) => {
+  const { name } = req.params
+  const { installationId, repositories } = req.body
+
+  console.log(`📝 Updating GitHub notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `installationId: ${installationId}${repositories ? `\nrepositories: ${repositories}` : ''}`
+
+  notificationServices[serviceIndex] = { name, type: 'github', config }
+
+  console.log(`✅ GitHub service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
+// Mock create Webhook service endpoint
+app.post('/api/v1/notifications/services/webhook', (req, res) => {
+  const { name, url, events } = req.body
+
+  console.log(`📨 Creating Webhook notification service: ${name}`)
+  console.log(`   URL: ${url}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  const config = `url: ${url}`
+
+  const service = {
+    name,
+    type: 'webhook',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Webhook service "${name}" created with ${triggers.length} triggers`)
+  res.json({ status: 'success', name })
+})
+
+// Mock update Webhook service endpoint
+app.put('/api/v1/notifications/services/webhook/:name', (req, res) => {
+  const { name } = req.params
+  const { url } = req.body
+
+  console.log(`📝 Updating Webhook notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  const config = `url: ${url}`
+
+  notificationServices[serviceIndex] = { name, type: 'webhook', config }
+
+  console.log(`✅ Webhook service "${name}" updated`)
+  res.json({ status: 'success', name })
+})
+
+// Mock test Webhook service endpoint
+app.post('/api/v1/notifications/services/:name/test/webhook', async (req, res) => {
+  const { name } = req.params
+  const { url } = req.body
+
+  console.log(`🧪 Testing webhook service: ${name || 'test'}`)
+  console.log(`   URL: ${url}`)
+
+  try {
+    // Actually send a real webhook!
+    const payload = {
+      app: {
+        name: 'test-app',
+        namespace: 'default'
+      },
+      status: {
+        health: 'Healthy',
+        sync: 'Synced'
+      },
+      revision: 'abc123def456',
+      message: 'This is a test webhook from Cased CD',
+      timestamp: new Date().toISOString()
+    }
+
+    console.log(`📤 Sending test webhook to ${url}...`)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Cased-CD-Webhook/1.0'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (response.ok) {
+      console.log(`✅ Webhook sent successfully! Response: ${response.status} ${response.statusText}`)
+      res.json({
+        status: 'success',
+        message: `Test webhook sent successfully (${response.status} ${response.statusText})`
+      })
+    } else {
+      console.log(`⚠️  Webhook sent but received error response: ${response.status} ${response.statusText}`)
+      res.status(400).json({
+        status: 'error',
+        message: `Webhook endpoint returned ${response.status}: ${response.statusText}`
+      })
+    }
+  } catch (error) {
+    console.log(`❌ Failed to send webhook: ${error.message}`)
+    res.status(500).json({
+      status: 'error',
+      message: `Failed to send webhook: ${error.message}`
+    })
+  }
+})
+
+// Mock create Email service endpoint
+app.post('/api/v1/notifications/services/email', (req, res) => {
+  const { name, smtpHost, smtpPort, username, password, from, to, events } = req.body
+
+  console.log(`📧 Creating Email notification service: ${name}`)
+  console.log(`   Host: ${smtpHost}:${smtpPort}`)
+  console.log(`   From: ${from}`)
+  console.log(`   To: ${to || 'not specified'}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  let config = `host: ${smtpHost}
+port: ${smtpPort}
+username: ${username}
+password: $email-${name}-password
+from: ${from}`
+
+  if (to) {
+    config += `\nto: ${to}`
+  }
+
+  const service = {
+    name,
+    type: 'email',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Email service "${name}" created with ${triggers.length} triggers`)
+  res.json({ status: 'created', name })
+})
+
+// Mock update Email service endpoint
+app.put('/api/v1/notifications/services/email/:name', (req, res) => {
+  const { name } = req.params
+  const { smtpHost, smtpPort, username, password, from, to } = req.body
+
+  console.log(`📝 Updating Email notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  let config = `host: ${smtpHost}
+port: ${smtpPort}
+username: ${username}
+password: $email-${name}-password
+from: ${from}`
+
+  if (to) {
+    config += `\nto: ${to}`
+  }
+
+  notificationServices[serviceIndex] = { name, type: 'email', config }
+
+  console.log(`✅ Email service "${name}" updated`)
+  res.json({ status: 'updated', name })
+})
+
+// Mock test Email service endpoint
+app.post('/api/v1/notifications/services/:name/test/email', (req, res) => {
+  const { name } = req.params
+  const { smtpHost, smtpPort, username, password, from, to } = req.body
+
+  console.log(`🧪 Testing email service: ${name || 'test'}`)
+  console.log(`   Host: ${smtpHost}:${smtpPort}`)
+  console.log(`   From: ${from}`)
+  console.log(`   To: ${to || 'not specified'}`)
+
+  // For the mock server, we just simulate success
+  // In a real implementation, you would use a library like nodemailer
+  console.log(`✅ Email configuration validated (mock - not actually sent)`)
+  res.json({
+    status: 'success',
+    message: 'Test email configuration validated (actual sending not implemented in mock server)'
+  })
+})
+
+// Mock delete notification service endpoint
+app.delete('/api/v1/notifications/services/:name', (req, res) => {
+  const { name } = req.params
+
+  console.log(`🗑️  Deleting notification service: ${name}`)
+
+  const initialLength = notificationServices.length
+  notificationServices = notificationServices.filter(s => s.name !== name)
+
+  if (notificationServices.length < initialLength) {
+    console.log(`✅ Service "${name}" deleted`)
+    res.json({ status: 'success', name })
+  } else {
+    res.status(404).json({ error: 'Service not found' })
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`🚀 Mock ArgoCD API server running on http://localhost:${PORT}`)
 })

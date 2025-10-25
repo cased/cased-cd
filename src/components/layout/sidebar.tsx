@@ -10,6 +10,7 @@ import {
   IconLayers,
   IconFolder,
   IconLock,
+  IconMessage,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -53,11 +54,18 @@ const navItems = [
     color: "#10b981", // green
   },
   {
-    title: "RBAC",
+    title: "Permissions",
     href: "/rbac",
     icon: IconLock,
     color: "#ef4444", // red
     requiresFeature: 'rbac' as const, // Requires enterprise license
+  },
+  {
+    title: "Notifications",
+    href: "/notifications",
+    icon: IconMessage,
+    color: "#ec4899", // pink
+    requiresFeature: 'notifications' as const, // Requires enterprise license
   },
 ];
 
@@ -66,11 +74,13 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const hasRBAC = useHasFeature('rbac');
+  const hasNotifications = useHasFeature('notifications');
 
   // Filter nav items based on license
   const visibleNavItems = navItems.filter(item => {
     if (!item.requiresFeature) return true;
     if (item.requiresFeature === 'rbac') return hasRBAC;
+    if (item.requiresFeature === 'notifications') return hasNotifications;
     return false;
   });
 

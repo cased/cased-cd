@@ -43,7 +43,7 @@ export const licenseApi = {
       if (override === 'enterprise') {
         return {
           tier: 'enterprise',
-          features: ['rbac', 'sso', 'audit'],
+          features: ['rbac', 'sso', 'audit', 'notifications'],
         }
       } else if (override === 'free') {
         return {
@@ -60,7 +60,7 @@ export const licenseApi = {
       // If successful, return enterprise license
       return {
         tier: 'enterprise',
-        features: ['rbac', 'sso', 'audit'],
+        features: ['rbac', 'sso', 'audit', 'notifications'],
       }
     } catch {
       // If endpoint doesn't exist (404) or any other error, return free license
