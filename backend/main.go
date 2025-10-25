@@ -471,9 +471,37 @@ func (h *Handler) handleNotificationServices(w http.ResponseWriter, r *http.Requ
 	ctx := context.Background()
 	path := r.URL.Path
 
-	// POST /api/v1/notifications/services - Create service
-	if path == "/api/v1/notifications/services" && r.Method == "POST" {
-		h.createNotificationService(ctx, w, r)
+	// POST /api/v1/notifications/services/slack - Create Slack service
+	if path == "/api/v1/notifications/services/slack" && r.Method == "POST" {
+		h.createSlackService(ctx, w, r)
+		return
+	}
+
+	// POST /api/v1/notifications/services/webhook - Create Webhook service
+	if path == "/api/v1/notifications/services/webhook" && r.Method == "POST" {
+		h.createWebhookService(ctx, w, r)
+		return
+	}
+
+	// PUT /api/v1/notifications/services/slack/{name} - Update Slack service
+	if strings.HasPrefix(path, "/api/v1/notifications/services/slack/") && r.Method == "PUT" {
+		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/slack/")
+		h.updateSlackService(ctx, w, r, serviceName)
+		return
+	}
+
+	// PUT /api/v1/notifications/services/webhook/{name} - Update Webhook service
+	if strings.HasPrefix(path, "/api/v1/notifications/services/webhook/") && r.Method == "PUT" {
+		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/webhook/")
+		h.updateWebhookService(ctx, w, r, serviceName)
+		return
+	}
+
+	// POST /api/v1/notifications/services/{name}/test/webhook - Test webhook service
+	if strings.Contains(path, "/test/webhook") && r.Method == "POST" {
+		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/")
+		serviceName = strings.TrimSuffix(serviceName, "/test/webhook")
+		h.testWebhookService(ctx, w, r, serviceName)
 		return
 	}
 
@@ -486,15 +514,9 @@ func (h *Handler) handleNotificationServices(w http.ResponseWriter, r *http.Requ
 
 	serviceName := parts[0]
 
-	// POST /api/v1/notifications/services/{name}/test - Test service
+	// POST /api/v1/notifications/services/{name}/test - Test Slack service
 	if len(parts) == 2 && parts[1] == "test" && r.Method == "POST" {
-		h.testNotificationService(ctx, w, r, serviceName)
-		return
-	}
-
-	// PUT /api/v1/notifications/services/{name} - Update service
-	if len(parts) == 1 && r.Method == "PUT" {
-		h.updateNotificationService(ctx, w, r, serviceName)
+		h.testSlackService(ctx, w, r, serviceName)
 		return
 	}
 
@@ -516,7 +538,12 @@ type SlackServiceRequest struct {
 	Icon       string `json:"icon,omitempty"`
 }
 
-func (h *Handler) createNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+type WebhookServiceRequest struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+func (h *Handler) createSlackService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
 	var req SlackServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
@@ -603,7 +630,7 @@ func (h *Handler) createNotificationService(ctx context.Context, w http.Response
 	json.NewEncoder(w).Encode(map[string]string{"status": "created", "name": req.Name})
 }
 
-func (h *Handler) updateNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+func (h *Handler) updateSlackService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
 	var req SlackServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
@@ -708,7 +735,7 @@ func (h *Handler) deleteNotificationService(ctx context.Context, w http.Response
 	json.NewEncoder(w).Encode(map[string]string{"status": "deleted", "name": serviceName})
 }
 
-func (h *Handler) testNotificationService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+func (h *Handler) testSlackService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
 	var req SlackServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
@@ -754,4 +781,141 @@ func (h *Handler) testNotificationService(ctx context.Context, w http.ResponseWr
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": "Test notification sent"})
+}
+
+// Webhook service handlers
+
+func (h *Handler) createWebhookService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var req WebhookServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Name == "" || req.URL == "" {
+		http.Error(w, "name and url are required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if service already exists
+	serviceKey := fmt.Sprintf("service.webhook.%s", req.Name)
+	if _, exists := configMap.Data[serviceKey]; exists {
+		http.Error(w, "Service already exists", http.StatusConflict)
+		return
+	}
+
+	// Build YAML config for webhook service
+	yamlConfig := fmt.Sprintf("url: %s\n", req.URL)
+
+	// Update ConfigMap
+	if configMap.Data == nil {
+		configMap.Data = make(map[string]string)
+	}
+	configMap.Data[serviceKey] = yamlConfig
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "created", "name": req.Name})
+}
+
+func (h *Handler) updateWebhookService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req WebhookServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.URL == "" {
+		http.Error(w, "url is required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	serviceKey := fmt.Sprintf("service.webhook.%s", serviceName)
+	if _, exists := configMap.Data[serviceKey]; !exists {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	// Build YAML config
+	yamlConfig := fmt.Sprintf("url: %s\n", req.URL)
+	configMap.Data[serviceKey] = yamlConfig
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated", "name": serviceName})
+}
+
+func (h *Handler) testWebhookService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req WebhookServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.URL == "" {
+		http.Error(w, "url is required", http.StatusBadRequest)
+		return
+	}
+
+	// Send test webhook with sample payload
+	payload := map[string]interface{}{
+		"app": map[string]string{
+			"name":      "test-app",
+			"namespace": "default",
+		},
+		"status": map[string]string{
+			"health": "Healthy",
+			"sync":   "Synced",
+		},
+		"revision": "abc123def456",
+		"message":  "This is a test webhook from Cased CD",
+	}
+
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to marshal payload: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	resp, err := http.Post(req.URL, "application/json", strings.NewReader(string(payloadBytes)))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to send test webhook: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		http.Error(w, fmt.Sprintf("Webhook endpoint returned error: %s", resp.Status), http.StatusBadGateway)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": fmt.Sprintf("Test webhook sent successfully (%s)", resp.Status)})
 }

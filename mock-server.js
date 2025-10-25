@@ -1508,21 +1508,59 @@ app.put('/api/v1/notifications/services/webhook/:name', (req, res) => {
 })
 
 // Mock test Webhook service endpoint
-app.post('/api/v1/notifications/services/:name/test/webhook', (req, res) => {
+app.post('/api/v1/notifications/services/:name/test/webhook', async (req, res) => {
   const { name } = req.params
   const { url } = req.body
 
   console.log(`🧪 Testing webhook service: ${name || 'test'}`)
   console.log(`   URL: ${url}`)
 
-  // In real implementation, this would send a test HTTP POST to the webhook URL
-  // For mock, we just simulate success
-  console.log(`✅ Test webhook would be sent to ${url}`)
+  try {
+    // Actually send a real webhook!
+    const payload = {
+      app: {
+        name: 'test-app',
+        namespace: 'default'
+      },
+      status: {
+        health: 'Healthy',
+        sync: 'Synced'
+      },
+      revision: 'abc123def456',
+      message: 'This is a test webhook from Cased CD',
+      timestamp: new Date().toISOString()
+    }
 
-  res.json({
-    status: 'success',
-    message: 'Test webhook sent successfully'
-  })
+    console.log(`📤 Sending test webhook to ${url}...`)
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'Cased-CD-Webhook/1.0'
+      },
+      body: JSON.stringify(payload)
+    })
+
+    if (response.ok) {
+      console.log(`✅ Webhook sent successfully! Response: ${response.status} ${response.statusText}`)
+      res.json({
+        status: 'success',
+        message: `Test webhook sent successfully (${response.status} ${response.statusText})`
+      })
+    } else {
+      console.log(`⚠️  Webhook sent but received error response: ${response.status} ${response.statusText}`)
+      res.status(400).json({
+        status: 'error',
+        message: `Webhook endpoint returned ${response.status}: ${response.statusText}`
+      })
+    }
+  } catch (error) {
+    console.log(`❌ Failed to send webhook: ${error.message}`)
+    res.status(500).json({
+      status: 'error',
+      message: `Failed to send webhook: ${error.message}`
+    })
+  }
 })
 
 // Mock delete notification service endpoint
