@@ -19,6 +19,7 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ApplicationCard } from '@/components/-applications/application-card'
 import { PageHeader } from '@/components/ui/page-header'
 import { PageContent } from '@/components/ui/page-content'
+import { useDebounce } from '@/hooks/useDebounce'
 
 export const Route = createFileRoute('/_authenticated/applications/')({
   component: ApplicationsPage,
@@ -31,10 +32,13 @@ function ApplicationsPage() {
   const refreshMutation = useRefreshApplication()
   const syncMutation = useSyncApplication()
 
-  // Filter applications based on search
+  // Debounce search to avoid excessive filtering on every keystroke
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Filter applications based on debounced search
   const filteredApps =
     data?.items?.filter((app) =>
-      app.metadata.name.toLowerCase().includes(searchQuery.toLowerCase()),
+      app.metadata.name.toLowerCase().includes(debouncedSearch.toLowerCase()),
     ) || []
 
   const handleRefresh = async (name: string) => {
