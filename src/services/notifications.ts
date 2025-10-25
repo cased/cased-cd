@@ -171,6 +171,58 @@ const notificationsApi = {
     const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test/webhook`, data)
     return response.data
   },
+
+  // Create an Email notification service
+  createEmailService: async (data: {
+    name: string
+    smtpHost: string
+    smtpPort: string
+    username: string
+    password: string
+    from: string
+    to?: string
+    events?: {
+      onDeployed: boolean
+      onSyncFailed: boolean
+      onHealthDegraded: boolean
+    }
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.post<{ status: string; name: string }>('/notifications/services/email', data)
+    return response.data
+  },
+
+  // Update an Email notification service
+  updateEmailService: async (data: {
+    name: string
+    smtpHost: string
+    smtpPort: string
+    username: string
+    password: string
+    from: string
+    to?: string
+    events?: {
+      onDeployed: boolean
+      onSyncFailed: boolean
+      onHealthDegraded: boolean
+    }
+  }): Promise<{ status: string; name: string }> => {
+    const response = await api.put<{ status: string; name: string }>(`/notifications/services/email/${data.name}`, data)
+    return response.data
+  },
+
+  // Test an Email notification service
+  testEmailService: async (data: {
+    name?: string
+    smtpHost: string
+    smtpPort: string
+    username: string
+    password: string
+    from: string
+    to?: string
+  }): Promise<{ status: string; message: string }> => {
+    const response = await api.post<{ status: string; message: string }>(`/notifications/services/${data.name || 'test'}/test/email`, data)
+    return response.data
+  },
 }
 
 // Helper to determine service type from name and config
@@ -354,5 +406,67 @@ export function useTestWebhookService() {
       name?: string
       url: string
     }) => notificationsApi.testWebhookService(data),
+  })
+}
+
+export function useCreateEmailService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      smtpHost: string
+      smtpPort: string
+      username: string
+      password: string
+      from: string
+      to?: string
+      events?: {
+        onDeployed: boolean
+        onSyncFailed: boolean
+        onHealthDegraded: boolean
+      }
+    }) => notificationsApi.createEmailService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useUpdateEmailService() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: {
+      name: string
+      smtpHost: string
+      smtpPort: string
+      username: string
+      password: string
+      from: string
+      to?: string
+      events?: {
+        onDeployed: boolean
+        onSyncFailed: boolean
+        onHealthDegraded: boolean
+      }
+    }) => notificationsApi.updateEmailService(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
+    },
+  })
+}
+
+export function useTestEmailService() {
+  return useMutation({
+    mutationFn: (data: {
+      name?: string
+      smtpHost: string
+      smtpPort: string
+      username: string
+      password: string
+      from: string
+      to?: string
+    }) => notificationsApi.testEmailService(data),
   })
 }

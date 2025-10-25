@@ -483,6 +483,12 @@ func (h *Handler) handleNotificationServices(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// POST /api/v1/notifications/services/email - Create Email service
+	if path == "/api/v1/notifications/services/email" && r.Method == "POST" {
+		h.createEmailService(ctx, w, r)
+		return
+	}
+
 	// PUT /api/v1/notifications/services/slack/{name} - Update Slack service
 	if strings.HasPrefix(path, "/api/v1/notifications/services/slack/") && r.Method == "PUT" {
 		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/slack/")
@@ -497,11 +503,26 @@ func (h *Handler) handleNotificationServices(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// PUT /api/v1/notifications/services/email/{name} - Update Email service
+	if strings.HasPrefix(path, "/api/v1/notifications/services/email/") && r.Method == "PUT" {
+		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/email/")
+		h.updateEmailService(ctx, w, r, serviceName)
+		return
+	}
+
 	// POST /api/v1/notifications/services/{name}/test/webhook - Test webhook service
 	if strings.Contains(path, "/test/webhook") && r.Method == "POST" {
 		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/")
 		serviceName = strings.TrimSuffix(serviceName, "/test/webhook")
 		h.testWebhookService(ctx, w, r, serviceName)
+		return
+	}
+
+	// POST /api/v1/notifications/services/{name}/test/email - Test email service
+	if strings.Contains(path, "/test/email") && r.Method == "POST" {
+		serviceName := strings.TrimPrefix(path, "/api/v1/notifications/services/")
+		serviceName = strings.TrimSuffix(serviceName, "/test/email")
+		h.testEmailService(ctx, w, r, serviceName)
 		return
 	}
 
@@ -541,6 +562,16 @@ type SlackServiceRequest struct {
 type WebhookServiceRequest struct {
 	Name string `json:"name"`
 	URL  string `json:"url"`
+}
+
+type EmailServiceRequest struct {
+	Name     string `json:"name"`
+	SMTPHost string `json:"smtpHost"`
+	SMTPPort string `json:"smtpPort"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+	From     string `json:"from"`
+	To       string `json:"to,omitempty"`
 }
 
 func (h *Handler) createSlackService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -918,4 +949,181 @@ func (h *Handler) testWebhookService(ctx context.Context, w http.ResponseWriter,
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "success", "message": fmt.Sprintf("Test webhook sent successfully (%s)", resp.Status)})
+}
+
+// Email service handlers
+
+func (h *Handler) createEmailService(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var req EmailServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.Name == "" || req.SMTPHost == "" || req.SMTPPort == "" || req.Username == "" || req.Password == "" || req.From == "" {
+		http.Error(w, "name, smtpHost, smtpPort, username, password, and from are required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if service already exists
+	serviceKey := fmt.Sprintf("service.email.%s", req.Name)
+	if _, exists := configMap.Data[serviceKey]; exists {
+		http.Error(w, "Service already exists", http.StatusConflict)
+		return
+	}
+
+	// Build YAML config for email service
+	var yamlConfig strings.Builder
+	secretKey := fmt.Sprintf("email-%s-password", req.Name)
+	yamlConfig.WriteString(fmt.Sprintf("host: %s\n", req.SMTPHost))
+	yamlConfig.WriteString(fmt.Sprintf("port: %s\n", req.SMTPPort))
+	yamlConfig.WriteString(fmt.Sprintf("username: %s\n", req.Username))
+	yamlConfig.WriteString(fmt.Sprintf("password: $%s\n", secretKey))
+	yamlConfig.WriteString(fmt.Sprintf("from: %s\n", req.From))
+	if req.To != "" {
+		yamlConfig.WriteString(fmt.Sprintf("to: %s\n", req.To))
+	}
+
+	// Update ConfigMap
+	if configMap.Data == nil {
+		configMap.Data = make(map[string]string)
+	}
+	configMap.Data[serviceKey] = yamlConfig.String()
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Store password in secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
+	if err != nil {
+		// Create secret if it doesn't exist
+		secret = &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "argocd-notifications-secret",
+				Namespace: h.namespace,
+			},
+			Data: make(map[string][]byte),
+		}
+	}
+
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[secretKey] = []byte(req.Password)
+
+	if secret.CreationTimestamp.IsZero() {
+		_, err = h.clientset.CoreV1().Secrets(h.namespace).Create(ctx, secret, metav1.CreateOptions{})
+	} else {
+		_, err = h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(map[string]string{"status": "created", "name": req.Name})
+}
+
+func (h *Handler) updateEmailService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req EmailServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Validate required fields
+	if req.SMTPHost == "" || req.SMTPPort == "" || req.Username == "" || req.Password == "" || req.From == "" {
+		http.Error(w, "smtpHost, smtpPort, username, password, and from are required", http.StatusBadRequest)
+		return
+	}
+
+	// Get the ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	serviceKey := fmt.Sprintf("service.email.%s", serviceName)
+	if _, exists := configMap.Data[serviceKey]; !exists {
+		http.Error(w, "Service not found", http.StatusNotFound)
+		return
+	}
+
+	// Build YAML config
+	var yamlConfig strings.Builder
+	secretKey := fmt.Sprintf("email-%s-password", serviceName)
+	yamlConfig.WriteString(fmt.Sprintf("host: %s\n", req.SMTPHost))
+	yamlConfig.WriteString(fmt.Sprintf("port: %s\n", req.SMTPPort))
+	yamlConfig.WriteString(fmt.Sprintf("username: %s\n", req.Username))
+	yamlConfig.WriteString(fmt.Sprintf("password: $%s\n", secretKey))
+	yamlConfig.WriteString(fmt.Sprintf("from: %s\n", req.From))
+	if req.To != "" {
+		yamlConfig.WriteString(fmt.Sprintf("to: %s\n", req.To))
+	}
+
+	configMap.Data[serviceKey] = yamlConfig.String()
+
+	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Update secret
+	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if secret.Data == nil {
+		secret.Data = make(map[string][]byte)
+	}
+	secret.Data[secretKey] = []byte(req.Password)
+
+	_, err = h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "updated", "name": serviceName})
+}
+
+func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r *http.Request, serviceName string) {
+	var req EmailServiceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, fmt.Sprintf("Invalid request body: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	if req.SMTPHost == "" || req.SMTPPort == "" || req.Username == "" || req.Password == "" || req.From == "" {
+		http.Error(w, "smtpHost, smtpPort, username, password, and from are required", http.StatusBadRequest)
+		return
+	}
+
+	// For now, just return success without actually sending an email
+	// In a production environment, you would use net/smtp or a library like gomail
+	// to send a test email
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "success",
+		"message": fmt.Sprintf("Test email configuration validated for %s (actual sending not implemented in backend)", serviceName),
+	})
 }

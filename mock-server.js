@@ -1563,6 +1563,140 @@ app.post('/api/v1/notifications/services/:name/test/webhook', async (req, res) =
   }
 })
 
+// Mock create Email service endpoint
+app.post('/api/v1/notifications/services/email', (req, res) => {
+  const { name, smtpHost, smtpPort, username, password, from, to, events } = req.body
+
+  console.log(`📧 Creating Email notification service: ${name}`)
+  console.log(`   Host: ${smtpHost}:${smtpPort}`)
+  console.log(`   From: ${from}`)
+  console.log(`   To: ${to || 'not specified'}`)
+  console.log(`   Events:`, events)
+
+  // Create service config in YAML-like format
+  let config = `host: ${smtpHost}
+port: ${smtpPort}
+username: ${username}
+password: $email-${name}-password
+from: ${from}`
+
+  if (to) {
+    config += `\nto: ${to}`
+  }
+
+  const service = {
+    name,
+    type: 'email',
+    config
+  }
+
+  // Remove any existing service with the same name
+  notificationServices = notificationServices.filter(s => s.name !== name)
+  notificationServices.push(service)
+
+  // Default to all events enabled if not specified
+  const enabledEvents = events || {
+    onDeployed: true,
+    onSyncFailed: true,
+    onHealthDegraded: true
+  }
+
+  // Auto-create triggers only for enabled events
+  const triggers = []
+
+  if (enabledEvents.onDeployed) {
+    triggers.push({
+      name: `on-deployed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Succeeded']
+  send: [app-deployed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onSyncFailed) {
+    triggers.push({
+      name: `on-sync-failed-${name}`,
+      config: `- when: app.status.operationState.phase in ['Failed']
+  send: [app-sync-failed]
+  services: [${name}]`
+    })
+  }
+
+  if (enabledEvents.onHealthDegraded) {
+    triggers.push({
+      name: `on-health-degraded-${name}`,
+      config: `- when: app.status.health.status == 'Degraded'
+  send: [app-health-degraded]
+  services: [${name}]`
+    })
+  }
+
+  // Remove any existing triggers with the same potential names (cleanup)
+  const potentialTriggerNames = [
+    `on-deployed-${name}`,
+    `on-sync-failed-${name}`,
+    `on-health-degraded-${name}`
+  ]
+  notificationTriggers = notificationTriggers.filter(t => !potentialTriggerNames.includes(t.name))
+
+  // Add the new triggers
+  triggers.forEach(trigger => {
+    notificationTriggers.push(trigger)
+  })
+
+  console.log(`✅ Email service "${name}" created with ${triggers.length} triggers`)
+  res.json({ status: 'created', name })
+})
+
+// Mock update Email service endpoint
+app.put('/api/v1/notifications/services/email/:name', (req, res) => {
+  const { name } = req.params
+  const { smtpHost, smtpPort, username, password, from, to } = req.body
+
+  console.log(`📝 Updating Email notification service: ${name}`)
+
+  const serviceIndex = notificationServices.findIndex(s => s.name === name)
+
+  if (serviceIndex === -1) {
+    res.status(404).json({ error: 'Service not found' })
+    return
+  }
+
+  let config = `host: ${smtpHost}
+port: ${smtpPort}
+username: ${username}
+password: $email-${name}-password
+from: ${from}`
+
+  if (to) {
+    config += `\nto: ${to}`
+  }
+
+  notificationServices[serviceIndex] = { name, type: 'email', config }
+
+  console.log(`✅ Email service "${name}" updated`)
+  res.json({ status: 'updated', name })
+})
+
+// Mock test Email service endpoint
+app.post('/api/v1/notifications/services/:name/test/email', (req, res) => {
+  const { name } = req.params
+  const { smtpHost, smtpPort, username, password, from, to } = req.body
+
+  console.log(`🧪 Testing email service: ${name || 'test'}`)
+  console.log(`   Host: ${smtpHost}:${smtpPort}`)
+  console.log(`   From: ${from}`)
+  console.log(`   To: ${to || 'not specified'}`)
+
+  // For the mock server, we just simulate success
+  // In a real implementation, you would use a library like nodemailer
+  console.log(`✅ Email configuration validated (mock - not actually sent)`)
+  res.json({
+    status: 'success',
+    message: 'Test email configuration validated (actual sending not implemented in mock server)'
+  })
+})
+
 // Mock delete notification service endpoint
 app.delete('/api/v1/notifications/services/:name', (req, res) => {
   const { name } = req.params

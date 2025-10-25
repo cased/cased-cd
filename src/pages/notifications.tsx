@@ -14,12 +14,16 @@ import {
   useUpdateSlackService,
   useCreateWebhookService,
   useUpdateWebhookService,
-  useTestWebhookService
+  useTestWebhookService,
+  useCreateEmailService,
+  useUpdateEmailService,
+  useTestEmailService
 } from '@/services/notifications'
 import type { NotificationService } from '@/types/notifications'
 import { CreateServicePanel, type ServiceType } from '@/components/notifications/create-service-panel'
 import { SlackServiceForm, type SlackServiceFormData } from '@/components/notifications/slack-service-form'
 import { WebhookServiceForm, type WebhookServiceFormData } from '@/components/notifications/webhook-service-form'
+import { EmailServiceForm, type EmailServiceFormData } from '@/components/notifications/email-service-form'
 import { useDeleteHandler } from '@/hooks/useDeleteHandler'
 import { toast } from 'sonner'
 
@@ -28,6 +32,7 @@ export default function NotificationsPage() {
   const [createPanelOpen, setCreatePanelOpen] = useState(false)
   const [slackFormOpen, setSlackFormOpen] = useState(false)
   const [webhookFormOpen, setWebhookFormOpen] = useState(false)
+  const [emailFormOpen, setEmailFormOpen] = useState(false)
   const [editingService, setEditingService] = useState<NotificationService | null>(null)
   const [testingService, setTestingService] = useState<string | null>(null)
 
@@ -37,10 +42,15 @@ export default function NotificationsPage() {
   const createWebhookService = useCreateWebhookService()
   const updateWebhookService = useUpdateWebhookService()
   const testWebhookService = useTestWebhookService()
+  const createEmailService = useCreateEmailService()
+  const updateEmailService = useUpdateEmailService()
+  const testEmailService = useTestEmailService()
   const deleteNotificationService = useDeleteNotificationService()
 
   const deleteHandler = useDeleteHandler({
-    deleteFn: deleteNotificationService.mutateAsync,
+    deleteFn: async (name: string) => {
+      await deleteNotificationService.mutateAsync(name)
+    },
     resourceType: 'Service',
     getId: (service: NotificationService) => service.name,
     getDisplayName: (service: NotificationService) => service.name,
@@ -56,6 +66,8 @@ export default function NotificationsPage() {
       setSlackFormOpen(true)
     } else if (type === 'webhook') {
       setWebhookFormOpen(true)
+    } else if (type === 'email') {
+      setEmailFormOpen(true)
     } else {
       // TODO: Handle other service types
       toast.info(`${type} service form not yet implemented`)
@@ -120,6 +132,35 @@ export default function NotificationsPage() {
     }
   }
 
+  const handleEmailSubmit = async (data: EmailServiceFormData) => {
+    try {
+      if (editingService) {
+        await updateEmailService.mutateAsync(data)
+        toast.success(`Email service "${data.name}" updated successfully`)
+      } else {
+        await createEmailService.mutateAsync(data)
+        toast.success(`Email service "${data.name}" created successfully`)
+      }
+      setEmailFormOpen(false)
+      setEditingService(null)
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to save service'
+      toast.error(errorMessage)
+    }
+  }
+
+  const handleEmailTest = async (data: EmailServiceFormData) => {
+    try {
+      await testEmailService.mutateAsync(data)
+      toast.success('Test email sent successfully')
+    } catch (err) {
+      const error = err as { response?: { data?: { message?: string } }; message?: string }
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send test email'
+      toast.error(errorMessage)
+    }
+  }
+
   const handleEditService = (service: NotificationService) => {
     setEditingService(service)
 
@@ -128,6 +169,8 @@ export default function NotificationsPage() {
       setSlackFormOpen(true)
     } else if (service.type === 'webhook') {
       setWebhookFormOpen(true)
+    } else if (service.type === 'email') {
+      setEmailFormOpen(true)
     } else {
       toast.info(`Edit functionality for "${service.type}" services not yet implemented`)
     }
@@ -144,6 +187,10 @@ export default function NotificationsPage() {
         const data = parseWebhookConfig(service.config, service.name)
         await testWebhookService.mutateAsync(data)
         toast.success('Test webhook sent successfully')
+      } else if (service.type === 'email') {
+        const data = parseEmailConfig(service.config, service.name)
+        await testEmailService.mutateAsync(data)
+        toast.success('Test email sent successfully')
       } else {
         toast.info(`Test functionality for "${service.type}" services not yet implemented`)
       }
@@ -198,6 +245,37 @@ export default function NotificationsPage() {
       const value = valueParts.join(':').trim()
 
       if (key.trim() === 'url') data.url = value
+    })
+
+    return data
+  }
+
+  const parseEmailConfig = (config: string, name: string): EmailServiceFormData => {
+    const lines = config.split('\n')
+    const data: EmailServiceFormData = {
+      name,
+      smtpHost: '',
+      smtpPort: '587',
+      username: '',
+      password: '',
+      from: '',
+      events: {
+        onDeployed: true,
+        onSyncFailed: true,
+        onHealthDegraded: true,
+      },
+    }
+
+    lines.forEach(line => {
+      const [key, ...valueParts] = line.split(':')
+      const value = valueParts.join(':').trim()
+
+      if (key.trim() === 'host') data.smtpHost = value
+      else if (key.trim() === 'port') data.smtpPort = value
+      else if (key.trim() === 'username') data.username = value
+      else if (key.trim() === 'password') data.password = value
+      else if (key.trim() === 'from') data.from = value
+      else if (key.trim() === 'to') data.to = value
     })
 
     return data
@@ -317,6 +395,21 @@ export default function NotificationsPage() {
         isTesting={testWebhookService.isPending}
         isEditing={!!editingService && editingService.type === 'webhook'}
         initialData={editingService && editingService.type === 'webhook' ? parseWebhookConfig(editingService.config, editingService.name) : undefined}
+      />
+
+      {/* Email Service Form */}
+      <EmailServiceForm
+        open={emailFormOpen}
+        onOpenChange={(open) => {
+          setEmailFormOpen(open)
+          if (!open) setEditingService(null)
+        }}
+        onSubmit={handleEmailSubmit}
+        onTest={handleEmailTest}
+        isSubmitting={editingService ? updateEmailService.isPending : createEmailService.isPending}
+        isTesting={testEmailService.isPending}
+        isEditing={!!editingService && editingService.type === 'email'}
+        initialData={editingService && editingService.type === 'email' ? parseEmailConfig(editingService.config, editingService.name) : undefined}
       />
 
       {/* Delete Confirmation Dialog */}
