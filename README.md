@@ -114,7 +114,75 @@ That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or conf
 
 ### Enterprise Installation
 
-Enterprise customers should contact support@cased.com for access to the RBAC backend component and installation instructions.
+**Prerequisites:**
+- Existing ArgoCD installation (v2.0+)
+- Kubernetes cluster with default StorageClass (for audit log PVC)
+
+**Deploy with Helm:**
+
+```bash
+# Add the Cased Helm repository (if not already added)
+helm repo add cased https://cased.github.io/cased-cd
+helm repo update
+
+# Install Cased CD Enterprise in the argocd namespace
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.persistence.size=10Gi
+```
+
+**What gets deployed:**
+- ✅ Cased CD frontend (static React app)
+- ✅ Enterprise backend (RBAC, audit, notifications, user management)
+- ✅ PersistentVolumeClaim for audit logs (automatically provisioned)
+- ✅ Kubernetes RBAC roles for ConfigMap/Secret access
+
+**Access the UI:**
+
+```bash
+# Port-forward to access locally
+kubectl port-forward -n argocd svc/cased-cd 8080:80
+
+# Then open http://localhost:8080 and login with your ArgoCD credentials
+```
+
+**Configure Ingress for external access:**
+
+```bash
+helm upgrade cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=cased-cd.example.com \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix
+```
+
+**Customize audit storage:**
+
+```bash
+# Use a larger PVC for audit logs (default: 10Gi)
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.persistence.size=50Gi \
+  --set enterprise.persistence.storageClass=fast-ssd
+```
+
+**Verify deployment:**
+
+```bash
+# Check all pods are running
+kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
+
+# Check audit PVC was created
+kubectl get pvc -n argocd -l app.kubernetes.io/component=enterprise
+
+# View audit logs
+kubectl exec -n argocd deployment/cased-cd-enterprise -- tail -f /data/audit/events.jsonl
+```
 
 ### Install with kubectl
 
