@@ -172,22 +172,22 @@ export function AuditTrailPage() {
     return (
       <div className="mt-3 p-3 bg-neutral-50 dark:bg-neutral-900 rounded border border-neutral-200 dark:border-neutral-800">
         <div className="grid grid-cols-2 gap-4">
-          {details.before && (
+          {details.before ? (
             <div>
               <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">Before</h4>
               <pre className="text-xs font-mono text-neutral-600 dark:text-neutral-400 overflow-auto">
                 {JSON.stringify(details.before, null, 2)}
               </pre>
             </div>
-          )}
-          {details.after && (
+          ) : null}
+          {details.after ? (
             <div>
               <h4 className="text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2">After</h4>
               <pre className="text-xs font-mono text-neutral-600 dark:text-neutral-400 overflow-auto">
                 {JSON.stringify(details.after, null, 2)}
               </pre>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
     )
