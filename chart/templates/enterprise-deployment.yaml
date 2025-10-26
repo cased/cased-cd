@@ -18,6 +18,10 @@ spec:
         {{- include "cased-cd.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: enterprise
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "cased-cd.serviceAccountName" . }}
       securityContext:
         runAsNonRoot: true
