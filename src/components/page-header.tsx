@@ -17,28 +17,30 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          {Icon && (
-            <div className="h-8 w-8 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
-              <Icon
-                className="text-neutral-600 dark:text-neutral-400"
-                size={16}
-              />
-            </div>
-          )}
-          <div>
-            <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">
-              {title}
-            </h1>
-            {(description || subtitle) && (
-              <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
-                {subtitle || description}
-              </p>
+      <div className="px-8 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {Icon && (
+              <div className="h-8 w-8 rounded-md bg-neutral-100 dark:bg-neutral-900 flex items-center justify-center">
+                <Icon
+                  className="text-neutral-600 dark:text-neutral-400"
+                  size={16}
+                />
+              </div>
             )}
+            <div>
+              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">
+                {title}
+              </h1>
+              {(description || subtitle) && (
+                <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-400">
+                  {subtitle || description}
+                </p>
+              )}
+            </div>
           </div>
+          {action && <div className="flex gap-2">{action}</div>}
         </div>
-        {action && <div>{action}</div>}
       </div>
     </div>
   );

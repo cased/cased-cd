@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:mock": "node mock-server.js",
     "dev:real": "VITE_USE_REAL_API=true vite",
+    "dev:enterprise": "VITE_USE_REAL_API=true VITE_ENTERPRISE_BACKEND=true vite",
     "argocd:setup": "./scripts/setup-argocd.sh",
     "argocd:teardown": "./scripts/teardown-argocd.sh",
     "build": "tsc -b && vite build",

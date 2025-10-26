@@ -22,6 +22,7 @@ import { Route as AuthenticatedHelpRouteImport } from './routes/_authenticated/h
 import { Route as AuthenticatedGpgkeysRouteImport } from './routes/_authenticated/gpgkeys'
 import { Route as AuthenticatedClustersRouteImport } from './routes/_authenticated/clusters'
 import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
+import { Route as AuthenticatedAuditTrailRouteImport } from './routes/_authenticated/audit-trail'
 import { Route as AuthenticatedApplicationsRouteImport } from './routes/_authenticated/applications'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedApplicationsIndexRouteImport } from './routes/_authenticated/applications/index'
@@ -101,6 +102,11 @@ const AuthenticatedCertificatesRoute =
     path: '/certificates',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAuditTrailRoute = AuthenticatedAuditTrailRouteImport.update({
+  id: '/audit-trail',
+  path: '/audit-trail',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedApplicationsRoute =
   AuthenticatedApplicationsRouteImport.update({
     id: '/applications',
@@ -171,6 +177,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/accounts': typeof AuthenticatedAccountsRoute
   '/applications': typeof AuthenticatedApplicationsRouteWithChildren
+  '/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/clusters': typeof AuthenticatedClustersRoute
   '/gpgkeys': typeof AuthenticatedGpgkeysRoute
@@ -195,6 +202,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/accounts': typeof AuthenticatedAccountsRoute
+  '/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/clusters': typeof AuthenticatedClustersRoute
   '/gpgkeys': typeof AuthenticatedGpgkeysRoute
@@ -221,6 +229,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/applications': typeof AuthenticatedApplicationsRouteWithChildren
+  '/_authenticated/audit-trail': typeof AuthenticatedAuditTrailRoute
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/clusters': typeof AuthenticatedClustersRoute
   '/_authenticated/gpgkeys': typeof AuthenticatedGpgkeysRoute
@@ -248,6 +257,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/accounts'
     | '/applications'
+    | '/audit-trail'
     | '/certificates'
     | '/clusters'
     | '/gpgkeys'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
   to:
     | '/login'
     | '/accounts'
+    | '/audit-trail'
     | '/certificates'
     | '/clusters'
     | '/gpgkeys'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/accounts'
     | '/_authenticated/applications'
+    | '/_authenticated/audit-trail'
     | '/_authenticated/certificates'
     | '/_authenticated/clusters'
     | '/_authenticated/gpgkeys'
@@ -415,6 +427,13 @@ declare module '@tanstack/react-router' {
       path: '/certificates'
       fullPath: '/certificates'
       preLoaderRoute: typeof AuthenticatedCertificatesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/audit-trail': {
+      id: '/_authenticated/audit-trail'
+      path: '/audit-trail'
+      fullPath: '/audit-trail'
+      preLoaderRoute: typeof AuthenticatedAuditTrailRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/applications': {
@@ -550,6 +569,7 @@ const AuthenticatedApplicationsRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedApplicationsRoute: typeof AuthenticatedApplicationsRouteWithChildren
+  AuthenticatedAuditTrailRoute: typeof AuthenticatedAuditTrailRoute
   AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedClustersRoute: typeof AuthenticatedClustersRoute
   AuthenticatedGpgkeysRoute: typeof AuthenticatedGpgkeysRoute
@@ -566,6 +586,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedApplicationsRoute: AuthenticatedApplicationsRouteWithChildren,
+  AuthenticatedAuditTrailRoute: AuthenticatedAuditTrailRoute,
   AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedClustersRoute: AuthenticatedClustersRoute,
   AuthenticatedGpgkeysRoute: AuthenticatedGpgkeysRoute,

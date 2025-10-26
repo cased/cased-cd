@@ -11,6 +11,7 @@ import {
   IconFolder,
   IconLock,
   IconMessage,
+  IconDocument,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -67,6 +68,13 @@ const navItems = [
     color: "#ec4899", // pink
     requiresFeature: 'notifications' as const, // Requires enterprise license
   },
+  {
+    title: "Audit Trail",
+    href: "/audit-trail",
+    icon: IconDocument,
+    color: "#6366f1", // indigo
+    requiresFeature: 'audit' as const, // Requires enterprise license
+  },
 ];
 
 export function AppSidebar({ children }: { children: React.ReactNode }) {
@@ -75,12 +83,14 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const { logout } = useAuth();
   const hasRBAC = useHasFeature('rbac');
   const hasNotifications = useHasFeature('notifications');
+  const hasAudit = useHasFeature('audit');
 
   // Filter nav items based on license
   const visibleNavItems = navItems.filter(item => {
     if (!item.requiresFeature) return true;
     if (item.requiresFeature === 'rbac') return hasRBAC;
     if (item.requiresFeature === 'notifications') return hasNotifications;
+    if (item.requiresFeature === 'audit') return hasAudit;
     return false;
   });
 

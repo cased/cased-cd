@@ -36,9 +36,9 @@ spec:
           env:
             - name: ARGOCD_SERVER
               value: {{ .Values.argocd.server | quote }}
-            {{- if .Values.rbacProxy.enabled }}
-            - name: RBAC_PROXY_SERVICE
-              value: {{ include "cased-cd.fullname" . }}-rbac-proxy.{{ .Release.Namespace }}.svc.cluster.local
+            {{- if .Values.enterprise.enabled }}
+            - name: ENTERPRISE_BACKEND_SERVICE
+              value: {{ include "cased-cd.fullname" . }}-enterprise.{{ .Release.Namespace }}.svc.cluster.local
             {{- end }}
           ports:
             - name: http

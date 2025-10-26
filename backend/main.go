@@ -1,19 +1,26 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
+	"net/http/httptest"
 	"net/http/httputil"
 	"net/smtp"
 	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	corev1 "k8s.io/api/core/v1"
@@ -69,9 +76,22 @@ func main() {
 		log.Fatalf("Failed to create Kubernetes client: %v", err)
 	}
 
+	// Get audit file path from environment or use default
+	auditFile := os.Getenv("AUDIT_FILE_PATH")
+	if auditFile == "" {
+		auditFile = "/data/audit/events.jsonl"
+	}
+
+	// Ensure audit directory exists
+	auditDir := filepath.Dir(auditFile)
+	if err := os.MkdirAll(auditDir, 0755); err != nil {
+		log.Printf("Warning: Failed to create audit directory %s: %v", auditDir, err)
+	}
+
 	handler := &Handler{
 		clientset: clientset,
 		namespace: "argocd",
+		auditFile: auditFile,
 	}
 
 	// Set up reverse proxy to ArgoCD for all API requests (except /api/v1/settings/*)
@@ -98,7 +118,7 @@ func main() {
 			handler.handleRBAC(w, r)
 			return
 		}
-		if r.URL.Path == "/api/v1/settings/accounts" {
+		if r.URL.Path == "/api/v1/account" || r.URL.Path == "/api/v1/settings/accounts" {
 			handler.handleAccount(w, r)
 			return
 		}
@@ -108,6 +128,24 @@ func main() {
 		}
 		if strings.HasPrefix(r.URL.Path, "/api/v1/notifications/services") {
 			handler.handleNotificationServices(w, r)
+			return
+		}
+		if r.URL.Path == "/api/v1/settings/audit" {
+			handler.handleAudit(w, r)
+			return
+		}
+		if r.URL.Path == "/api/v1/session" {
+			handler.handleSession(w, r, proxy)
+			return
+		}
+		// Audit application deletes
+		if strings.HasPrefix(r.URL.Path, "/api/v1/applications/") && r.Method == "DELETE" {
+			handler.handleApplicationDelete(w, r, proxy)
+			return
+		}
+		// Audit project deletes
+		if strings.HasPrefix(r.URL.Path, "/api/v1/projects/") && r.Method == "DELETE" {
+			handler.handleProjectDelete(w, r, proxy)
 			return
 		}
 
@@ -143,8 +181,10 @@ func main() {
 }
 
 type Handler struct {
-	clientset *kubernetes.Clientset
-	namespace string
+	clientset  *kubernetes.Clientset
+	namespace  string
+	auditFile  string
+	auditMutex sync.Mutex
 }
 
 func (h *Handler) handleRBAC(w http.ResponseWriter, r *http.Request) {
@@ -201,6 +241,14 @@ func (h *Handler) updateRBACConfig(ctx context.Context, w http.ResponseWriter, r
 		return
 	}
 
+	// Capture old policy for audit trail
+	oldPolicy := ""
+	oldPolicyDefault := ""
+	if configMap.Data != nil {
+		oldPolicy = configMap.Data["policy.csv"]
+		oldPolicyDefault = configMap.Data["policy.default"]
+	}
+
 	// Update data
 	if configMap.Data == nil {
 		configMap.Data = make(map[string]string)
@@ -217,8 +265,23 @@ func (h *Handler) updateRBACConfig(ctx context.Context, w http.ResponseWriter, r
 	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		//Log failed audit event
+		h.createAuditEvent(ctx, "admin", "rbac.update", "rbac", "permissions", "error", r.RemoteAddr, false)
 		return
 	}
+
+	// Log successful audit event with before/after details
+	changeDetails := map[string]interface{}{
+		"before": map[string]string{
+			"policy.csv":     oldPolicy,
+			"policy.default": oldPolicyDefault,
+		},
+		"after": map[string]string{
+			"policy.csv":     config.Policy,
+			"policy.default": config.PolicyDefault,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "rbac.update", "rbac", "permissions", "info", r.RemoteAddr, true, changeDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(config)
@@ -227,7 +290,7 @@ func (h *Handler) updateRBACConfig(ctx context.Context, w http.ResponseWriter, r
 func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, DELETE, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 	if r.Method == "OPTIONS" {
@@ -238,6 +301,8 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 
 	switch r.Method {
+	case "GET":
+		h.listAccounts(ctx, w, r)
 	case "POST":
 		h.createAccount(ctx, w, r)
 	case "DELETE":
@@ -245,6 +310,67 @@ func (h *Handler) handleAccount(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func (h *Handler) listAccounts(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Get argocd-cm ConfigMap to read accounts
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-cm", metav1.GetOptions{})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get ConfigMap: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Parse accounts from ConfigMap data
+	// Accounts are stored as "accounts.<name>" keys with capabilities as values
+	accounts := []map[string]interface{}{}
+
+	// Admin account is always present
+	adminEnabled := true
+	if enabledVal, ok := configMap.Data["accounts.admin.enabled"]; ok && enabledVal == "false" {
+		adminEnabled = false
+	}
+	accounts = append(accounts, map[string]interface{}{
+		"name":         "admin",
+		"enabled":      adminEnabled,
+		"capabilities": []string{"apiKey", "login"},
+	})
+
+	// Parse other accounts from ConfigMap
+	for key, value := range configMap.Data {
+		if strings.HasPrefix(key, "accounts.") && !strings.Contains(key, ".enabled") {
+			accountName := strings.TrimPrefix(key, "accounts.")
+
+			// Skip admin account (already added)
+			if accountName == "admin" {
+				continue
+			}
+
+			// Check if account is enabled
+			enabled := true
+			enabledKey := fmt.Sprintf("accounts.%s.enabled", accountName)
+			if enabledVal, ok := configMap.Data[enabledKey]; ok && enabledVal == "false" {
+				enabled = false
+			}
+
+			// Parse capabilities from value (e.g., "apiKey,login")
+			capabilities := []string{}
+			if value != "" {
+				capabilities = strings.Split(value, ",")
+			}
+
+			accounts = append(accounts, map[string]interface{}{
+				"name":         accountName,
+				"enabled":      enabled,
+				"capabilities": capabilities,
+			})
+		}
+	}
+
+	// Return accounts list
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"items": accounts,
+	})
 }
 
 func (h *Handler) createAccount(ctx context.Context, w http.ResponseWriter, r *http.Request) {
@@ -346,6 +472,16 @@ func (h *Handler) createAccount(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
+	// Log successful audit event with details
+	accountDetails := map[string]interface{}{
+		"after": map[string]interface{}{
+			"name":         req.Name,
+			"enabled":      req.Enabled,
+			"capabilities": []string{"apiKey", "login"},
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "account.create", "account", req.Name, "info", r.RemoteAddr, true, accountDetails)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -375,16 +511,29 @@ func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
-	// Check if account exists
+	// Check if account exists and capture details before deleting
 	accountKey := fmt.Sprintf("accounts.%s", accountName)
-	if _, exists := configMap.Data[accountKey]; !exists {
+	capabilities, exists := configMap.Data[accountKey]
+	if !exists {
 		http.Error(w, "Account not found", http.StatusNotFound)
 		return
 	}
 
+	// Capture account state before deletion for audit
+	enabledKey := fmt.Sprintf("accounts.%s.enabled", accountName)
+	enabled := true
+	if enabledVal, ok := configMap.Data[enabledKey]; ok && enabledVal == "false" {
+		enabled = false
+	}
+
+	// Parse capabilities
+	capList := []string{}
+	if capabilities != "" {
+		capList = strings.Split(capabilities, ",")
+	}
+
 	// Remove account fields from ConfigMap
 	delete(configMap.Data, accountKey)
-	enabledKey := fmt.Sprintf("accounts.%s.enabled", accountName)
 	delete(configMap.Data, enabledKey)
 
 	// Update ConfigMap
@@ -411,6 +560,16 @@ func (h *Handler) deleteAccount(ctx context.Context, w http.ResponseWriter, r *h
 		return
 	}
 
+	// Log successful audit event with details
+	accountDetails := map[string]interface{}{
+		"before": map[string]interface{}{
+			"name":         accountName,
+			"enabled":      enabled,
+			"capabilities": capList,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "account.delete", "account", accountName, "warning", r.RemoteAddr, true, accountDetails)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{
@@ -434,11 +593,275 @@ func (h *Handler) handleNotifications(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		h.getNotifications(ctx, w, r)
+		h.getNotificationsConfig(ctx, w, r)
 	case "PUT":
-		h.updateNotifications(ctx, w, r)
+		h.updateNotificationsConfig(ctx, w, r)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) getNotificationsConfig(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Get argocd-notifications-cm ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	if err != nil {
+		// If ConfigMap doesn't exist, return empty config
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"data": map[string]string{},
+		})
+		return
+	}
+
+	// Return ConfigMap data
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": configMap.Data,
+	})
+}
+
+func (h *Handler) updateNotificationsConfig(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	var request map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to decode request: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	// Get or create argocd-notifications-cm ConfigMap
+	configMap, err := h.clientset.CoreV1().ConfigMaps(h.namespace).Get(ctx, "argocd-notifications-cm", metav1.GetOptions{})
+	createNew := false
+	if err != nil {
+		// ConfigMap doesn't exist, create it
+		createNew = true
+		configMap = &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "argocd-notifications-cm",
+				Namespace: h.namespace,
+			},
+			Data: make(map[string]string),
+		}
+	}
+
+	// Capture old config for audit
+	oldData := make(map[string]string)
+	if configMap.Data != nil {
+		for k, v := range configMap.Data {
+			oldData[k] = v
+		}
+	}
+
+	// Initialize data if needed
+	if configMap.Data == nil {
+		configMap.Data = make(map[string]string)
+	}
+
+	// Update ConfigMap data from request
+	if data, ok := request["data"].(map[string]interface{}); ok {
+		// Clear existing data
+		configMap.Data = make(map[string]string)
+		// Set new data
+		for key, value := range data {
+			if strValue, ok := value.(string); ok {
+				configMap.Data[key] = strValue
+			}
+		}
+	}
+
+	// Create or update ConfigMap
+	if createNew {
+		_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Create(ctx, configMap, metav1.CreateOptions{})
+	} else {
+		_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
+	}
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		// Log failed audit event
+		h.createAuditEvent(ctx, "admin", "notification.update", "notification", "config", "error", r.RemoteAddr, false)
+		return
+	}
+
+	// Log successful audit event with before/after details
+	changeDetails := map[string]interface{}{
+		"before": oldData,
+		"after":  configMap.Data,
+	}
+	h.createAuditEvent(ctx, "admin", "notification.update", "notification", "config", "info", r.RemoteAddr, true, changeDetails)
+
+	// Return success
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"data": configMap.Data,
+	})
+}
+
+// Audit types
+type AuditEvent struct {
+	ID           string                 `json:"id"`
+	Timestamp    string                 `json:"timestamp"`
+	User         string                 `json:"user"`
+	Action       string                 `json:"action"`
+	ResourceType string                 `json:"resourceType"`
+	ResourceName string                 `json:"resourceName"`
+	Severity     string                 `json:"severity"`
+	Details      map[string]interface{} `json:"details,omitempty"`
+	IPAddress    string                 `json:"ipAddress,omitempty"`
+	UserAgent    string                 `json:"userAgent,omitempty"`
+	Success      bool                   `json:"success"`
+}
+
+type AuditEventList struct {
+	Items    []AuditEvent          `json:"items"`
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
+}
+
+func (h *Handler) handleAudit(w http.ResponseWriter, r *http.Request) {
+	// Enable CORS
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	ctx := context.Background()
+
+	switch r.Method {
+	case "GET":
+		h.getAuditEvents(ctx, w, r)
+	default:
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+func (h *Handler) handleSession(w http.ResponseWriter, r *http.Request, proxy *httputil.ReverseProxy) {
+	ctx := context.Background()
+
+	// Read the request body to extract username
+	var loginReq struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body", http.StatusBadRequest)
+		return
+	}
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Reset body for proxy
+
+	// Try to parse username from request
+	username := "unknown"
+	if err := json.Unmarshal(bodyBytes, &loginReq); err == nil {
+		username = loginReq.Username
+	}
+
+	// Create a response recorder to capture the proxy response
+	recorder := httptest.NewRecorder()
+
+	// Forward request to ArgoCD using the proxy
+	proxy.ServeHTTP(recorder, r)
+
+	// Copy response from recorder to actual response writer
+	for key, values := range recorder.Header() {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(recorder.Code)
+	w.Write(recorder.Body.Bytes())
+
+	// Create audit event based on response status
+	success := recorder.Code == http.StatusOK
+	severity := "info"
+	action := "auth.login"
+	if !success {
+		severity = "warning"
+	}
+
+	loginDetails := map[string]interface{}{
+		"username":    username,
+		"statusCode":  recorder.Code,
+		"ipAddress":   r.RemoteAddr,
+	}
+
+	if success {
+		h.createAuditEvent(ctx, username, action, "session", "login", severity, r.RemoteAddr, true, map[string]interface{}{"after": loginDetails})
+	} else {
+		h.createAuditEvent(ctx, username, action, "session", "login", severity, r.RemoteAddr, false, map[string]interface{}{"after": loginDetails})
+	}
+}
+
+func (h *Handler) handleApplicationDelete(w http.ResponseWriter, r *http.Request, proxy *httputil.ReverseProxy) {
+	ctx := context.Background()
+
+	// Extract application name from path
+	appName := strings.TrimPrefix(r.URL.Path, "/api/v1/applications/")
+	appName = strings.Split(appName, "?")[0] // Remove query params if any
+
+	// Create a response recorder to capture the proxy response
+	recorder := httptest.NewRecorder()
+
+	// Forward request to ArgoCD using the proxy
+	proxy.ServeHTTP(recorder, r)
+
+	// Copy response from recorder to actual response writer
+	for key, values := range recorder.Header() {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(recorder.Code)
+	w.Write(recorder.Body.Bytes())
+
+	// Create audit event based on response status
+	success := recorder.Code == http.StatusOK
+	severity := "warning" // Deletes are always warnings
+
+	if success {
+		h.createAuditEvent(ctx, "admin", "application.delete", "application", appName, severity, r.RemoteAddr, true, map[string]interface{}{
+			"before": map[string]string{"name": appName},
+		})
+	} else {
+		h.createAuditEvent(ctx, "admin", "application.delete", "application", appName, "error", r.RemoteAddr, false)
+	}
+}
+
+func (h *Handler) handleProjectDelete(w http.ResponseWriter, r *http.Request, proxy *httputil.ReverseProxy) {
+	ctx := context.Background()
+
+	// Extract project name from path
+	projectName := strings.TrimPrefix(r.URL.Path, "/api/v1/projects/")
+	projectName = strings.Split(projectName, "?")[0] // Remove query params if any
+
+	// Create a response recorder to capture the proxy response
+	recorder := httptest.NewRecorder()
+
+	// Forward request to ArgoCD using the proxy
+	proxy.ServeHTTP(recorder, r)
+
+	// Copy response from recorder to actual response writer
+	for key, values := range recorder.Header() {
+		for _, value := range values {
+			w.Header().Add(key, value)
+		}
+	}
+	w.WriteHeader(recorder.Code)
+	w.Write(recorder.Body.Bytes())
+
+	// Create audit event based on response status
+	success := recorder.Code == http.StatusOK
+	severity := "warning" // Deletes are always warnings
+
+	if success {
+		h.createAuditEvent(ctx, "admin", "project.delete", "project", projectName, severity, r.RemoteAddr, true, map[string]interface{}{
+			"before": map[string]string{"name": projectName},
+		})
+	} else {
+		h.createAuditEvent(ctx, "admin", "project.delete", "project", projectName, "error", r.RemoteAddr, false)
 	}
 }
 
@@ -599,7 +1022,12 @@ func (h *Handler) createSlackService(ctx context.Context, w http.ResponseWriter,
 	// Check if service already exists
 	serviceKey := fmt.Sprintf("service.slack.%s", req.Name)
 	if _, exists := configMap.Data[serviceKey]; exists {
-		http.Error(w, "Service already exists", http.StatusConflict)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Service already exists",
+			"message": fmt.Sprintf("A Slack service named '%s' already exists. Please choose a different name or delete the existing service first.", req.Name),
+		})
 		return
 	}
 
@@ -655,8 +1083,20 @@ func (h *Handler) createSlackService(ctx context.Context, w http.ResponseWriter,
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("slack/%s", req.Name), "error", r.RemoteAddr, false)
 		return
 	}
+
+	// Log successful audit event
+	serviceDetails := map[string]interface{}{
+		"after": map[string]interface{}{
+			"type":     "slack",
+			"name":     req.Name,
+			"channel":  req.Channel,
+			"username": req.Username,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("slack/%s", req.Name), "info", r.RemoteAddr, true, serviceDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -741,8 +1181,23 @@ func (h *Handler) deleteNotificationService(ctx context.Context, w http.Response
 		return
 	}
 
-	serviceKey := fmt.Sprintf("service.slack.%s", serviceName)
-	if _, exists := configMap.Data[serviceKey]; !exists {
+	// Find the service and determine its type
+	var serviceKey string
+	var serviceType string
+	var serviceConfig string
+
+	// Check all service types
+	for _, svcType := range []string{"slack", "webhook", "email"} {
+		key := fmt.Sprintf("service.%s.%s", svcType, serviceName)
+		if config, exists := configMap.Data[key]; exists {
+			serviceKey = key
+			serviceType = svcType
+			serviceConfig = config
+			break
+		}
+	}
+
+	if serviceKey == "" {
 		http.Error(w, "Service not found", http.StatusNotFound)
 		return
 	}
@@ -753,16 +1208,34 @@ func (h *Handler) deleteNotificationService(ctx context.Context, w http.Response
 	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		h.createAuditEvent(ctx, "admin", "notification.service.delete", "notification", fmt.Sprintf("%s/%s", serviceType, serviceName), "error", r.RemoteAddr, false)
 		return
 	}
 
-	// Remove from secret
+	// Remove from secret based on service type
 	secret, err := h.clientset.CoreV1().Secrets(h.namespace).Get(ctx, "argocd-notifications-secret", metav1.GetOptions{})
 	if err == nil {
-		secretKey := fmt.Sprintf("slack-%s-token", serviceName)
-		delete(secret.Data, secretKey)
-		h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+		var secretKey string
+		if serviceType == "slack" {
+			secretKey = fmt.Sprintf("slack-%s-token", serviceName)
+		} else if serviceType == "email" {
+			secretKey = fmt.Sprintf("email-%s-password", serviceName)
+		}
+		if secretKey != "" {
+			delete(secret.Data, secretKey)
+			h.clientset.CoreV1().Secrets(h.namespace).Update(ctx, secret, metav1.UpdateOptions{})
+		}
 	}
+
+	// Log successful audit event
+	serviceDetails := map[string]interface{}{
+		"before": map[string]interface{}{
+			"type":   serviceType,
+			"name":   serviceName,
+			"config": serviceConfig,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "notification.service.delete", "notification", fmt.Sprintf("%s/%s", serviceType, serviceName), "warning", r.RemoteAddr, true, serviceDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"status": "deleted", "name": serviceName})
@@ -841,7 +1314,12 @@ func (h *Handler) createWebhookService(ctx context.Context, w http.ResponseWrite
 	// Check if service already exists
 	serviceKey := fmt.Sprintf("service.webhook.%s", req.Name)
 	if _, exists := configMap.Data[serviceKey]; exists {
-		http.Error(w, "Service already exists", http.StatusConflict)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Service already exists",
+			"message": fmt.Sprintf("A webhook service named '%s' already exists. Please choose a different name or delete the existing service first.", req.Name),
+		})
 		return
 	}
 
@@ -857,8 +1335,19 @@ func (h *Handler) createWebhookService(ctx context.Context, w http.ResponseWrite
 	_, err = h.clientset.CoreV1().ConfigMaps(h.namespace).Update(ctx, configMap, metav1.UpdateOptions{})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update ConfigMap: %v", err), http.StatusInternalServerError)
+		h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("webhook/%s", req.Name), "error", r.RemoteAddr, false)
 		return
 	}
+
+	// Log successful audit event
+	serviceDetails := map[string]interface{}{
+		"after": map[string]interface{}{
+			"type": "webhook",
+			"name": req.Name,
+			"url":  req.URL,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("webhook/%s", req.Name), "info", r.RemoteAddr, true, serviceDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -978,7 +1467,12 @@ func (h *Handler) createEmailService(ctx context.Context, w http.ResponseWriter,
 	// Check if service already exists
 	serviceKey := fmt.Sprintf("service.email.%s", req.Name)
 	if _, exists := configMap.Data[serviceKey]; exists {
-		http.Error(w, "Service already exists", http.StatusConflict)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		json.NewEncoder(w).Encode(map[string]string{
+			"error":   "Service already exists",
+			"message": fmt.Sprintf("An email service named '%s' already exists. Please choose a different name or delete the existing service first.", req.Name),
+		})
 		return
 	}
 
@@ -1032,8 +1526,23 @@ func (h *Handler) createEmailService(ctx context.Context, w http.ResponseWriter,
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to update secret: %v", err), http.StatusInternalServerError)
+		h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("email/%s", req.Name), "error", r.RemoteAddr, false)
 		return
 	}
+
+	// Log successful audit event
+	serviceDetails := map[string]interface{}{
+		"after": map[string]interface{}{
+			"type":     "email",
+			"name":     req.Name,
+			"smtpHost": req.SMTPHost,
+			"smtpPort": req.SMTPPort,
+			"username": req.Username,
+			"from":     req.From,
+			"to":       req.To,
+		},
+	}
+	h.createAuditEvent(ctx, "admin", "notification.service.create", "notification", fmt.Sprintf("email/%s", req.Name), "info", r.RemoteAddr, true, serviceDetails)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -1198,4 +1707,191 @@ func (h *Handler) testEmailService(ctx context.Context, w http.ResponseWriter, r
 		"status":  "success",
 		"message": successMessage,
 	})
+}
+
+func (h *Handler) getAuditEvents(ctx context.Context, w http.ResponseWriter, r *http.Request) {
+	// Read audit events from JSONL file
+	file, err := os.Open(h.auditFile)
+	if err != nil {
+		// If file doesn't exist, return empty list
+		if os.IsNotExist(err) {
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(AuditEventList{
+				Items: []AuditEvent{},
+			})
+			return
+		}
+		http.Error(w, fmt.Sprintf("Failed to open audit file: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer file.Close()
+
+	// Read all events from JSONL file (one JSON object per line)
+	var events []AuditEvent
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var event AuditEvent
+		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
+			log.Printf("Failed to parse audit event: %v", err)
+			continue // Skip malformed lines
+		}
+		events = append(events, event)
+	}
+
+	if err := scanner.Err(); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to read audit file: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Reverse to show newest first (file is append-only, so oldest are first)
+	for i, j := 0, len(events)-1; i < j; i, j = i+1, j-1 {
+		events[i], events[j] = events[j], events[i]
+	}
+
+	// Apply query parameter filters
+	queryParams := r.URL.Query()
+	filteredEvents := events
+
+	// Filter by user
+	if user := queryParams.Get("user"); user != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.User == user {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by action
+	if action := queryParams.Get("action"); action != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Action == action {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by resource type
+	if resourceType := queryParams.Get("resourceType"); resourceType != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.ResourceType == resourceType {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by severity
+	if severity := queryParams.Get("severity"); severity != "" {
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Severity == severity {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Filter by success
+	if successStr := queryParams.Get("success"); successStr != "" {
+		success := successStr == "true"
+		filtered := []AuditEvent{}
+		for _, event := range filteredEvents {
+			if event.Success == success {
+				filtered = append(filtered, event)
+			}
+		}
+		filteredEvents = filtered
+	}
+
+	// Pagination
+	totalCount := len(filteredEvents)
+	limit := 50 // Default page size
+	offset := 0
+
+	if limitStr := queryParams.Get("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+			if limit > 100 {
+				limit = 100 // Max page size
+			}
+		}
+	}
+
+	if offsetStr := queryParams.Get("offset"); offsetStr != "" {
+		if parsedOffset, err := strconv.Atoi(offsetStr); err == nil && parsedOffset >= 0 {
+			offset = parsedOffset
+		}
+	}
+
+	// Apply pagination
+	start := offset
+	end := offset + limit
+	if start > totalCount {
+		start = totalCount
+	}
+	if end > totalCount {
+		end = totalCount
+	}
+
+	paginatedEvents := filteredEvents[start:end]
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(AuditEventList{
+		Items: paginatedEvents,
+		Metadata: map[string]interface{}{
+			"totalCount": totalCount,
+			"offset":     offset,
+			"limit":      limit,
+			"pageSize":   len(paginatedEvents),
+		},
+	})
+}
+
+// Helper function to create an audit event
+func (h *Handler) createAuditEvent(ctx context.Context, user, action, resourceType, resourceName, severity, ipAddress string, success bool, details ...map[string]interface{}) error {
+	// Generate event ID using timestamp + random component
+	eventID := fmt.Sprintf("audit-%d", time.Now().UnixNano())
+
+	// Create audit event
+	detailsMap := make(map[string]interface{})
+	if len(details) > 0 && details[0] != nil {
+		detailsMap = details[0]
+	}
+
+	event := AuditEvent{
+		ID:           eventID,
+		Timestamp:    time.Now().Format(time.RFC3339),
+		User:         user,
+		Action:       action,
+		ResourceType: resourceType,
+		ResourceName: resourceName,
+		Severity:     severity,
+		IPAddress:    ipAddress,
+		Success:      success,
+		Details:      detailsMap,
+	}
+
+	// Append to audit file (JSONL format - one JSON object per line)
+	h.auditMutex.Lock()
+	defer h.auditMutex.Unlock()
+
+	file, err := os.OpenFile(h.auditFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Printf("Failed to open audit file: %v", err)
+		return err
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(event); err != nil {
+		log.Printf("Failed to write audit event: %v", err)
+		return err
+	}
+
+	return nil
 }

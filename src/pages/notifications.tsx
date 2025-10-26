@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { PageHeader } from '@/components/page-header'
 import {
   useNotificationsConfig,
   useCreateSlackService,
@@ -283,33 +284,26 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          <div className="flex items-center justify-between mb-3">
-            <div>
-              <h1 className="text-lg font-semibold text-black dark:text-white tracking-tight">Notifications</h1>
-              <p className="mt-0.5 text-xs text-neutral-600 dark:text-neutral-400">
-                Configure notification services to receive alerts about your deployments
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                onClick={() => refetch()}
-                disabled={isLoading}
-              >
-                <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
-                Refresh
-              </Button>
-              <Button onClick={() => setCreatePanelOpen(true)}>
-                <IconAdd size={16} />
-                Add Service
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        title="Notifications"
+        description="Configure notification services to receive alerts about your deployments"
+        action={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              disabled={isLoading}
+            >
+              <IconCircleForward size={16} className={isLoading ? 'animate-spin' : ''} />
+              Refresh
+            </Button>
+            <Button onClick={() => setCreatePanelOpen(true)}>
+              <IconAdd size={16} />
+              Add Service
+            </Button>
+          </>
+        }
+      />
 
       {/* Content */}
       <div className="flex-1 overflow-auto bg-white dark:bg-black">
