@@ -1,11 +1,11 @@
-{{- if .Values.rbacProxy.enabled }}
+{{- if .Values.enterprise.enabled }}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  name: {{ include "cased-cd.fullname" . }}-enterprise
   labels:
     {{- include "cased-cd.labels" . | nindent 4 }}
-    app.kubernetes.io/component: rbac-proxy
+    app.kubernetes.io/component: enterprise
 spec:
   type: ClusterIP
   ports:
@@ -15,5 +15,5 @@ spec:
       name: http
   selector:
     {{- include "cased-cd.selectorLabels" . | nindent 4 }}
-    app.kubernetes.io/component: rbac-proxy
+    app.kubernetes.io/component: enterprise
 {{- end }}

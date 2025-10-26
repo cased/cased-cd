@@ -1,22 +1,22 @@
-{{- if .Values.rbacProxy.enabled }}
+{{- if .Values.enterprise.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  name: {{ include "cased-cd.fullname" . }}-enterprise
   labels:
     {{- include "cased-cd.labels" . | nindent 4 }}
-    app.kubernetes.io/component: rbac-proxy
+    app.kubernetes.io/component: enterprise
 spec:
-  replicas: {{ .Values.rbacProxy.replicaCount }}
+  replicas: {{ .Values.enterprise.replicaCount }}
   selector:
     matchLabels:
       {{- include "cased-cd.selectorLabels" . | nindent 6 }}
-      app.kubernetes.io/component: rbac-proxy
+      app.kubernetes.io/component: enterprise
   template:
     metadata:
       labels:
         {{- include "cased-cd.selectorLabels" . | nindent 8 }}
-        app.kubernetes.io/component: rbac-proxy
+        app.kubernetes.io/component: enterprise
     spec:
       serviceAccountName: {{ include "cased-cd.serviceAccountName" . }}
       securityContext:
@@ -24,9 +24,9 @@ spec:
         runAsUser: 65532
         fsGroup: 65532
       containers:
-        - name: rbac-proxy
-          image: "{{ .Values.rbacProxy.image.repository }}:{{ .Values.rbacProxy.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.rbacProxy.image.pullPolicy }}
+        - name: enterprise
+          image: "{{ .Values.enterprise.image.repository }}:{{ .Values.enterprise.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.enterprise.image.pullPolicy }}
           ports:
             - name: http
               containerPort: 8081
@@ -44,7 +44,7 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
           resources:
-            {{- toYaml .Values.rbacProxy.resources | nindent 12 }}
+            {{- toYaml .Values.enterprise.resources | nindent 12 }}
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
@@ -57,5 +57,5 @@ spec:
       volumes:
         - name: audit-logs
           persistentVolumeClaim:
-            claimName: {{ include "cased-cd.fullname" . }}-audit-logs
+            claimName: {{ include "cased-cd.fullname" . }}-enterprise-audit
 {{- end }}

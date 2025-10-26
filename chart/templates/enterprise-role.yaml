@@ -1,26 +1,30 @@
-{{- if .Values.rbacProxy.enabled }}
+{{- if .Values.enterprise.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  name: {{ include "cased-cd.fullname" . }}-enterprise
   labels:
     {{- include "cased-cd.labels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources: ["configmaps"]
-    resourceNames: ["argocd-rbac-cm"]
+    resourceNames: ["argocd-rbac-cm", "argocd-notifications-cm"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["argocd-secret"]
     verbs: ["get", "update", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  name: {{ include "cased-cd.fullname" . }}-enterprise
   labels:
     {{- include "cased-cd.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "cased-cd.fullname" . }}-rbac-proxy
+  name: {{ include "cased-cd.fullname" . }}-enterprise
 subjects:
   - kind: ServiceAccount
     name: {{ include "cased-cd.serviceAccountName" . }}
