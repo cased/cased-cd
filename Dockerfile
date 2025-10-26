@@ -71,7 +71,7 @@ RUN go mod download
 COPY backend/ ./
 
 # Build the Go binary
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o rbac-proxy main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o cased-backend main.go
 
 # ==============================================================================
 # Stage 4: Enterprise Image (Go + React + RBAC) - ENTERPRISE TIER
@@ -84,21 +84,21 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy Go binary from backend builder
-COPY --from=backend-builder /app/rbac-proxy /app/rbac-proxy
+COPY --from=backend-builder /app/cased-backend /app/cased-backend
 
 # Copy React build from frontend builder
 COPY --from=frontend-builder /app/dist /app/dist
 
 # Environment variables for configuration
-ENV PORT=8080
+ENV PORT=8081
 ENV ARGOCD_SERVER=http://argocd-server.argocd.svc.cluster.local:80
 
 # Expose port
-EXPOSE 8080
+EXPOSE 8081
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost:8080/health || exit 1
+  CMD wget --quiet --tries=1 --spider http://localhost:8081/health || exit 1
 
 # Run the Go binary
-CMD ["/app/rbac-proxy"]
+CMD ["/app/cased-backend"]
