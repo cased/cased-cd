@@ -117,6 +117,23 @@ That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or conf
 **Prerequisites:**
 - Existing ArgoCD installation (v2.0+)
 - Kubernetes cluster with default StorageClass (for audit log PVC)
+- Enterprise credentials for accessing the private container image
+
+**Authentication:**
+
+The enterprise backend image (`ghcr.io/cased/cased-cd-enterprise`) is private and requires authentication. Enterprise customers need to create an imagePullSecret:
+
+```bash
+# Create a GitHub Personal Access Token with read:packages scope
+# Then create the secret in your cluster:
+kubectl create secret docker-registry cased-enterprise \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_GITHUB_TOKEN \
+  --namespace=argocd
+```
+
+**Note:** This authentication mechanism may change in future releases to simplify deployment.
 
 **Deploy with Helm:**
 
@@ -129,7 +146,8 @@ helm repo update
 helm install cased-cd cased/cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
-  --set enterprise.persistence.size=10Gi
+  --set enterprise.persistence.size=10Gi \
+  --set imagePullSecrets[0].name=cased-enterprise
 ```
 
 **What gets deployed:**
