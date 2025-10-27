@@ -33,6 +33,7 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: {{ include "cased-cd.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/entrypoint.sh"]
           env:
             - name: ARGOCD_SERVER
               value: {{ .Values.argocd.server | quote }}

@@ -33,6 +33,7 @@ spec:
         - name: enterprise
           image: "{{ .Values.enterprise.image.repository }}:{{ .Values.enterprise.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.enterprise.image.pullPolicy }}
+          command: ["/app/cased-backend"]
           env:
             - name: ARGOCD_SERVER
               value: {{ .Values.argocd.server | quote }}
