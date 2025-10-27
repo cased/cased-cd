@@ -28,8 +28,14 @@ function LoginPage() {
       navigate({ to: '/applications' })
     } catch (err) {
       if (err instanceof Error && 'response' in err) {
-        const response = err.response as { data?: { error?: string } }
-        setError(response?.data?.error || err.message || 'Login failed')
+        const response = err.response as { status?: number; data?: { error?: string } }
+
+        // Handle rate limiting
+        if (response?.status === 429) {
+          setError('Too many login attempts. Please wait a minute and try again.')
+        } else {
+          setError(response?.data?.error || err.message || 'Login failed')
+        }
       } else {
         setError(err instanceof Error ? err.message : 'Login failed')
       }
