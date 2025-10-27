@@ -184,3 +184,4 @@ For production, this app can be deployed as a static site. You'll need to:
 
 1. Configure your ArgoCD server to allow CORS from your domain, OR
 2. Deploy a CORS proxy similar to the nginx setup in `scripts/setup-argocd.sh`
+- Before adding tailwind css colors, check whether there is a color variable in the css that would make sense
