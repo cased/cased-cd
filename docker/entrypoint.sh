@@ -8,11 +8,11 @@ ARGOCD_SERVER=${ARGOCD_SERVER:-http://argocd-server.argocd.svc.cluster.local:80}
 # If ENTERPRISE_BACKEND_SERVICE is set, route all API requests through the enterprise backend
 # Otherwise, route directly to ArgoCD server
 if [ -n "$ENTERPRISE_BACKEND_SERVICE" ]; then
-  PROXY_TARGET="http://${ENTERPRISE_BACKEND_SERVICE}:8081"
+  export PROXY_TARGET="http://${ENTERPRISE_BACKEND_SERVICE}:8081"
   echo "Enterprise mode enabled: proxying API requests through $PROXY_TARGET"
   echo "Enterprise backend will forward requests to ArgoCD at: $ARGOCD_SERVER"
 else
-  PROXY_TARGET="$ARGOCD_SERVER"
+  export PROXY_TARGET="$ARGOCD_SERVER"
   echo "Standard mode: proxying API requests directly to $PROXY_TARGET"
 fi
 

@@ -149,6 +149,13 @@ test_envsubst() {
   else
     fail "entrypoint.sh should use envsubst with PROXY_TARGET"
   fi
+
+  # Test that PROXY_TARGET is exported (required for envsubst)
+  if grep -q "export PROXY_TARGET=" "$SCRIPT_DIR/entrypoint.sh"; then
+    pass "PROXY_TARGET is exported for envsubst"
+  else
+    fail "PROXY_TARGET must be exported for envsubst to work"
+  fi
 }
 
 # Run all tests
