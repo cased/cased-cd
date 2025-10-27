@@ -113,6 +113,7 @@ Cased CD implements multiple layers of security to protect your deployment infra
 
 ### HTTP Security Headers
 - **Content Security Policy (CSP)** - Restricts resource loading to prevent XSS
+- **Strict-Transport-Security (HSTS)** - Forces HTTPS connections (1 year, includeSubDomains, preload)
 - **X-Frame-Options** - Prevents clickjacking attacks
 - **X-Content-Type-Options** - Prevents MIME sniffing
 - **Referrer-Policy** - Controls referrer information
