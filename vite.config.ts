@@ -3,9 +3,16 @@ import react from '@vitejs/plugin-react'
 import { reactClickToComponent } from 'vite-plugin-react-click-to-component'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
 import path from 'path'
+import { readFileSync } from 'fs'
+
+// Read version from package.json
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    'import.meta.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
+  },
   plugins: [
     TanStackRouterVite(),
     react(),
