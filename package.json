@@ -17,6 +17,11 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:nginx": "./docker/test-entrypoint.sh",
+    "test:docker": "./docker/test-build.sh",
+    "test:helm": "./chart/test-chart.sh",
+    "test:integration": "npm run test:nginx && npm run test:helm",
+    "test:all": "npm run lint && npm run type-check && npm run test:run && npm run test:integration",
     "release": "./scripts/release.sh"
   },
   "dependencies": {

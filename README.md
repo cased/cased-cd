@@ -640,7 +640,7 @@ Get up and running in seconds with the mock API:
 This will:
 - ✅ Check Node.js 18+ is installed
 - 📦 Install dependencies if needed
-- 🎭 Start mock API server (port 8080)
+- 🎭 Start mock API server (port 3000)
 - 🌐 Start Vite dev server (port 5173)
 - 📖 Tail logs from both servers
 

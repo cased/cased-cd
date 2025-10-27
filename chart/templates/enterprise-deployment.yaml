@@ -33,6 +33,11 @@ spec:
         - name: enterprise
           image: "{{ .Values.enterprise.image.repository }}:{{ .Values.enterprise.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.enterprise.image.pullPolicy }}
+          env:
+            - name: ARGOCD_SERVER
+              value: {{ .Values.argocd.server | quote }}
+            - name: PORT
+              value: "8081"
           ports:
             - name: http
               containerPort: 8081
