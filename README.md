@@ -212,6 +212,28 @@ kubectl apply -f https://raw.githubusercontent.com/cased/cased-cd/main/manifests
 kubectl port-forward -n argocd svc/cased-cd 8080:80
 ```
 
+**Important**: The static `install.yaml` assumes ArgoCD is installed in the `argocd` namespace with the default service name `argocd-server`. If your setup is different, you'll need to either:
+
+1. **Use Helm instead** (recommended - allows easy configuration):
+   ```bash
+   helm install cased-cd cased/cased-cd \
+     --namespace argocd \
+     --set argocd.server="http://your-argocd-service.your-namespace.svc.cluster.local:80"
+   ```
+
+2. **Edit the install.yaml** before applying:
+   ```bash
+   # Download and edit
+   curl -o install.yaml https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
+
+   # Find and update the ARGOCD_SERVER environment variable (around line 164):
+   # - name: ARGOCD_SERVER
+   #   value: "http://YOUR-ARGOCD-SERVICE.YOUR-NAMESPACE.svc.cluster.local:80"
+
+   # Then apply
+   kubectl apply -f install.yaml
+   ```
+
 ### Run with Docker
 
 ```bash
@@ -225,13 +247,32 @@ docker run -d \
 
 ### Connecting to ArgoCD
 
-Cased CD needs to know where your ArgoCD server is. Configure this via:
+Cased CD needs to know where your ArgoCD server is located. The default configuration assumes ArgoCD is installed in the `argocd` namespace with the service name `argocd-server`.
 
-**Helm:**
+**Default value**: `http://argocd-server.argocd.svc.cluster.local:80`
+
+If your ArgoCD installation uses a different namespace or service name, you must configure the `ARGOCD_SERVER` environment variable:
+
+**Helm (recommended):**
 ```yaml
 # values.yaml
 argocd:
   server: "http://argocd-server.argocd.svc.cluster.local:80"
+
+# Examples for different setups:
+# - Different namespace: "http://argocd-server.my-namespace.svc.cluster.local:80"
+# - Different service name: "http://my-argocd.argocd.svc.cluster.local:80"
+# - External ArgoCD: "https://argocd.example.com"
+```
+
+**kubectl (requires manual edit):**
+```bash
+# Download the install.yaml
+curl -o install.yaml https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
+
+# Edit line 164 to match your ArgoCD server location
+# Then apply
+kubectl apply -f install.yaml
 ```
 
 **Docker:**
