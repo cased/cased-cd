@@ -9,6 +9,9 @@ on:
         description: 'Tag to build CLI for (e.g., v0.1.8)'
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   build-cli:
     name: Build CLI Binaries
