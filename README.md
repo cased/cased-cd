@@ -359,6 +359,101 @@ The backend is necessary for enterprise features because:
 - **Kubernetes**: 1.19+
 - **Browsers**: Modern browsers (Chrome, Firefox, Safari, Edge)
 
+## CLI Tool
+
+The `cased-cd` CLI is a debugging and context awareness tool to help you understand your Kubernetes environment and troubleshoot Cased CD installations.
+
+### Why Use the CLI?
+
+The CLI helps you:
+- Quickly see which cluster and context you're using
+- Diagnose installation issues
+- Find the right way to access your deployment
+- Check component versions
+
+### Installation
+
+Build the CLI from source:
+
+```bash
+cd cli
+go build -o cased-cd .
+sudo mv cased-cd /usr/local/bin/  # Optional: make it available system-wide
+```
+
+### Commands
+
+#### `cased-cd context`
+
+Shows your current Kubernetes context and cluster information:
+
+```bash
+cased-cd context
+```
+
+Displays context name, cluster, server URL, namespace, and user.
+
+#### `cased-cd doctor`
+
+Health check for your Cased CD installation:
+
+```bash
+cased-cd doctor
+```
+
+**Checks:**
+- ✓ Frontend deployment (replicas ready)
+- ✓ Enterprise backend deployment (if installed)
+- ✓ Audit log PVC (bound status, capacity)
+- ✓ Service existence
+- ✓ ArgoCD server connectivity
+
+#### `cased-cd access`
+
+Shows how to access your Cased CD installation:
+
+```bash
+cased-cd access
+```
+
+**Detects and displays (in priority order):**
+1. Ingress URLs (if configured)
+2. LoadBalancer external IPs (if available)
+3. Port-forward instructions (default)
+
+#### `cased-cd version`
+
+Shows versions of running components:
+
+```bash
+cased-cd version
+```
+
+**Displays:**
+- Frontend image and version
+- Enterprise backend image (if installed)
+- Helm chart version
+
+### Example Workflow
+
+```bash
+# Check your current context
+cased-cd context
+# Shows: k3d-cased-cd cluster
+
+# Check installation health
+cased-cd doctor
+# ✓ All checks passed!
+
+# Get access URL
+cased-cd access
+# Shows: kubectl port-forward instructions or ingress URL
+
+# Check versions
+cased-cd version
+# Shows: frontend and backend image versions
+```
+
 ## Troubleshooting
 
 ### Local Development: 404 Errors or RBAC Failures
