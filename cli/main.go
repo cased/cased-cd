@@ -297,7 +297,7 @@ func handleDoctor() {
 			fmt.Printf("    --namespace %s \\\n", namespace)
 			fmt.Printf("    --set enterprise.enabled=true \\\n")
 			fmt.Printf("    --set enterprise.persistence.size=10Gi\n\n")
-			fmt.Printf("For more information: https://github.com/cased/cased-cd\n\n")
+			fmt.Printf("For more information: https://cased.github.io/cased-cd\n\n")
 		} else {
 			fmt.Printf("Review the errors above and fix any issues.\n\n")
 		}
