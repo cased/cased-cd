@@ -159,17 +159,30 @@ That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or conf
 
 **Storage Requirements:**
 
-The enterprise backend requires persistent storage for audit logs. The Helm chart will attempt to use your cluster's default storage class.
+The enterprise backend includes a persistent audit trail (enabled by default) that requires a PersistentVolumeClaim. The Helm chart will attempt to use your cluster's default storage class.
 
-**⚠️ Talos Linux Users:** Talos does not include a storage provisioner by default. You must install one before deploying enterprise features:
-- **Rook/Ceph** (recommended for production)
-- **OpenEBS** (lightweight option)
-- **Longhorn** (cloud-native distributed storage)
-
-After installing a storage provisioner, explicitly set the storage class:
+**If your cluster doesn't have a storage provisioner**, you can disable the persistent audit trail:
 ```bash
---set enterprise.persistence.storageClass=rook-ceph-block
+--set enterprise.auditTrail.enabled=false
 ```
+
+When disabled, audit events will be logged to stdout only (no PVC required).
+
+**⚠️ Talos Linux Users:** Talos does not include a storage provisioner by default. You must either:
+1. Install a storage provisioner before deploying enterprise features:
+   - **Rook/Ceph** (recommended for production)
+   - **OpenEBS** (lightweight option)
+   - **Longhorn** (cloud-native distributed storage)
+
+   Then explicitly set the storage class:
+   ```bash
+   --set enterprise.persistence.storageClass=rook-ceph-block
+   ```
+
+2. Or disable persistent audit logging:
+   ```bash
+   --set enterprise.auditTrail.enabled=false
+   ```
 
 For other platforms, common storage classes are:
 - **AWS EKS**: `gp2`, `gp3`

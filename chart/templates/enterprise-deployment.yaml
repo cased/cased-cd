@@ -64,11 +64,15 @@ spec:
             readOnlyRootFilesystem: false
             seccompProfile:
               type: RuntimeDefault
+          {{- if .Values.enterprise.auditTrail.enabled }}
           volumeMounts:
             - name: audit-logs
               mountPath: /data/audit
+          {{- end }}
+      {{- if .Values.enterprise.auditTrail.enabled }}
       volumes:
         - name: audit-logs
           persistentVolumeClaim:
             claimName: {{ include "cased-cd.fullname" . }}-enterprise-audit
+      {{- end }}
 {{- end }}

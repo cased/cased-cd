@@ -43,10 +43,15 @@
 
 4. Enterprise Features Enabled:
    - RBAC Management
+   {{- if .Values.enterprise.auditTrail.enabled }}
    - Audit Trail (PersistentVolume)
+   {{- else }}
+   - Audit Trail (stdout only, no PVC)
+   {{- end }}
    - User Management
    - Notification Services
 
+   {{- if .Values.enterprise.auditTrail.enabled }}
    Check audit PVC status:
    kubectl get pvc -n {{ .Release.Namespace }} {{ include "cased-cd.fullname" . }}-enterprise-audit
 
@@ -66,6 +71,15 @@
    - Google GKE: standard, standard-rwo
    - Azure AKS: default, managed-premium
    - k3d/k3s: local-path
+
+   To disable persistent audit logging (no PVC required):
+   --set enterprise.auditTrail.enabled=false
+   {{- else }}
+
+   Note: Persistent audit logging is disabled. Audit events are logged to stdout only.
+   To enable persistent audit logging with PVC:
+   --set enterprise.auditTrail.enabled=true
+   {{- end }}
 
 5. Learn more about Cased:
 {{- else }}

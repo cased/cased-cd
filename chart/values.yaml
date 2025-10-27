@@ -44,7 +44,14 @@ enterprise:
     requests:
       cpu: 50m
       memory: 64Mi
-  # Persistent storage for audit logs
+  # Audit trail configuration
+  auditTrail:
+    # Enable persistent audit logging
+    # When true: Creates PVC and stores audit events to persistent volume
+    # When false: No PVC created, audit events logged to stdout only
+    # Set to false if your cluster lacks a storage provisioner (e.g., Talos Linux without storage)
+    enabled: true
+  # Persistent storage for audit logs (only used when auditTrail.enabled=true)
   persistence:
     # Storage size for audit logs (supports ~20M events at 10GB)
     size: 10Gi
