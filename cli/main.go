@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"strings"
 
@@ -41,6 +43,8 @@ func main() {
 		handleDoctor()
 	case "version":
 		handleVersion()
+	case "local":
+		handleLocal()
 	case "help", "-h", "--help":
 		printUsage()
 	default:
@@ -61,6 +65,7 @@ func printUsage() {
   %saccess%s     Show how to access Cased CD (URL, port-forward, ingress)
   %sdoctor%s     Check Cased CD installation health
   %sversion%s    Show Cased CD component versions
+  %slocal%s      Check local development environment status
   %shelp%s       Show this help message
 
 %sEXAMPLES:%s
@@ -76,6 +81,7 @@ func printUsage() {
 `, bold+colorCyan, bold, colorReset,
 		bold, colorReset,
 		bold, colorReset,
+		colorGreen, colorReset,
 		colorGreen, colorReset,
 		colorGreen, colorReset,
 		colorGreen, colorReset,
@@ -352,6 +358,70 @@ func handleVersion() {
 	}
 
 	fmt.Println()
+}
+
+func handleLocal() {
+	fmt.Printf("\n%s%s🔧 Local Development Status%s\n\n", bold, colorCyan, colorReset)
+
+	// Check service ports
+	services := []struct {
+		name string
+		port string
+		url  string
+	}{
+		{"Frontend (Vite)", "5173", "http://localhost:5173"},
+		{"Backend", "8081", "http://localhost:8081"},
+		{"ArgoCD Port-Forward", "8090", "https://localhost:8090"},
+	}
+
+	fmt.Printf("%sServices:%s\n", bold, colorReset)
+	allRunning := true
+	for _, svc := range services {
+		conn, err := net.DialTimeout("tcp", "localhost:"+svc.port, 100*1000000) // 100ms
+		if err == nil {
+			conn.Close()
+			fmt.Printf("  %s✓%s %s - %s%s%s\n", colorGreen, colorReset, svc.name, colorCyan, svc.url, colorReset)
+		} else {
+			fmt.Printf("  %s✗%s %s - Not running\n", colorRed, colorReset, svc.name)
+			allRunning = false
+		}
+	}
+
+	// Try to read credentials
+	fmt.Printf("\n%sCredentials:%s\n", bold, colorReset)
+	credFile := ".argocd-credentials"
+	if file, err := os.Open(credFile); err == nil {
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "ARGOCD_USERNAME=") {
+				username := strings.TrimPrefix(line, "ARGOCD_USERNAME=")
+				fmt.Printf("  Username: %s\n", username)
+			} else if strings.HasPrefix(line, "ARGOCD_PASSWORD=") {
+				password := strings.TrimPrefix(line, "ARGOCD_PASSWORD=")
+				fmt.Printf("  Password: %s\n", password)
+			}
+		}
+	} else {
+		fmt.Printf("  %sℹ%s  No .argocd-credentials file found\n", colorYellow, colorReset)
+	}
+
+	// Provide helpful commands
+	if !allRunning {
+		fmt.Printf("\n%sTo start local development:%s\n\n", bold, colorReset)
+		fmt.Printf("  %s# Setup k3d cluster with ArgoCD (one-time)%s\n", colorPurple, colorReset)
+		fmt.Printf("  ./scripts/setup-argocd.sh\n\n")
+		fmt.Printf("  %s# Start ArgoCD port-forward%s\n", colorPurple, colorReset)
+		fmt.Printf("  kubectl port-forward svc/argocd-server -n argocd 8090:443 &\n\n")
+		fmt.Printf("  %s# Build and start backend%s\n", colorPurple, colorReset)
+		fmt.Printf("  cd backend && go build -o cased-backend .\n")
+		fmt.Printf("  ARGOCD_SERVER=https://localhost:8090 ./cased-backend &\n\n")
+		fmt.Printf("  %s# Start frontend%s\n", colorPurple, colorReset)
+		fmt.Printf("  VITE_USE_REAL_API=true VITE_ENTERPRISE_BACKEND=true npm run dev\n\n")
+	} else {
+		fmt.Printf("\n%s✓ All services running!%s\n\n", colorGreen+bold, colorReset)
+	}
 }
 
 func getKubeClient() (*rest.Config, *kubernetes.Clientset, string) {
