@@ -7,11 +7,11 @@ import path from 'path'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    TanStackRouterVite(),
-    react(),
     codeInspectorPlugin({
       bundler: 'vite',
     }),
+    TanStackRouterVite(),
+    react(),
   ],
   resolve: {
     alias: {
