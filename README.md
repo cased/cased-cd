@@ -275,6 +275,8 @@ kubectl exec -n argocd deployment/cased-cd-enterprise -- tail -f /data/audit/eve
 
 ### Install with kubectl
 
+**Note:** This installs the **standard (non-enterprise)** version only. For enterprise features, use Helm.
+
 ```bash
 # Apply the manifests
 kubectl apply -f https://cased.github.io/cased-cd/install.yaml
