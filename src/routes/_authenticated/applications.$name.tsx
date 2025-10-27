@@ -4,17 +4,40 @@ import {
   IconCircleForward,
   IconDelete,
   IconCodeBranch,
-  IconCircleCheck,
-  IconSettings
+  IconSettings,
+  IconChevronRight,
+  IconCircleCheckFill,
+  IconChevronDown,
+  IconBrandGithubFill
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import { getHealthIcon } from '@/lib/status-icons'
 import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { cn, formatRepoUrl } from '@/lib/utils'
+import {
   useApplication,
+  useApplications,
   useUpdateApplicationSpec,
   useSyncApplication,
   useDeleteApplication,
@@ -32,12 +55,14 @@ function ApplicationDetailLayout() {
   const router = useRouterState()
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [syncProgressOpen, setSyncProgressOpen] = useState(false)
+  const [comboboxOpen, setComboboxOpen] = useState(false)
 
   // Get current view from pathname
   const currentPath = router.location.pathname
   const currentView = currentPath.split('/').pop() || 'tree'
 
   const { data: app, isLoading, error, refetch } = useApplication(name || '', !!name)
+  const { data: allApps } = useApplications()
 
   const syncMutation = useSyncApplication()
   const updateSpecMutation = useUpdateApplicationSpec()
@@ -175,7 +200,7 @@ function ApplicationDetailLayout() {
 
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
-  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus)
+  const { color: healthColor } = getHealthIcon(healthStatus)
 
   // Parse app versions from image tags
   const appVersions = parseAppVersions(app.status?.summary?.images)
@@ -183,21 +208,77 @@ function ApplicationDetailLayout() {
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-black">
-        <div className="px-6 py-3">
-          {/* Controls row */}
-          <div className="flex items-center justify-between mb-3">
-                      {/* Title and info */}
-          <div className="mb-3">
-            <h1 className="text-lg font-semibold text-black dark:text-white">
-              {app.metadata.name}
-            </h1>
-            <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400 mt-0.5">
-              <span>{app.spec.destination.namespace || 'default'}</span>
-              <span>·</span>
-              <span>{app.spec.destination.server || app.spec.destination.name || 'unknown'}</span>
-            </div>
-          </div>
+      <div className="bg-white dark:bg-black">
+        {/* Breadcrumb section - full width */}
+        <div className="px-6 py-3 border-b border-border">
+          <div className="flex items-center justify-between">
+            <Breadcrumb>
+              <BreadcrumbList>
+                <BreadcrumbItem>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto p-0 text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
+                    onClick={() => navigate({ to: '/applications' })}
+                  >
+                    Applications
+                  </Button>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <IconChevronRight size={14} />
+                </BreadcrumbSeparator>
+                <BreadcrumbItem>
+                  <Popover open={comboboxOpen} onOpenChange={setComboboxOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        role="combobox"
+                        aria-expanded={comboboxOpen}
+                        className="h-auto p-0 text-sm font-medium text-black dark:text-white hover:bg-transparent gap-1.5"
+                      >
+                        {app.metadata.name}
+                        <IconChevronDown size={14} className="opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="start">
+                      <Command>
+                        <CommandInput placeholder="Search applications..." />
+                        <CommandList>
+                          <CommandEmpty>No application found.</CommandEmpty>
+                          <CommandGroup>
+                            {allApps?.items?.map((application) => (
+                              <CommandItem
+                                key={application.metadata.name}
+                                value={application.metadata.name}
+                                onSelect={(selectedName) => {
+                                  navigate({
+                                    to: '/applications/$name/tree',
+                                    params: { name: selectedName }
+                                  })
+                                  setComboboxOpen(false)
+                                }}
+                              >
+                                {application.metadata.name}
+                                <IconCircleCheckFill
+                                  size={16}
+                                  className={cn(
+                                    'ml-auto',
+                                    app.metadata.name === application.metadata.name
+                                      ? 'opacity-100'
+                                      : 'opacity-0'
+                                  )}
+                                />
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </BreadcrumbItem>
+              </BreadcrumbList>
+            </Breadcrumb>
+
             {/* Actions */}
             <div className="flex gap-3 items-center">
               {/* Auto-sync toggle */}
@@ -251,95 +332,136 @@ function ApplicationDetailLayout() {
               </Button>
             </div>
           </div>
-
-          {/* Status badges and info */}
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className="gap-1.5">
-                <HealthIcon size={12} className={healthColor} />
-                {healthStatus}
-              </Badge>
-              <Badge variant="outline" className="gap-1.5">
-                <IconCircleCheck size={12} className={syncStatus === 'Synced' ? 'text-grass-11' : 'text-amber-400'} />
-                {syncStatus}
-              </Badge>
-            </div>
-
-            {/* App Versions */}
-            {appVersions.length > 0 && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-neutral-600 dark:text-neutral-400">App:</span>
-                <div className="flex items-center gap-1.5">
-                  {appVersions.map((version, i) => (
-                    <Badge key={i} variant="outline" className="gap-1 text-xs font-mono">
-                      {version.name}: {version.version}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center gap-1.5 text-xs text-neutral-600 dark:text-neutral-400">
-              <IconCodeBranch size={14} />
-              <span className="truncate max-w-md">{app.spec.source.repoURL}</span>
-            </div>
-
-            {app.spec.source.targetRevision && (
-              <div className="text-xs text-neutral-600 dark:text-neutral-400">
-                <span className="text-neutral-600">Config:</span> {app.spec.source.targetRevision}
-              </div>
-            )}
-          </div>
-
-          {/* View switcher */}
-          <div className="flex items-center gap-1.5 mt-3">
-            <Button
-              variant={currentView === 'tree' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate({ to: '/applications/$name/tree', params: { name } })}
-              className="gap-1"
-            >
-              Tree
-            </Button>
-            <Button
-              variant={currentView === 'list' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate({ to: '/applications/$name/list', params: { name } })}
-              className="gap-1"
-            >
-              List
-            </Button>
-            <Button
-              variant={currentView === 'pods' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate({ to: '/applications/$name/pods', params: { name } })}
-              className="gap-1"
-            >
-              Pods
-            </Button>
-            <Button
-              variant={currentView === 'diff' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate({ to: '/applications/$name/diff', params: { name } })}
-              className="gap-1"
-            >
-              Diff
-            </Button>
-            <Button
-              variant={currentView === 'history' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => navigate({ to: '/applications/$name/history', params: { name } })}
-              className="gap-1"
-            >
-              History
-            </Button>
-          </div>
         </div>
       </div>
 
-      {/* Content - Outlet for nested routes */}
-      <div className="flex-1 overflow-auto bg-white dark:bg-black">
-        <Outlet />
+      {/* Main content area with sidebar */}
+      <div className="flex flex-1 overflow-hidden bg-white dark:bg-black">
+        {/* Left content area */}
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* View switcher - hide on settings page */}
+          {currentView !== 'settings' && (
+            <div className="px-6 py-3">
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant={currentView === 'tree' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate({ to: '/applications/$name/tree', params: { name } })}
+                  className="gap-1"
+                >
+                  Tree
+                </Button>
+                <Button
+                  variant={currentView === 'list' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate({ to: '/applications/$name/list', params: { name } })}
+                  className="gap-1"
+                >
+                  List
+                </Button>
+                <Button
+                  variant={currentView === 'pods' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate({ to: '/applications/$name/pods', params: { name } })}
+                  className="gap-1"
+                >
+                  Pods
+                </Button>
+                <Button
+                  variant={currentView === 'diff' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate({ to: '/applications/$name/diff', params: { name } })}
+                  className="gap-1"
+                >
+                  Diff
+                </Button>
+                <Button
+                  variant={currentView === 'history' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => navigate({ to: '/applications/$name/history', params: { name } })}
+                  className="gap-1"
+                >
+                  History
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Content - Outlet for nested routes */}
+          <div className="flex-1 overflow-auto">
+            <Outlet />
+          </div>
+        </div>
+
+        {/* Right sidebar - metadata */}
+        <div className="w-80 overflow-y-auto border-l border-border p-6 space-y-4">
+          {/* Health status */}
+          <div className="grid grid-cols-1 md:grid-cols-2">
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Health</div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${healthColor.replace('text-', 'bg-').replace('bg-grass-11', 'bg-grass-9')}`} />
+                <div className="text-sm">{healthStatus}</div>
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Sync status</div>
+              <div className="flex items-center gap-2">
+                <div className={`w-2 h-2 rounded-full ${syncStatus === 'Synced' ? 'bg-grass-9' : 'bg-amber-400'}`} />
+                <div className="text-sm">{syncStatus}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Namespace */}
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">Namespace</div>
+            <div className="text-sm">{app.spec.destination.namespace || 'default'}</div>
+          </div>
+
+          {/* Destination server */}
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">Destination</div>
+            <div className="text-sm break-all">{app.spec.destination.server || app.spec.destination.name || 'unknown'}</div>
+          </div>
+
+          {/* Repository */}
+          <div>
+            <div className="text-xs font-medium text-muted-foreground mb-1">Repository</div>
+            <div className="flex items-center gap-1.5 text-sm break-all">
+              {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
+                <IconBrandGithubFill size={14} className="flex-shrink-0" />
+              ) : (
+                <IconCodeBranch size={14} className="flex-shrink-0" />
+              )}
+              <span>{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
+            </div>
+          </div>
+
+          {/* Target revision */}
+          {app.spec.source.targetRevision && (
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Target revision</div>
+              <div className="text-sm font-mono">{app.spec.source.targetRevision}</div>
+            </div>
+          )}
+
+          {/* App Versions */}
+          {appVersions.length > 0 && (
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-2">App versions</div>
+              <div className="space-y-1.5">
+                {appVersions.map((version, i) => (
+                  <div key={i} className="text-sm">
+                    <span className="font-medium">{version.name}:</span>{' '}
+                    <span className="font-mono">{version.version}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Confirm Delete Dialog */}

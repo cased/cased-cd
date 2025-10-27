@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import { reactClickToComponent } from 'vite-plugin-react-click-to-component'
 import { TanStackRouterVite } from '@tanstack/router-vite-plugin'
+import { codeInspectorPlugin } from 'code-inspector-plugin'
 import path from 'path'
 import { readFileSync } from 'fs'
 
@@ -14,9 +14,11 @@ export default defineConfig({
     'import.meta.env.PACKAGE_VERSION': JSON.stringify(packageJson.version),
   },
   plugins: [
+    codeInspectorPlugin({
+      bundler: 'vite',
+    }),
     TanStackRouterVite(),
     react(),
-    reactClickToComponent(),
   ],
   resolve: {
     alias: {
