@@ -58,7 +58,7 @@ The audit backend intercepts specific API requests, logs the action details, the
 **Storage & Compliance:**
 - Audit events are stored in a PersistentVolume at `/data/audit/events.jsonl`
 - JSONL format (newline-delimited JSON) for efficient streaming and parsing
-- Default storage: 10GB (configurable via `rbacProxy.persistence.size` in Helm values)
+- Default storage: 10GB (configurable via `enterprise.persistence.size` in Helm values)
 - **Automatically provisioned** - PVC is created automatically when deploying via Helm (no manual setup required)
 - Supports ~20 million events at default 10GB size
 - Can be backed up using standard Kubernetes PVC backup tools (Velero, etc.)
@@ -321,7 +321,7 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
 
 ## Documentation
 
-- **[Deployment Guide](DEPLOY.md)** - Comprehensive deployment instructions
+- **[GitHub Pages](https://cased.github.io/cased-cd)** - Installation guide and quick start
 - **[Cased Docs](https://docs.cased.com)** - Learn about Cased's platform
 
 ## Architecture
@@ -749,7 +749,7 @@ See **[CLAUDE.md](CLAUDE.md)** for detailed architecture documentation.
 ## Support
 
 - **Website**: [cased.com](https://cased.com)
-- **Documentation**: [docs.cased.com](https://docs.cased.com)
+- **Documentation**: [cased.github.io/cased-cd](https://cased.github.io/cased-cd)
 - **Contact**: support@cased.com
 
 ## Acknowledgments
