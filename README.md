@@ -206,7 +206,7 @@ kubectl exec -n argocd deployment/cased-cd-enterprise -- tail -f /data/audit/eve
 
 ```bash
 # Apply the manifests
-kubectl apply -f https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
+kubectl apply -f https://cased.github.io/cased-cd/install.yaml
 
 # Access via port-forward
 kubectl port-forward -n argocd svc/cased-cd 8080:80
@@ -224,7 +224,7 @@ kubectl port-forward -n argocd svc/cased-cd 8080:80
 2. **Edit the install.yaml** before applying:
    ```bash
    # Download and edit
-   curl -o install.yaml https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
+   curl -o install.yaml https://cased.github.io/cased-cd/install.yaml
 
    # Find and update the ARGOCD_SERVER environment variable (around line 164):
    # - name: ARGOCD_SERVER
@@ -268,7 +268,7 @@ argocd:
 **kubectl (requires manual edit):**
 ```bash
 # Download the install.yaml
-curl -o install.yaml https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install.yaml
+curl -o install.yaml https://cased.github.io/cased-cd/install.yaml
 
 # Edit line 164 to match your ArgoCD server location
 # Then apply
