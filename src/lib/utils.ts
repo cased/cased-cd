@@ -17,8 +17,8 @@ export function formatRepoUrl(repoUrl: string): {
 } {
   try {
     // Handle both HTTPS and SSH GitHub URLs
-    const githubHttpsMatch = repoUrl.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/\.]+?)(?:\.git)?$/i)
-    const githubSshMatch = repoUrl.match(/git@github\.com:([^/]+)\/([^/\.]+?)(?:\.git)?$/i)
+    const githubHttpsMatch = repoUrl.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/([^/]+)\/([^/.]+?)(?:\.git)?$/i)
+    const githubSshMatch = repoUrl.match(/git@github\.com:([^/]+)\/([^/.]+?)(?:\.git)?$/i)
 
     if (githubHttpsMatch) {
       const org = githubHttpsMatch[1]

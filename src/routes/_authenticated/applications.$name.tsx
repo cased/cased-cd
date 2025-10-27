@@ -4,7 +4,6 @@ import {
   IconCircleForward,
   IconDelete,
   IconCodeBranch,
-  IconCircleCheck,
   IconSettings,
   IconChevronRight,
   IconCircleCheckFill,
@@ -12,7 +11,6 @@ import {
   IconBrandGithubFill
 } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
@@ -202,7 +200,7 @@ function ApplicationDetailLayout() {
 
   const healthStatus = app.status?.health?.status || 'Unknown'
   const syncStatus = app.status?.sync?.status || 'Unknown'
-  const { icon: HealthIcon, color: healthColor } = getHealthIcon(healthStatus)
+  const { color: healthColor } = getHealthIcon(healthStatus)
 
   // Parse app versions from image tags
   const appVersions = parseAppVersions(app.status?.summary?.images)
