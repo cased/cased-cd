@@ -17,6 +17,7 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
+    "test:nginx": "./docker/test-entrypoint.sh",
     "release": "./scripts/release.sh"
   },
   "dependencies": {
