@@ -165,10 +165,10 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="w-full max-w-2xl bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-lg shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 p-6">
+        <div className="flex items-center justify-between border-b border-neutral-200 dark:border-neutral-800 p-6 flex-shrink-0">
           <div className="flex-1">
             <h2 className="text-xl font-semibold text-black dark:text-white">Create Application</h2>
             <p className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">Deploy a new application to your cluster</p>
@@ -208,7 +208,8 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
 
         {/* Form */}
         {mode === 'form' ? (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="overflow-y-auto flex-1 px-6 py-6 space-y-6">
             {/* General */}
             <div>
               <h3 className="text-sm font-medium text-black dark:text-white mb-4">General</h3>
@@ -361,76 +362,83 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <Button
-                type="submit"
-                variant="default"
-                disabled={createMutation.isPending}
-                className="gap-1"
-              >
-                {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
-                {createMutation.isPending ? 'Creating...' : 'Create Application'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
             </div>
 
-            {/* Error */}
-            {createMutation.isError && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-                <p className="text-sm text-red-400">
-                  {createMutation.error instanceof Error
-                    ? createMutation.error.message
-                    : 'Failed to create application'}
-                </p>
+            {/* Actions */}
+            <div className="flex-shrink-0 border-t border-neutral-200 dark:border-neutral-800 p-6 bg-white dark:bg-neutral-950">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={createMutation.isPending}
+                  className="gap-1"
+                >
+                  {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
+                  {createMutation.isPending ? 'Creating...' : 'Create Application'}
+                </Button>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
               </div>
-            )}
+
+              {/* Error */}
+              {createMutation.isError && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 mt-4">
+                  <p className="text-sm text-red-400">
+                    {createMutation.error instanceof Error
+                      ? createMutation.error.message
+                      : 'Failed to create application'}
+                  </p>
+                </div>
+              )}
+            </div>
           </form>
         ) : (
-          <form onSubmit={handleYamlSubmit} className="p-6 space-y-6">
-            {/* YAML Editor */}
-            <div>
-              <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                Application Manifest
-              </label>
-              <textarea
-                value={yamlContent}
-                onChange={(e) => setYamlContent(e.target.value)}
-                className="w-full h-96 px-3 py-2 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-md font-mono text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-0 resize-none"
-                placeholder="metadata:&#10;  name: my-app&#10;spec:&#10;  project: default&#10;  source:&#10;    repoURL: https://github.com/argoproj/argocd-example-apps&#10;    path: guestbook&#10;    targetRevision: HEAD&#10;  destination:&#10;    server: https://kubernetes.default.svc&#10;    namespace: default"
-                spellCheck={false}
-              />
+          <form onSubmit={handleYamlSubmit} className="flex flex-col flex-1 min-h-0">
+            <div className="overflow-y-auto flex-1 px-6 py-6">
+              {/* YAML Editor */}
+              <div>
+                <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
+                  Application Manifest
+                </label>
+                <textarea
+                  value={yamlContent}
+                  onChange={(e) => setYamlContent(e.target.value)}
+                  className="w-full h-96 px-3 py-2 bg-white dark:bg-black border border-neutral-200 dark:border-neutral-800 rounded-md font-mono text-sm text-black dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white focus:ring-offset-0 resize-none"
+                  placeholder="metadata:&#10;  name: my-app&#10;spec:&#10;  project: default&#10;  source:&#10;    repoURL: https://github.com/argoproj/argocd-example-apps&#10;    path: guestbook&#10;    targetRevision: HEAD&#10;  destination:&#10;    server: https://kubernetes.default.svc&#10;    namespace: default"
+                  spellCheck={false}
+                />
+              </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3 pt-4 border-t border-neutral-200 dark:border-neutral-800">
-              <Button
-                type="submit"
-                variant="default"
-                disabled={createMutation.isPending}
-                className="gap-1"
-              >
-                {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
-                {createMutation.isPending ? 'Creating...' : 'Create Application'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-            </div>
-
-            {/* Error */}
-            {(yamlError || createMutation.isError) && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4">
-                <p className="text-sm text-red-400">
-                  {yamlError || (createMutation.error instanceof Error
-                    ? createMutation.error.message
-                    : 'Failed to create application')}
-                </p>
+            <div className="flex-shrink-0 border-t border-neutral-200 dark:border-neutral-800 p-6 bg-white dark:bg-neutral-950">
+              <div className="flex items-center gap-3">
+                <Button
+                  type="submit"
+                  variant="default"
+                  disabled={createMutation.isPending}
+                  className="gap-1"
+                >
+                  {createMutation.isPending && <IconSpinnerBall size={16} className="animate-spin" />}
+                  {createMutation.isPending ? 'Creating...' : 'Create Application'}
+                </Button>
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancel
+                </Button>
               </div>
-            )}
+
+              {/* Error */}
+              {(yamlError || createMutation.isError) && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-4 mt-4">
+                  <p className="text-sm text-red-400">
+                    {yamlError || (createMutation.error instanceof Error
+                      ? createMutation.error.message
+                      : 'Failed to create application')}
+                  </p>
+                </div>
+              )}
+            </div>
           </form>
         )}
       </div>

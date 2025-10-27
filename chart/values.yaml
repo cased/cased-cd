@@ -24,12 +24,13 @@ fullnameOverride: ""
 argocd:
   # URL of the ArgoCD server API
   # Default assumes ArgoCD is installed in the 'argocd' namespace
-  server: "http://argocd-server.argocd.svc.cluster.local:80"
+  # Uses HTTPS (ArgoCD's default). nginx is configured to accept self-signed certs.
+  server: "https://argocd-server.argocd.svc.cluster.local"
 
 # Enterprise backend for RBAC, audit logging, notifications, and user management
 enterprise:
   # Enable enterprise backend
-  enabled: true
+  enabled: false
   # Number of replicas
   replicaCount: 1
   image:

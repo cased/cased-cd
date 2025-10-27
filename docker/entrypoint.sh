@@ -2,7 +2,8 @@
 set -e
 
 # Default ArgoCD server URL if not provided
-ARGOCD_SERVER=${ARGOCD_SERVER:-http://argocd-server.argocd.svc.cluster.local:80}
+# Uses HTTPS by default (ArgoCD's default configuration)
+ARGOCD_SERVER=${ARGOCD_SERVER:-https://argocd-server.argocd.svc.cluster.local}
 
 # Determine proxy target based on enterprise mode
 # If ENTERPRISE_BACKEND_SERVICE is set, route all API requests through the enterprise backend
