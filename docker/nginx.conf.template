@@ -56,6 +56,8 @@ http {
         add_header X-Content-Type-Options "nosniff" always;
         add_header X-XSS-Protection "1; mode=block" always;
         add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Permitted-Cross-Domain-Policies "none" always;
+        add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()" always;
 
         # Content Security Policy (CSP)
         # - default-src 'self': Only load resources from same origin by default
@@ -73,6 +75,17 @@ http {
         location /health {
             access_log off;
             return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # RFC 9116: Serve security.txt from .well-known location
+        location = /.well-known/security.txt {
+            alias /usr/share/nginx/html/security.txt;
+            add_header Content-Type text/plain;
+        }
+
+        # Also serve from root for convenience
+        location = /security.txt {
             add_header Content-Type text/plain;
         }
 
