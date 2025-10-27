@@ -7,11 +7,13 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -275,12 +277,24 @@ func handleDoctor() {
 
 	// Check ArgoCD connectivity
 	fmt.Printf("\n%sChecking ArgoCD...%s\n", bold, colorReset)
-	_, err = clientset.CoreV1().Services("argocd").Get(ctx, "argocd-server", metav1.GetOptions{})
+	argoSvc, err := clientset.CoreV1().Services("argocd").Get(ctx, "argocd-server", metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("  %s✗%s ArgoCD server not found in 'argocd' namespace\n", colorRed, colorReset)
 		allHealthy = false
 	} else {
 		fmt.Printf("  %s✓%s ArgoCD server found\n", colorGreen, colorReset)
+
+		// Test actual HTTP connectivity from within cluster
+		fmt.Printf("%sTesting ArgoCD HTTP connectivity...%s\n", bold, colorReset)
+		reachable := testArgocdConnectivity(clientset, ctx, namespace)
+		if reachable {
+			fmt.Printf("  %s✓%s ArgoCD HTTP endpoint reachable (http://argocd-server.argocd.svc.cluster.local:%d)\n",
+				colorGreen, colorReset, argoSvc.Spec.Ports[0].Port)
+		} else {
+			fmt.Printf("  %s✗%s ArgoCD HTTP endpoint not reachable\n", colorRed, colorReset)
+			fmt.Printf("      Check network policies, DNS, and ArgoCD pod status\n")
+			allHealthy = false
+		}
 	}
 
 	// Summary and guidance
@@ -309,6 +323,76 @@ func handleDoctor() {
 		}
 		os.Exit(1)
 	}
+}
+
+func testArgocdConnectivity(clientset *kubernetes.Clientset, ctx context.Context, namespace string) bool {
+	// Create a temporary pod with curl to test connectivity
+	podName := "test-argocd-connectivity"
+
+	// Clean up any existing test pod
+	clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+
+	pod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: v1.PodSpec{
+			RestartPolicy: v1.RestartPolicyNever,
+			Containers: []v1.Container{
+				{
+					Name:    "curl",
+					Image:   "curlimages/curl:latest",
+					Command: []string{"curl"},
+					Args: []string{
+						"-s",
+						"-o", "/dev/null",
+						"-w", "%{http_code}",
+						"--max-time", "5",
+						"http://argocd-server.argocd.svc.cluster.local:80/healthz",
+					},
+				},
+			},
+		},
+	}
+
+	// Create the pod
+	_, err := clientset.CoreV1().Pods(namespace).Create(ctx, pod, metav1.CreateOptions{})
+	if err != nil {
+		return false
+	}
+
+	// Wait for pod to complete (max 10 seconds)
+	for i := 0; i < 20; i++ {
+		pod, err := clientset.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
+		if err != nil {
+			break
+		}
+
+		if pod.Status.Phase == v1.PodSucceeded {
+			// Check if curl returned 200
+			// Pod succeeded means curl executed successfully
+			// We consider this a success
+			clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			return true
+		}
+
+		if pod.Status.Phase == v1.PodFailed {
+			clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			return false
+		}
+
+		// Wait a bit
+		select {
+		case <-ctx.Done():
+			clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+			return false
+		case <-time.After(500 * time.Millisecond):
+		}
+	}
+
+	// Cleanup and return false if timeout
+	clientset.CoreV1().Pods(namespace).Delete(ctx, podName, metav1.DeleteOptions{})
+	return false
 }
 
 func handleVersion() {
