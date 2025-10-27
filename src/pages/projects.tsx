@@ -6,6 +6,14 @@ import {
 } from "obra-icons-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useProjects, useDeleteProject } from "@/services/projects";
 import { CreateProjectPanel } from "@/components/create-project-panel";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -73,9 +81,19 @@ export function ProjectsPage() {
           />
         )}
 
-        {/* Projects List */}
+        {/* Projects Table */}
         {!isLoading && !error && data?.items && data.items.length > 0 && (
-          <div className="space-y-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[280px]">Project</TableHead>
+                <TableHead className="w-[200px]">Sources</TableHead>
+                <TableHead className="w-[200px]">Destinations</TableHead>
+                <TableHead className="w-[100px]">Roles</TableHead>
+                <TableHead className="w-[60px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {data.items.map((project) => {
                 const isDefaultProject = project.metadata.name === "default";
                 const sourceReposCount = project.spec.sourceRepos?.length || 0;
@@ -84,107 +102,71 @@ export function ProjectsPage() {
                 const rolesCount = project.spec.roles?.length || 0;
 
                 return (
-                  <div
-                    key={project.metadata.name}
-                    className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-3 transition-colors hover:border-neutral-300 dark:hover:border-neutral-700"
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        {/* Header */}
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="h-8 w-8 rounded bg-white dark:bg-black flex items-center justify-center">
-                            <IconFolder
-                              size={16}
-                              className="text-black dark:text-white"
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <h3 className="font-medium text-sm text-black dark:text-white">
-                                {project.metadata.name}
-                              </h3>
-                              {isDefaultProject && (
-                                <Badge variant="secondary">Default</Badge>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-3 text-xs text-neutral-600 dark:text-neutral-400">
-                              {sourceReposCount === 0 ? (
-                                <span>All sources</span>
-                              ) : (
-                                <span>
-                                  {sourceReposCount} source
-                                  {sourceReposCount !== 1 ? "s" : ""}
-                                </span>
-                              )}
-                              <span>•</span>
-                              {destinationsCount === 0 ? (
-                                <span>All destinations</span>
-                              ) : (
-                                <span>
-                                  {destinationsCount} destination
-                                  {destinationsCount !== 1 ? "s" : ""}
-                                </span>
-                              )}
-                              {rolesCount > 0 && (
-                                <>
-                                  <span>•</span>
-                                  <span>
-                                    {rolesCount} role
-                                    {rolesCount !== 1 ? "s" : ""}
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Details */}
-                        <div className="pl-10 space-y-1.5">
-                          {/* Source Repos */}
-                          {sourceReposCount > 0 && sourceReposCount <= 3 && (
-                            <div className="text-xs">
-                              <span className="text-neutral-500 dark:text-neutral-500">
-                                Sources:
-                              </span>{" "}
-                              <span className="text-neutral-600 dark:text-neutral-400 font-mono">
-                                {project.spec.sourceRepos?.join(", ")}
-                              </span>
-                            </div>
-                          )}
-                          {sourceReposCount > 3 && (
-                            <div className="text-xs">
-                              <span className="text-neutral-500 dark:text-neutral-500">
-                                Sources:
-                              </span>{" "}
-                              <span className="text-neutral-600 dark:text-neutral-400 font-mono">
-                                {project.spec.sourceRepos
-                                  ?.slice(0, 2)
-                                  .join(", ")}{" "}
-                                and {sourceReposCount - 2} more
-                              </span>
-                            </div>
-                          )}
-
-                          {/* Destinations */}
-                          {destinationsCount > 0 && destinationsCount <= 3 && (
-                            <div className="text-xs">
-                              <span className="text-neutral-500 dark:text-neutral-500">
-                                Destinations:
-                              </span>{" "}
-                              <span className="text-neutral-600 dark:text-neutral-400">
-                                {project.spec.destinations
-                                  ?.map(
-                                    (d) =>
-                                      `${d.name || d.server}${d.namespace ? `/${d.namespace}` : ""}`,
-                                  )
-                                  .join(", ")}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+                  <TableRow key={project.metadata.name}>
+                    {/* Project Name */}
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-black dark:text-white truncate">
+                          {project.metadata.name}
+                        </span>
+                        {isDefaultProject && (
+                          <Badge variant="secondary">Default</Badge>
+                        )}
                       </div>
+                    </TableCell>
 
-                      {/* Actions */}
+                    {/* Sources */}
+                    <TableCell className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {sourceReposCount === 0 ? (
+                        <span>All sources</span>
+                      ) : sourceReposCount <= 2 ? (
+                        <span className="font-mono">
+                          {project.spec.sourceRepos?.join(", ")}
+                        </span>
+                      ) : (
+                        <span>
+                          {sourceReposCount} source
+                          {sourceReposCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Destinations */}
+                    <TableCell className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {destinationsCount === 0 ? (
+                        <span>All destinations</span>
+                      ) : destinationsCount <= 2 ? (
+                        <span>
+                          {project.spec.destinations
+                            ?.map(
+                              (d) =>
+                                `${d.name || d.server}${d.namespace ? `/${d.namespace}` : ""}`,
+                            )
+                            .join(", ")}
+                        </span>
+                      ) : (
+                        <span>
+                          {destinationsCount} destination
+                          {destinationsCount !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Roles */}
+                    <TableCell className="text-xs text-neutral-600 dark:text-neutral-400">
+                      {rolesCount > 0 ? (
+                        <span>
+                          {rolesCount} role{rolesCount !== 1 ? "s" : ""}
+                        </span>
+                      ) : (
+                        <span className="text-neutral-400 dark:text-neutral-600">
+                          None
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell>
                       {!isDefaultProject && (
                         <Button
                           variant="outline"
@@ -197,12 +179,13 @@ export function ProjectsPage() {
                           <IconDelete size={16} />
                         </Button>
                       )}
-                    </div>
-                  </div>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </div>
-          )}
+            </TableBody>
+          </Table>
+        )}
 
         {/* Empty State */}
         {!isLoading &&
