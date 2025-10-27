@@ -142,6 +142,10 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
         setYamlError('Repository URL is required in spec.source.repoURL')
         return
       }
+      if (!application?.spec?.source?.path && !application?.spec?.source?.chart) {
+        setYamlError('Either spec.source.path or spec.source.chart is required')
+        return
+      }
       if (!application?.spec?.destination?.namespace) {
         setYamlError('Destination namespace is required in spec.destination.namespace')
         return
@@ -260,13 +264,17 @@ export function CreateApplicationPanel({ onClose, onSuccess }: CreateApplication
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
-                    Path
+                    Path *
                   </label>
                   <Input
+                    required
                     value={formData.path}
                     onChange={(e) => setFormData({ ...formData, path: e.target.value })}
                     placeholder="guestbook"
                   />
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1.5">
+                    Directory path within the repository containing your manifests or Helm chart (e.g., "apps/frontend" or "." for root)
+                  </p>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-neutral-600 dark:text-neutral-400 mb-2">
