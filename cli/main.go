@@ -106,46 +106,11 @@ func handleContext() {
 	context := rawConfig.Contexts[currentContext]
 	cluster := rawConfig.Clusters[context.Cluster]
 
-	// Determine environment type
-	envType := "unknown"
-	envColor := colorWhite
-	if strings.Contains(cluster.Server, "localhost") || strings.Contains(cluster.Server, "127.0.0.1") {
-		envType = "LOCAL"
-		envColor = colorGreen
-	} else if strings.Contains(cluster.Server, "k3d") || strings.Contains(currentContext, "k3d") {
-		envType = "LOCAL (k3d)"
-		envColor = colorGreen
-	} else if strings.Contains(cluster.Server, "kind") || strings.Contains(currentContext, "kind") {
-		envType = "LOCAL (kind)"
-		envColor = colorGreen
-	} else if strings.Contains(cluster.Server, "minikube") || strings.Contains(currentContext, "minikube") {
-		envType = "LOCAL (minikube)"
-		envColor = colorGreen
-	} else if strings.Contains(currentContext, "prod") || strings.Contains(context.Cluster, "prod") {
-		envType = "PRODUCTION"
-		envColor = colorRed
-	} else if strings.Contains(currentContext, "staging") || strings.Contains(context.Cluster, "staging") {
-		envType = "STAGING"
-		envColor = colorYellow
-	} else {
-		envType = "REMOTE"
-		envColor = colorYellow
-	}
-
 	fmt.Printf("  %sContext:%s       %s\n", bold, colorReset, currentContext)
 	fmt.Printf("  %sCluster:%s       %s\n", bold, colorReset, context.Cluster)
 	fmt.Printf("  %sServer:%s        %s\n", bold, colorReset, cluster.Server)
 	fmt.Printf("  %sNamespace:%s     %s\n", bold, colorReset, context.Namespace)
-	fmt.Printf("  %sUser:%s          %s\n", bold, colorReset, context.AuthInfo)
-	fmt.Printf("  %sEnvironment:%s   %s%s%s\n\n", bold, colorReset, envColor+bold, envType, colorReset)
-
-	if envType == "PRODUCTION" {
-		fmt.Printf("%s⚠️  WARNING: You are pointing at PRODUCTION!%s\n", colorRed+bold, colorReset)
-		fmt.Printf("   Be careful with destructive operations.\n\n")
-	} else if envType != "LOCAL" && !strings.Contains(envType, "LOCAL") {
-		fmt.Printf("%sℹ️  Note: You are pointing at a REMOTE cluster%s\n", colorYellow, colorReset)
-		fmt.Printf("   Double-check before making changes.\n\n")
-	}
+	fmt.Printf("  %sUser:%s          %s\n\n", bold, colorReset, context.AuthInfo)
 
 	// Try to get cluster info
 	config, err := kubeConfig.ClientConfig()

@@ -361,15 +361,15 @@ The backend is necessary for enterprise features because:
 
 ## CLI Tool
 
-The `cased-cd` CLI is a debugging and context awareness tool designed to help you safely operate on Kubernetes clusters and troubleshoot Cased CD installations.
+The `cased-cd` CLI is a debugging and context awareness tool to help you understand your Kubernetes environment and troubleshoot Cased CD installations.
 
 ### Why Use the CLI?
 
-**Prevent "oops I just deleted production" moments.** The CLI helps you:
-- Know exactly which cluster you're pointing at (local, staging, production)
-- Get clear visual warnings when operating on production
-- Quickly diagnose installation issues
+The CLI helps you:
+- Quickly see which cluster and context you're using
+- Diagnose installation issues
 - Find the right way to access your deployment
+- Check component versions
 
 ### Installation
 
@@ -385,18 +385,13 @@ sudo mv cased-cd /usr/local/bin/  # Optional: make it available system-wide
 
 #### `cased-cd context`
 
-Shows your current Kubernetes context with color-coded environment detection:
+Shows your current Kubernetes context and cluster information:
 
 ```bash
 cased-cd context
 ```
 
-**Output:**
-- **GREEN** = Local (k3d, kind, minikube, localhost)
-- **YELLOW** = Staging or remote cluster
-- **RED** = Production (with warning banner)
-
-Use this before making any destructive changes to ensure you're on the right cluster.
+Displays context name, cluster, server URL, namespace, and user.
 
 #### `cased-cd doctor`
 
@@ -442,16 +437,9 @@ cased-cd version
 ### Example Workflow
 
 ```bash
-# Before making changes, check your context
+# Check your current context
 cased-cd context
-# ⚠️  WARNING: You are pointing at PRODUCTION!
-
-# Oops! Switch to local cluster
-kubectl config use-context k3d-cased-cd
-
-# Verify
-cased-cd context
-# ✓ Environment: LOCAL (k3d)
+# Shows: k3d-cased-cd cluster
 
 # Check installation health
 cased-cd doctor
@@ -459,7 +447,11 @@ cased-cd doctor
 
 # Get access URL
 cased-cd access
-# http://localhost:8080 (via port-forward)
+# Shows: kubectl port-forward instructions or ingress URL
+
+# Check versions
+cased-cd version
+# Shows: frontend and backend image versions
 ```
 
 ## Troubleshooting
