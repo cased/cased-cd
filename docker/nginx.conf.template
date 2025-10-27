@@ -23,8 +23,13 @@ http {
     limit_req_zone $binary_remote_addr zone=api_limit:10m rate=200r/s;
 
     # Logging
-    access_log /var/log/nginx/access.log;
-    error_log /var/log/nginx/error.log;
+    # Custom log format including rate limit info
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" rt=$request_time';
+
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log warn;
 
     # Performance
     sendfile on;
@@ -32,6 +37,10 @@ http {
     tcp_nodelay on;
     keepalive_timeout 65;
     types_hash_max_size 2048;
+
+    # Request size limits (prevent large request DoS)
+    client_max_body_size 10m;
+    client_body_buffer_size 128k;
 
     # Gzip compression
     gzip on;
