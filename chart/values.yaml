@@ -55,6 +55,7 @@ enterprise:
     #   Google GKE: standard, standard-rwo
     #   Azure AKS: default, managed-premium
     #   k3d/k3s: local-path
+    #   Talos Linux: rook-ceph-block, openebs-hostpath, longhorn (must install provisioner first!)
     storageClass: null
 
 service:

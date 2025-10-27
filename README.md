@@ -157,7 +157,25 @@ That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or conf
 - Kubernetes cluster with storage provisioner
 - Enterprise credentials for accessing the private container image
 
-**Note:** The enterprise backend requires persistent storage for audit logs. The Helm chart will attempt to use your cluster's default storage class. If your cluster has no default storage class, you'll see instructions after installation on how to configure it.
+**Storage Requirements:**
+
+The enterprise backend requires persistent storage for audit logs. The Helm chart will attempt to use your cluster's default storage class.
+
+**⚠️ Talos Linux Users:** Talos does not include a storage provisioner by default. You must install one before deploying enterprise features:
+- **Rook/Ceph** (recommended for production)
+- **OpenEBS** (lightweight option)
+- **Longhorn** (cloud-native distributed storage)
+
+After installing a storage provisioner, explicitly set the storage class:
+```bash
+--set enterprise.persistence.storageClass=rook-ceph-block
+```
+
+For other platforms, common storage classes are:
+- **AWS EKS**: `gp2`, `gp3`
+- **Google GKE**: `standard`, `standard-rwo`
+- **Azure AKS**: `default`, `managed-premium`
+- **k3d/k3s**: `local-path`
 
 **Authentication:**
 
