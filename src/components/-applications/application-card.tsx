@@ -3,9 +3,11 @@ import {
   IconCodeBranch,
   IconClock3,
   IconCircleForward,
+  IconBrandGithubFill,
 } from "obra-icons-react";
 import { Badge } from "@/components/ui/badge";
 import { getHealthIcon } from "@/lib/status-icons";
+import { formatRepoUrl } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { Application } from "@/types/api";
 import { Link } from "@tanstack/react-router";
@@ -80,8 +82,12 @@ export function ApplicationCard({ app }: ApplicationCardProps) {
 
       {/* Repository */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-3">
-        <IconCodeBranch size={12} className="text-muted-foreground" />
-        <span className="truncate">{app.spec.source.repoURL}</span>
+        {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
+          <IconBrandGithubFill size={12} className="text-muted-foreground" />
+        ) : (
+          <IconCodeBranch size={12} className="text-muted-foreground" />
+        )}
+        <span className="truncate">{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
       </div>
 
       {/* Footer */}
