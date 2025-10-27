@@ -100,7 +100,7 @@ test_enterprise_template() {
   fi
 
   # Check that enterprise deployment IS present
-  if grep -q "name: test-enterprise-enterprise" /tmp/helm-enterprise.yaml; then
+  if grep -q "name: test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml; then
     pass "Enterprise backend deployment rendered"
   else
     fail "Enterprise backend deployment missing"
@@ -114,7 +114,7 @@ test_enterprise_template() {
   fi
 
   # Check that enterprise service exists
-  if grep -q "kind: Service" /tmp/helm-enterprise.yaml && grep -q "test-enterprise-enterprise" /tmp/helm-enterprise.yaml; then
+  if grep -q "kind: Service" /tmp/helm-enterprise.yaml && grep -q "test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml; then
     pass "Enterprise backend service created"
   else
     fail "Enterprise backend service missing"
@@ -128,7 +128,7 @@ test_enterprise_template() {
   fi
 
   # Check that enterprise backend has ARGOCD_SERVER env var
-  if grep -A50 "name: test-enterprise-enterprise" /tmp/helm-enterprise.yaml | grep -q "name: ARGOCD_SERVER"; then
+  if grep -A50 "name: test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml | grep -q "name: ARGOCD_SERVER"; then
     pass "Enterprise backend has ARGOCD_SERVER configured"
   else
     fail "Enterprise backend missing ARGOCD_SERVER env var"
@@ -169,8 +169,8 @@ test_resource_config() {
     info "Frontend resource limits not found (may be using defaults)"
   fi
 
-  # Check enterprise backend resources
-  if grep -A50 "name: test-resources-enterprise" /tmp/helm-resources.yaml | grep -A5 "resources:" | grep -q "cpu: 100m"; then
+  # Check enterprise backend resources (search more lines to find the deployment's resources section)
+  if grep -A100 "kind: Deployment" /tmp/helm-resources.yaml | grep -A100 "name: test-resources.*-enterprise" | grep "cpu: 100m" > /dev/null; then
     pass "Enterprise backend resource requests configured"
   else
     fail "Enterprise backend resource configuration missing"
@@ -202,7 +202,7 @@ test_security_context() {
   fi
 
   # Check for dropped capabilities
-  if grep -q "drop:" /tmp/helm-security.yaml && grep -q "- ALL" /tmp/helm-security.yaml; then
+  if grep -q "drop:" /tmp/helm-security.yaml && grep -q "ALL" /tmp/helm-security.yaml; then
     pass "All capabilities dropped"
   else
     fail "Capability dropping not configured"
@@ -222,14 +222,14 @@ test_persistence_config() {
     > /tmp/helm-persistence.yaml 2>&1
 
   # Check PVC size
-  if grep -A10 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storage: 20Gi"; then
+  if grep -A20 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storage: 20Gi"; then
     pass "Custom PVC size applied (20Gi)"
   else
     fail "Custom PVC size not applied"
   fi
 
   # Check storage class
-  if grep -A10 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storageClassName: fast-ssd"; then
+  if grep -A20 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storageClassName: fast-ssd"; then
     pass "Custom storage class applied"
   else
     fail "Custom storage class not applied"
