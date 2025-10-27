@@ -67,7 +67,7 @@ export default defineConfig({
       } : {}),
       // All other API requests go to real ArgoCD (or mock if VITE_USE_REAL_API not set)
       '/api/v1': {
-        target: process.env.VITE_USE_REAL_API ? 'http://localhost:8090' : 'http://localhost:8080',
+        target: process.env.VITE_USE_REAL_API ? 'http://localhost:8090' : 'http://localhost:3000',
         changeOrigin: true,
       },
     },
