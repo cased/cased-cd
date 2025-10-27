@@ -154,8 +154,10 @@ That's it! Access Cased CD at `http://localhost:8080` (via port-forward) or conf
 
 **Prerequisites:**
 - Existing ArgoCD installation (v2.0+)
-- Kubernetes cluster with default StorageClass (for audit log PVC)
+- Kubernetes cluster with storage provisioner
 - Enterprise credentials for accessing the private container image
+
+**Note:** The enterprise backend requires persistent storage for audit logs. The Helm chart will attempt to use your cluster's default storage class. If your cluster has no default storage class, you'll see instructions after installation on how to configure it.
 
 **Authentication:**
 

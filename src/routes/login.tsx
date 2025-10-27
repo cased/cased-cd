@@ -146,7 +146,7 @@ function LoginPage() {
               Powered by ArgoCD • Built by Cased
             </p>
             <p className="text-xs text-neutral-400 mt-1">
-              v{import.meta.env.PACKAGE_VERSION || '0.1.8'}
+              v{import.meta.env.PACKAGE_VERSION || '0.1.9'}
             </p>
           </div>
         </div>

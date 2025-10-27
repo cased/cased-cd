@@ -48,8 +48,14 @@ enterprise:
   persistence:
     # Storage size for audit logs (supports ~20M events at 10GB)
     size: 10Gi
-    # Storage class (leave empty to use cluster default)
-    storageClass: ""
+    # Storage class name
+    # If not set (null), the chart will try to use the cluster's default storage class
+    # If you experience PVC binding issues, set this explicitly to match your cluster:
+    #   AWS EKS: gp2, gp3
+    #   Google GKE: standard, standard-rwo
+    #   Azure AKS: default, managed-premium
+    #   k3d/k3s: local-path
+    storageClass: null
 
 service:
   # Service type (ClusterIP, NodePort, LoadBalancer)

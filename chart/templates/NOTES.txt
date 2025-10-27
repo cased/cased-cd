@@ -39,7 +39,39 @@
 3. Configuration:
    ArgoCD Server: {{ .Values.argocd.server }}
 
+{{- if .Values.enterprise.enabled }}
+
+4. Enterprise Features Enabled:
+   - RBAC Management
+   - Audit Trail (PersistentVolume)
+   - User Management
+   - Notification Services
+
+   Check audit PVC status:
+   kubectl get pvc -n {{ .Release.Namespace }} {{ include "cased-cd.fullname" . }}-enterprise-audit
+
+   ⚠️  If PVC is stuck in Pending state:
+
+   Check if a default storage class exists:
+   kubectl get storageclass
+
+   If no storage class is marked (default), you must set one explicitly:
+   helm upgrade {{ .Release.Name }} cased/cased-cd \
+     --namespace {{ .Release.Namespace }} \
+     --reuse-values \
+     --set enterprise.persistence.storageClass=<storage-class-name>
+
+   Common storage classes:
+   - AWS EKS: gp2, gp3
+   - Google GKE: standard, standard-rwo
+   - Azure AKS: default, managed-premium
+   - k3d/k3s: local-path
+
+5. Learn more about Cased:
+{{- else }}
+
 4. Learn more about Cased:
+{{- end }}
    Website: https://cased.com
    Docs: https://docs.cased.com
 
