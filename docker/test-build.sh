@@ -164,13 +164,20 @@ test_nginx_config_generation() {
   docker exec cased-cd-test-config cat /tmp/nginx.conf > /tmp/generated-nginx.conf 2>/dev/null || true
 
   if [ -f /tmp/generated-nginx.conf ]; then
-    # Check that PROXY_TARGET was substituted
-    if grep -q "proxy_pass http://test-enterprise.svc:8081" /tmp/generated-nginx.conf; then
-      pass "nginx config correctly substitutes PROXY_TARGET"
+    # Check that proxy_backend variable is set with PROXY_TARGET
+    if grep -q "set \$proxy_backend \"http://test-enterprise.svc:8081\"" /tmp/generated-nginx.conf; then
+      pass "nginx config correctly sets proxy_backend variable"
     else
-      fail "nginx config does not contain expected proxy_pass target"
+      fail "nginx config does not contain expected proxy_backend variable"
       info "Config snippet:"
-      grep "proxy_pass" /tmp/generated-nginx.conf | head -5
+      grep -E "(set \$proxy_backend|proxy_pass)" /tmp/generated-nginx.conf | head -5
+    fi
+
+    # Check that proxy_pass uses the variable
+    if grep -q "proxy_pass \$proxy_backend" /tmp/generated-nginx.conf; then
+      pass "proxy_pass directives correctly use variable"
+    else
+      fail "proxy_pass directives not using variable"
     fi
 
     # Check that template variables are not left unsubstituted

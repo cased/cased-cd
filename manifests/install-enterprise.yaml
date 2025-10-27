@@ -5,10 +5,10 @@ kind: ServiceAccount
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: cased-cd/templates/enterprise-pvc.yaml
@@ -17,10 +17,10 @@ kind: PersistentVolumeClaim
 metadata:
   name: cased-cd-enterprise-audit
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: enterprise
 spec:
@@ -36,10 +36,10 @@ kind: Role
 metadata:
   name: cased-cd-enterprise
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
@@ -57,10 +57,10 @@ kind: RoleBinding
 metadata:
   name: cased-cd-enterprise
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -77,10 +77,10 @@ kind: Service
 metadata:
   name: cased-cd-enterprise
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: enterprise
 spec:
@@ -101,10 +101,10 @@ kind: Service
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
@@ -123,10 +123,10 @@ kind: Deployment
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -157,7 +157,7 @@ spec:
             readOnlyRootFilesystem: false
             seccompProfile:
               type: RuntimeDefault
-          image: ghcr.io/cased/cased-cd:0.1.10
+          image: ghcr.io/cased/cased-cd:0.1.11
           imagePullPolicy: IfNotPresent
           env:
             - name: ARGOCD_SERVER
@@ -200,10 +200,10 @@ kind: Deployment
 metadata:
   name: cased-cd-enterprise
   labels:
-    helm.sh/chart: cased-cd-0.1.10
+    helm.sh/chart: cased-cd-0.1.11
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/version: "0.1.11"
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/component: enterprise
 spec:
@@ -229,7 +229,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: enterprise
-          image: "ghcr.io/cased/cased-cd-enterprise:0.1.10"
+          image: "ghcr.io/cased/cased-cd-enterprise:0.1.11"
           imagePullPolicy: IfNotPresent
           env:
             - name: ARGOCD_SERVER
