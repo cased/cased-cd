@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router'
+import { createFileRoute, Link, Outlet, useNavigate, useParams, useRouterState } from '@tanstack/react-router'
 import { useState, useEffect } from 'react'
 import {
   IconCircleForward,
@@ -215,14 +215,12 @@ function ApplicationDetailLayout() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
-                    onClick={() => navigate({ to: '/applications' })}
+                  <Link
+                    to="/applications"
+                    className="text-sm text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white"
                   >
                     Applications
-                  </Button>
+                  </Link>
                 </BreadcrumbItem>
                 <BreadcrumbSeparator>
                   <IconChevronRight size={14} />

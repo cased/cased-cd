@@ -3,5 +3,5 @@ interface PageTitleProps {
 }
 
 export function PageTitle({ children }: PageTitleProps) {
-  return <h1 className="text-lg font-semibold text-foreground">{children}</h1>;
+  return <h1 className="text-lg font-medium text-foreground">{children}</h1>;
 }
