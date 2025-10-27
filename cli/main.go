@@ -140,8 +140,9 @@ func handleAccess() {
 	// Check for Service
 	service, err := clientset.CoreV1().Services(namespace).Get(ctx, "cased-cd", metav1.GetOptions{})
 	if err != nil {
-		fmt.Printf("%s✗%s Cased CD service not found in namespace '%s'\n", colorRed, colorReset, namespace)
-		fmt.Printf("  Run %scased-cd doctor%s to check installation\n\n", colorCyan, colorReset)
+		fmt.Printf("%s✗%s Cased CD service not found in namespace '%s'\n\n", colorRed, colorReset, namespace)
+		fmt.Printf("Cased CD doesn't appear to be installed.\n")
+		fmt.Printf("Run %scased-cd doctor%s for installation instructions.\n\n", colorCyan, colorReset)
 		return
 	}
 
@@ -208,6 +209,7 @@ func handleDoctor() {
 
 	ctx := context.Background()
 	allHealthy := true
+	casedCDInstalled := false
 
 	// Check Cased CD frontend deployment
 	fmt.Printf("%sChecking Cased CD frontend...%s\n", bold, colorReset)
@@ -216,6 +218,7 @@ func handleDoctor() {
 		fmt.Printf("  %s✗%s Deployment not found\n", colorRed, colorReset)
 		allHealthy = false
 	} else {
+		casedCDInstalled = true
 		if frontendDep.Status.ReadyReplicas == frontendDep.Status.Replicas && frontendDep.Status.Replicas > 0 {
 			fmt.Printf("  %s✓%s Deployment healthy (%d/%d replicas ready)\n", colorGreen, colorReset, frontendDep.Status.ReadyReplicas, frontendDep.Status.Replicas)
 		} else {
@@ -274,13 +277,30 @@ func handleDoctor() {
 		fmt.Printf("  %s✓%s ArgoCD server found\n", colorGreen, colorReset)
 	}
 
-	// Summary
+	// Summary and guidance
 	fmt.Println()
 	if allHealthy {
 		fmt.Printf("%s✓ All checks passed!%s\n\n", colorGreen+bold, colorReset)
 	} else {
-		fmt.Printf("%s✗ Some checks failed%s\n", colorRed+bold, colorReset)
-		fmt.Printf("  Review the errors above and fix any issues.\n\n")
+		fmt.Printf("%s✗ Some checks failed%s\n\n", colorRed+bold, colorReset)
+
+		if !casedCDInstalled {
+			fmt.Printf("%sℹ️  Cased CD is not installed%s\n\n", colorCyan, colorReset)
+			fmt.Printf("To install Cased CD:\n\n")
+			fmt.Printf("  %s# Add the Helm repository%s\n", colorPurple, colorReset)
+			fmt.Printf("  helm repo add cased https://cased.github.io/cased-cd\n")
+			fmt.Printf("  helm repo update\n\n")
+			fmt.Printf("  %s# Install standard edition%s\n", colorPurple, colorReset)
+			fmt.Printf("  helm install cased-cd cased/cased-cd --namespace %s\n\n", namespace)
+			fmt.Printf("  %s# Or install with enterprise features%s\n", colorPurple, colorReset)
+			fmt.Printf("  helm install cased-cd cased/cased-cd \\\n")
+			fmt.Printf("    --namespace %s \\\n", namespace)
+			fmt.Printf("    --set enterprise.enabled=true \\\n")
+			fmt.Printf("    --set enterprise.persistence.size=10Gi\n\n")
+			fmt.Printf("For more information: https://github.com/cased/cased-cd\n\n")
+		} else {
+			fmt.Printf("Review the errors above and fix any issues.\n\n")
+		}
 		os.Exit(1)
 	}
 }
@@ -294,10 +314,12 @@ func handleVersion() {
 	}
 
 	ctx := context.Background()
+	foundAny := false
 
 	// Get frontend version
 	frontendDep, err := clientset.AppsV1().Deployments(namespace).Get(ctx, "cased-cd", metav1.GetOptions{})
 	if err == nil {
+		foundAny = true
 		image := ""
 		if len(frontendDep.Spec.Template.Spec.Containers) > 0 {
 			image = frontendDep.Spec.Template.Spec.Containers[0].Image
@@ -308,6 +330,7 @@ func handleVersion() {
 	// Get enterprise version
 	enterpriseDep, err := clientset.AppsV1().Deployments(namespace).Get(ctx, "cased-cd-enterprise", metav1.GetOptions{})
 	if err == nil {
+		foundAny = true
 		image := ""
 		if len(enterpriseDep.Spec.Template.Spec.Containers) > 0 {
 			image = enterpriseDep.Spec.Template.Spec.Containers[0].Image
@@ -321,6 +344,11 @@ func handleVersion() {
 		if chartVersion != "" {
 			fmt.Printf("  %sHelm Chart:%s   %s\n", bold, colorReset, chartVersion)
 		}
+	}
+
+	if !foundAny {
+		fmt.Printf("No Cased CD components found in namespace '%s'\n", namespace)
+		fmt.Printf("Run %scased-cd doctor%s for installation instructions.\n", colorCyan, colorReset)
 	}
 
 	fmt.Println()
