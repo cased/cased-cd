@@ -17,10 +17,10 @@ http {
     scgi_temp_path        /tmp/scgi_temp;
 
     # Rate limiting zones
-    # Login endpoint: 5 requests per minute per IP, burst of 3
-    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=5r/m;
-    # General API: 100 requests per second per IP, burst of 50
-    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=100r/s;
+    # Login endpoint: 10 requests per minute per IP, burst of 5
+    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=10r/m;
+    # General API: 200 requests per second per IP, burst of 100
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=200r/s;
 
     # Logging
     access_log /var/log/nginx/access.log;
@@ -72,8 +72,8 @@ http {
 
         # Login endpoint with strict rate limiting
         location /api/v1/session {
-            # Rate limit: 5 requests per minute per IP, allow burst of 3
-            limit_req zone=login_limit burst=3 nodelay;
+            # Rate limit: 10 requests per minute per IP, allow burst of 5
+            limit_req zone=login_limit burst=5 nodelay;
 
             # Return 429 with custom error page on rate limit
             limit_req_status 429;
@@ -112,8 +112,8 @@ http {
 
         # Proxy API requests to ArgoCD server
         location /api/ {
-            # Rate limit: 100 requests per second per IP, allow burst of 50
-            limit_req zone=api_limit burst=50 nodelay;
+            # Rate limit: 200 requests per second per IP, allow burst of 100
+            limit_req zone=api_limit burst=100 nodelay;
             limit_req_status 429;
             # Handle preflight OPTIONS requests
             if ($request_method = 'OPTIONS') {
