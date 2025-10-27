@@ -452,8 +452,47 @@ The CLI helps you:
 
 ### Installation
 
-Build the CLI from source:
+Download pre-built binaries from the [latest release](https://github.com/cased/cased-cd/releases/latest):
 
+**macOS (Apple Silicon):**
+```bash
+curl -LO https://github.com/cased/cased-cd/releases/latest/download/cased-cd-darwin-arm64.tar.gz
+tar xzf cased-cd-darwin-arm64.tar.gz
+chmod +x cased-cd-darwin-arm64
+sudo mv cased-cd-darwin-arm64 /usr/local/bin/cased-cd
+```
+
+**macOS (Intel):**
+```bash
+curl -LO https://github.com/cased/cased-cd/releases/latest/download/cased-cd-darwin-amd64.tar.gz
+tar xzf cased-cd-darwin-amd64.tar.gz
+chmod +x cased-cd-darwin-amd64
+sudo mv cased-cd-darwin-amd64 /usr/local/bin/cased-cd
+```
+
+**Linux (amd64):**
+```bash
+curl -LO https://github.com/cased/cased-cd/releases/latest/download/cased-cd-linux-amd64.tar.gz
+tar xzf cased-cd-linux-amd64.tar.gz
+chmod +x cased-cd-linux-amd64
+sudo mv cased-cd-linux-amd64 /usr/local/bin/cased-cd
+```
+
+**Linux (arm64):**
+```bash
+curl -LO https://github.com/cased/cased-cd/releases/latest/download/cased-cd-linux-arm64.tar.gz
+tar xzf cased-cd-linux-arm64.tar.gz
+chmod +x cased-cd-linux-arm64
+sudo mv cased-cd-linux-arm64 /usr/local/bin/cased-cd
+```
+
+**Windows (amd64):**
+```powershell
+# Download from: https://github.com/cased/cased-cd/releases/latest/download/cased-cd-windows-amd64.zip
+# Extract and add to PATH
+```
+
+**Build from source:**
 ```bash
 cd cli
 go build -o cased-cd .
