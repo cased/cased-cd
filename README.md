@@ -359,6 +359,109 @@ The backend is necessary for enterprise features because:
 - **Kubernetes**: 1.19+
 - **Browsers**: Modern browsers (Chrome, Firefox, Safari, Edge)
 
+## CLI Tool
+
+The `cased-cd` CLI is a debugging and context awareness tool designed to help you safely operate on Kubernetes clusters and troubleshoot Cased CD installations.
+
+### Why Use the CLI?
+
+**Prevent "oops I just deleted production" moments.** The CLI helps you:
+- Know exactly which cluster you're pointing at (local, staging, production)
+- Get clear visual warnings when operating on production
+- Quickly diagnose installation issues
+- Find the right way to access your deployment
+
+### Installation
+
+Build the CLI from source:
+
+```bash
+cd cli
+go build -o cased-cd .
+sudo mv cased-cd /usr/local/bin/  # Optional: make it available system-wide
+```
+
+### Commands
+
+#### `cased-cd context`
+
+Shows your current Kubernetes context with color-coded environment detection:
+
+```bash
+cased-cd context
+```
+
+**Output:**
+- **GREEN** = Local (k3d, kind, minikube, localhost)
+- **YELLOW** = Staging or remote cluster
+- **RED** = Production (with warning banner)
+
+Use this before making any destructive changes to ensure you're on the right cluster.
+
+#### `cased-cd doctor`
+
+Health check for your Cased CD installation:
+
+```bash
+cased-cd doctor
+```
+
+**Checks:**
+- ✓ Frontend deployment (replicas ready)
+- ✓ Enterprise backend deployment (if installed)
+- ✓ Audit log PVC (bound status, capacity)
+- ✓ Service existence
+- ✓ ArgoCD server connectivity
+
+#### `cased-cd access`
+
+Shows how to access your Cased CD installation:
+
+```bash
+cased-cd access
+```
+
+**Detects and displays (in priority order):**
+1. Ingress URLs (if configured)
+2. LoadBalancer external IPs (if available)
+3. Port-forward instructions (default)
+
+#### `cased-cd version`
+
+Shows versions of running components:
+
+```bash
+cased-cd version
+```
+
+**Displays:**
+- Frontend image and version
+- Enterprise backend image (if installed)
+- Helm chart version
+
+### Example Workflow
+
+```bash
+# Before making changes, check your context
+cased-cd context
+# ⚠️  WARNING: You are pointing at PRODUCTION!
+
+# Oops! Switch to local cluster
+kubectl config use-context k3d-cased-cd
+
+# Verify
+cased-cd context
+# ✓ Environment: LOCAL (k3d)
+
+# Check installation health
+cased-cd doctor
+# ✓ All checks passed!
+
+# Get access URL
+cased-cd access
+# http://localhost:8080 (via port-forward)
+```
+
 ## Troubleshooting
 
 ### Local Development: 404 Errors or RBAC Failures

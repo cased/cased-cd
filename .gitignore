@@ -53,3 +53,6 @@ coverage
 # Backend build artifacts
 backend/cased-backend
 backend/rbac-proxy
+
+# CLI build artifacts
+cli/cased-cd
