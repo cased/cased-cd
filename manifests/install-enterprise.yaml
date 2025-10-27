@@ -1,0 +1,276 @@
+---
+# Source: cased-cd/templates/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cased-cd
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: cased-cd/templates/enterprise-pvc.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cased-cd-enterprise-audit
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: enterprise
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: cased-cd/templates/enterprise-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cased-cd-enterprise
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["argocd-rbac-cm", "argocd-notifications-cm"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["argocd-secret"]
+    verbs: ["get", "update", "patch"]
+---
+# Source: cased-cd/templates/enterprise-role.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cased-cd-enterprise
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cased-cd-enterprise
+subjects:
+  - kind: ServiceAccount
+    name: cased-cd
+    namespace: argocd
+---
+# Source: cased-cd/templates/enterprise-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cased-cd-enterprise
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: enterprise
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8081
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/component: enterprise
+---
+# Source: cased-cd/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: cased-cd
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+---
+# Source: cased-cd/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cased-cd
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cased-cd
+      app.kubernetes.io/instance: cased-cd
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cased-cd
+        app.kubernetes.io/instance: cased-cd
+    spec:
+      serviceAccountName: cased-cd
+      securityContext:
+        fsGroup: 101
+        runAsNonRoot: true
+        runAsUser: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: cased-cd
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
+            readOnlyRootFilesystem: false
+            seccompProfile:
+              type: RuntimeDefault
+          image: ghcr.io/cased/cased-cd:0.1.10
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARGOCD_SERVER
+              value: "https://argocd-server.argocd.svc.cluster.local"
+            - name: ENTERPRISE_BACKEND_SERVICE
+              value: cased-cd-enterprise.argocd.svc.cluster.local
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+---
+# Source: cased-cd/templates/enterprise-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cased-cd-enterprise
+  labels:
+    helm.sh/chart: cased-cd-0.1.10
+    app.kubernetes.io/name: cased-cd
+    app.kubernetes.io/instance: cased-cd
+    app.kubernetes.io/version: "0.1.10"
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/component: enterprise
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cased-cd
+      app.kubernetes.io/instance: cased-cd
+      app.kubernetes.io/component: enterprise
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cased-cd
+        app.kubernetes.io/instance: cased-cd
+        app.kubernetes.io/component: enterprise
+    spec:
+      serviceAccountName: cased-cd
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: enterprise
+          image: "ghcr.io/cased/cased-cd-enterprise:0.1.10"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: ARGOCD_SERVER
+              value: "https://argocd-server.argocd.svc.cluster.local"
+            - name: PORT
+              value: "8081"
+          ports:
+            - name: http
+              containerPort: 8081
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: audit-logs
+              mountPath: /data/audit
+      volumes:
+        - name: audit-logs
+          persistentVolumeClaim:
+            claimName: cased-cd-enterprise-audit

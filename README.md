@@ -275,15 +275,29 @@ kubectl exec -n argocd deployment/cased-cd-enterprise -- tail -f /data/audit/eve
 
 ### Install with kubectl
 
-**Note:** This installs the **standard (non-enterprise)** version only. For enterprise features, use Helm.
-
+**Standard (non-enterprise):**
 ```bash
-# Apply the manifests
 kubectl apply -f https://cased.github.io/cased-cd/install.yaml
-
-# Access via port-forward
 kubectl port-forward -n argocd svc/cased-cd 8080:80
 ```
+
+**Enterprise (with audit trail and RBAC features):**
+```bash
+# First, create the imagePullSecret for the private enterprise image
+kubectl create secret docker-registry cased-enterprise \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_GITHUB_TOKEN \
+  --namespace=argocd
+
+# Apply the enterprise manifests
+kubectl apply -f https://cased.github.io/cased-cd/install-enterprise.yaml
+kubectl port-forward -n argocd svc/cased-cd 8080:80
+```
+
+**Note:** The enterprise manifest includes a PVC for audit logs. If your cluster doesn't have a default storage class, you'll need to either:
+- Use Helm to configure storage class explicitly, or
+- Edit the manifest to specify your storage class before applying
 
 **Important**: The static `install.yaml` assumes ArgoCD is installed in the `argocd` namespace with the default service name `argocd-server`. If your setup is different, you'll need to either:
 
