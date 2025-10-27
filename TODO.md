@@ -1,23 +1,37 @@
 # CasedCD Feature TODO
 
+## CLI Tool
+- [x] Basic CLI structure (context, doctor, access, version)
+- [x] Cluster context display
+- [x] Health checks for deployments
+- [x] Installation guidance (online help)
+- [x] Local development status checker
+- [ ] Audit log export command
+- [ ] Audit log tail/streaming command
+
 ## Notifications
-- [ ] Notifications UI page
-- [ ] List all ArgoCD notification configurations
-- [ ] Create/edit/delete notification triggers
-- [ ] Configure notification services (Slack, email, webhooks)
-- [ ] Test notifications
+- [x] Notifications UI page
+- [x] List all notification configurations
+- [x] Create/edit/delete notification services
+- [x] Configure notification services (Slack, email, webhooks)
+- [ ] Test notifications UI (send test notification)
 - [ ] Notification history view
 - [ ] Notification templates editor
 - [ ] Subscription management per application
 
 ## Audit Trails
-- [ ] Audit log viewer UI
-- [ ] Filter by user, action, resource, time range
+- [x] Audit log viewer UI
+- [x] Filter by user, action, time range
+- [x] Backend with PVC storage
+- [x] Login tracking
+- [x] RBAC change tracking
+- [x] Resource deletion tracking
+- [x] Detailed diff view for configuration changes
+- [ ] Server-side pagination for audit logs
 - [ ] Export audit logs (CSV, JSON)
 - [ ] Real-time audit log streaming
 - [ ] Audit log retention policies
 - [ ] Compliance reporting
-- [ ] Detailed diff view for configuration changes
 
 ## Security Enhancements
 - [ ] Implement CSRF protection
