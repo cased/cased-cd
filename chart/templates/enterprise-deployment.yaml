@@ -27,6 +27,8 @@ spec:
         runAsNonRoot: true
         runAsUser: 65532
         fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: enterprise
           image: "{{ .Values.enterprise.image.repository }}:{{ .Values.enterprise.image.tag | default .Chart.AppVersion }}"
@@ -55,6 +57,8 @@ spec:
               drop:
                 - ALL
             readOnlyRootFilesystem: false
+            seccompProfile:
+              type: RuntimeDefault
           volumeMounts:
             - name: audit-logs
               mountPath: /data/audit

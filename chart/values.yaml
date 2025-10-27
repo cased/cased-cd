@@ -107,6 +107,8 @@ podSecurityContext:
   runAsNonRoot: true
   runAsUser: 101  # nginx user
   fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
 
 # Container security context
 securityContext:
@@ -115,6 +117,8 @@ securityContext:
     drop:
       - ALL
   readOnlyRootFilesystem: false
+  seccompProfile:
+    type: RuntimeDefault
 
 # Liveness probe
 livenessProbe:
