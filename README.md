@@ -95,6 +95,44 @@ This is only possible with a backend component that sits between the UI and Argo
 | **Login Tracking** | ❌ | ✅ |
 | **Change History (Before/After)** | ❌ | ✅ |
 
+## Security
+
+Cased CD implements multiple layers of security to protect your deployment infrastructure:
+
+### Authentication & Authorization
+- **JWT-based authentication** via ArgoCD tokens
+- **bcrypt password hashing** with configurable cost factor (backend only)
+- **Role-based access control (RBAC)** inherited from ArgoCD
+- **Session management** with secure token storage
+
+### Rate Limiting
+- **Login endpoint**: 10 requests per minute per IP (burst: 5)
+- **API endpoints**: 200 requests per second per IP (burst: 100)
+- **Custom 429 error pages** with clear user feedback
+- **Protection against brute force attacks**
+
+### HTTP Security Headers
+- **Content Security Policy (CSP)** - Restricts resource loading to prevent XSS
+- **Strict-Transport-Security (HSTS)** - Forces HTTPS connections (1 year, includeSubDomains, preload)
+- **X-Frame-Options** - Prevents clickjacking attacks
+- **X-Content-Type-Options** - Prevents MIME sniffing
+- **Referrer-Policy** - Controls referrer information
+- **Permissions-Policy** - Disables unnecessary browser features
+- **X-XSS-Protection** - Legacy XSS filter (for older browsers)
+
+### Container Security
+- **Non-root user** - Containers run as UID 1000
+- **Read-only root filesystem** - Immutable container filesystem
+- **No privilege escalation** - `allowPrivilegeEscalation: false`
+- **Minimal capabilities** - All Linux capabilities dropped
+- **Seccomp profile** - RuntimeDefault security profile
+
+### Responsible Disclosure
+We take security seriously. If you discover a vulnerability:
+- Email: security@cased.com
+- View our security policy: `https://<your-domain>/.well-known/security.txt`
+- We aim to respond within 48 hours
+
 ## Quick Start
 
 ### Install with Helm (Recommended)
