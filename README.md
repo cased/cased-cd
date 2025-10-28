@@ -192,19 +192,18 @@ For other platforms, common storage classes are:
 
 **Authentication:**
 
-The enterprise backend image (`ghcr.io/cased/cased-cd-enterprise`) is private and requires authentication. Enterprise customers need to create an imagePullSecret:
+The enterprise backend image is distributed via our private registry at `registry.cased.com`. Enterprise customers receive a unique access token from Cased support and need to create an imagePullSecret:
 
 ```bash
-# Create a GitHub Personal Access Token with read:packages scope
-# Then create the secret in your cluster:
-kubectl create secret docker-registry cased-enterprise \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_TOKEN \
+# Create the secret with credentials provided by Cased support
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=YOUR_CUSTOMER_NAME \
+  --docker-password=YOUR_CUSTOMER_TOKEN \
   --namespace=argocd
 ```
 
-**Note:** This authentication mechanism may change in future releases to simplify deployment.
+Contact support@cased.com to receive your enterprise access credentials.
 
 **Deploy with Helm:**
 
@@ -217,8 +216,9 @@ helm repo update
 helm install cased-cd cased/cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
+  --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
   --set enterprise.persistence.size=10Gi \
-  --set imagePullSecrets[0].name=cased-enterprise
+  --set imagePullSecrets[0].name=cased-cd-registry
 ```
 
 **What gets deployed:**
@@ -283,11 +283,11 @@ kubectl port-forward -n argocd svc/cased-cd 8080:80
 
 **Enterprise (with audit trail and RBAC features):**
 ```bash
-# First, create the imagePullSecret for the private enterprise image
-kubectl create secret docker-registry cased-enterprise \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_TOKEN \
+# First, create the imagePullSecret with credentials from Cased support
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=YOUR_CUSTOMER_NAME \
+  --docker-password=YOUR_CUSTOMER_TOKEN \
   --namespace=argocd
 
 # Apply the enterprise manifests
@@ -299,7 +299,7 @@ kubectl port-forward -n argocd svc/cased-cd 8080:80
 
 1. **Disable audit trails** (simplest for testing):
    ```bash
-   helm install cased-cd https://cased.github.io/cased-cd/cased-cd-0.1.14.tgz \
+   helm install cased-cd https://cased.github.io/cased-cd/cased-cd-0.1.15.tgz \
      --namespace argocd \
      --set enterprise.enabled=true \
      --set enterprise.auditTrail.enabled=false \

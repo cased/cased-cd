@@ -164,7 +164,7 @@ kubectl create secret docker-registry cased-cd-registry \
 
 # Step 2: Install with Helm
 helm install cased-cd \
-  https://cased.github.io/cased-cd/cased-cd-0.1.14.tgz \
+  https://cased.github.io/cased-cd/cased-cd-0.1.15.tgz \
   --namespace argocd \
   --set enterprise.enabled=true \
   --set enterprise.auditTrail.enabled=true \

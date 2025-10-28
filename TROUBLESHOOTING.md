@@ -39,19 +39,19 @@ kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep 
 
 **Error:**
 ```
-Failed to pull image "docker.io/casedimages/cased-cd-enterprise:0.1.15":
+Failed to pull image "registry.cased.com/cased/cased-cd-enterprise:0.1.15":
 rpc error: code = Unknown desc = failed to pull and unpack image:
-failed to resolve reference "docker.io/casedimages/cased-cd-enterprise:0.1.15":
+failed to resolve reference "registry.cased.com/cased/cased-cd-enterprise:0.1.15":
 pull access denied, repository does not exist or may require authentication
 ```
 
 **Fix:**
 ```bash
-# Create the secret with your DockerHub token
+# Create the secret with your customer token (provided by Cased support)
 kubectl create secret docker-registry cased-cd-registry \
-  --docker-server=docker.io \
-  --docker-username=casedimages \
-  --docker-password=YOUR_TOKEN_HERE \
+  --docker-server=registry.cased.com \
+  --docker-username="YOUR_CUSTOMER_NAME" \
+  --docker-password="YOUR_CUSTOMER_TOKEN" \
   -n argocd
 
 # Verify it exists
@@ -69,6 +69,7 @@ kubectl get secrets -n argocd | grep docker-registry
 helm upgrade cased-cd cased-cd/cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
+  --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
   --set imagePullSecrets[0].name=cased-cd-registry  # ← Must match secret name
 ```
 
@@ -77,8 +78,8 @@ helm upgrade cased-cd cased-cd/cased-cd \
 **Check token validity:**
 ```bash
 # Try pulling the image manually
-docker login docker.io -u casedimages -p YOUR_TOKEN_HERE
-docker pull docker.io/casedimages/cased-cd-enterprise:0.1.15
+echo "YOUR_CUSTOMER_TOKEN" | docker login registry.cased.com -u "YOUR_CUSTOMER_NAME" --password-stdin
+docker pull registry.cased.com/cased/cased-cd-enterprise:0.1.15
 ```
 
 If this fails, contact support@cased.com for a new token.
