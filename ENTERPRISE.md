@@ -4,21 +4,21 @@ This document explains how the Cased CD enterprise distribution model works, inc
 
 ## Overview
 
-Cased CD uses a **private container registry access** model for enterprise licensing:
+Cased CD uses a **private container registry proxy** model for enterprise licensing:
 
 - **Standard Tier**: Public image at `ghcr.io/cased/cased-cd`
-- **Enterprise Tier**: Private image at `ghcr.io/cased/cased-cd-enterprise`
+- **Enterprise Tier**: Private image at `registry.cased.com/cased/cased-cd-enterprise`
 
-Access to the private enterprise image serves as the license mechanism - no license keys required. Each customer receives a unique **package-scoped** GitHub Personal Access Token that provides access ONLY to the enterprise image, ensuring excellent security isolation.
+Access to the private enterprise image serves as the license mechanism - no license keys required. Each customer receives a unique **scoped access token** that provides access ONLY to the enterprise image through our registry proxy, ensuring excellent security isolation.
 
 ## Image Distribution
 
 | Tier | Image | Registry | Visibility | Access |
 |------|-------|----------|------------|--------|
 | Standard | `ghcr.io/cased/cased-cd` | GitHub Container Registry | Public | Anyone |
-| Enterprise | `ghcr.io/cased/cased-cd-enterprise` | GitHub Container Registry | Private | Package-scoped PAT |
+| Enterprise | `registry.cased.com/cased/cased-cd-enterprise` | Cased Registry Proxy | Private | Scoped token |
 
-Enterprise images are distributed via GHCR with **fine-grained, package-scoped** Personal Access Tokens. Each customer token can ONLY pull the enterprise image and nothing else, providing superior security compared to account-wide tokens.
+Enterprise images are distributed via our private registry proxy at `registry.cased.com`. The proxy authenticates with GitHub Container Registry on behalf of customers using scoped tokens. Each customer token can ONLY pull the enterprise image and nothing else, providing superior security compared to direct GitHub PAT access.
 
 ## How Enterprise Detection Works
 
@@ -96,72 +96,70 @@ The enterprise package should be configured to allow fine-grained PAT access:
 
 ## Granting Customer Access
 
-Enterprise customers receive access via unique **fine-grained GitHub Personal Access Tokens** that are scoped to ONLY the enterprise package.
+Enterprise customers receive access via unique **scoped access tokens** for our private registry proxy at `registry.cased.com`.
 
-### GitHub Fine-Grained PAT Distribution
+### Registry Proxy Token Distribution
 
-Each customer receives a unique package-scoped PAT, providing superior security isolation. The token can ONLY pull the enterprise image - it cannot access source code, other packages, or perform any write operations.
+Each customer receives a unique token that is scoped to ONLY pull the enterprise image through our registry proxy. The token provides superior security isolation and can be instantly revoked.
 
 #### Prerequisites
 
-1. GitHub organization: `cased`
-2. Private package: `ghcr.io/cased/cased-cd-enterprise`
-3. Customer tracking system: `~/.cased-cd-customers.json`
+1. Access to production Comet deployment (where registry proxy runs)
+2. kubectl access to production cluster
 
 #### Creating Customer Access
 
-For each new customer:
+For each new customer, run the management command on the Comet production server:
 
-1. **Create Fine-Grained GitHub PAT**
-   - Log in to **your** GitHub account (that owns `cased` org)
-   - Go to **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
-   - Click **"Generate new token"**
-   - Configure:
-     - **Token name**: `customer-acme-corp` (use customer name for tracking)
-     - **Expiration**: 1 year (or custom)
-     - **Resource owner**: `cased` (your organization)
-     - **Repository access**: Select "Public Repositories (read-only)" (most restrictive option)
-       - *Note: This doesn't affect package access, but select this to avoid granting any repo permissions*
-     - **Permissions** → **Account permissions**:
-       - **Packages**: `Read-only` ⚠️ **This is the key permission for GHCR access**
-   - Click **"Generate token"**
-   - **Copy the token** (format: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
+```bash
+# Create a new customer token
+kubectl exec -n comet deployment/comet-web -- \
+  python manage.py registry_token create \
+    "Customer Name" \
+    "customer@example.com" \
+    --image cased-cd-enterprise \
+    --expires-days 365
+```
 
-2. **Add Customer to Tracking System**
-   ```bash
-   ./scripts/customers/manage.sh add \
-     "Acme Corp" \
-     "admin@acme.com" \
-     "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-   ```
+This will output a confirmation with a partial token (first 8 characters only for security).
 
-3. **Send Installation Instructions**
-   ```bash
-   # Generate ready-to-send instructions
-   ./scripts/customers/manage.sh instructions "Acme Corp"
-   ```
+#### Get Installation Instructions
 
-   This outputs complete kubectl and helm commands the customer can run directly.
+Generate complete installation instructions for the customer:
+
+```bash
+# Get full installation guide with token
+kubectl exec -n comet deployment/comet-web -- \
+  python manage.py registry_token instructions "Customer Name"
+```
+
+This outputs ready-to-send instructions including:
+- kubectl command to create the registry secret
+- Helm installation command
+- kubectl installation manifests
+- Troubleshooting steps
+
+Send these instructions to the customer via secure channel (email, Slack, etc.).
 
 #### Security Benefits
 
-✅ **Package-scoped**: Token works ONLY for `cased-cd-enterprise` package
+✅ **Image-scoped**: Token works ONLY for `cased-cd-enterprise` image
 ✅ **Read-only**: Cannot push, modify, or delete images
-✅ **Org-scoped**: Cannot access packages outside `cased` organization
+✅ **Proxy-isolated**: Customer never gets GitHub credentials
 ✅ **No code access**: Cannot read source code repositories
-✅ **Revocable**: Delete token instantly revokes all access
-✅ **Auditable**: GitHub tracks all package pulls
+✅ **Instant revocation**: Revoke token with one command
+✅ **Full audit trail**: All pulls logged in database
 
 #### Customer Installation
 
-The customer receives these instructions:
+The customer receives these instructions (automatically generated by the `instructions` command):
 
 ```bash
-# Step 1: Create GitHub Container Registry secret
+# Step 1: Create registry secret
 kubectl create secret docker-registry cased-cd-registry \
-  --docker-server=ghcr.io \
-  --docker-username=USERNAME \
-  --docker-password=ghp_customer_token_here \
+  --docker-server=registry.cased.com \
+  --docker-username=customer-name \
+  --docker-password=<unique-token-here> \
   -n argocd
 
 # Step 2: Install with Helm
@@ -170,7 +168,7 @@ helm install cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
   --set enterprise.auditTrail.enabled=true \
-  --set enterprise.image.repository=ghcr.io/cased/cased-cd-enterprise \
+  --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
   --set imagePullSecrets[0].name=cased-cd-registry
 
 # Step 3: Access the UI
@@ -178,22 +176,52 @@ kubectl port-forward svc/cased-cd 8080:80 -n argocd
 # Visit: http://localhost:8080
 ```
 
-**Note**: The `--docker-username` can be any valid GitHub username - it's not validated when using a PAT.
+**Or using kubectl:**
+
+```bash
+# Download the enterprise manifest
+curl -O https://raw.githubusercontent.com/cased/cased-cd/main/manifests/install-enterprise.yaml
+
+# Create the registry secret first
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=customer-name \
+  --docker-password=<unique-token-here> \
+  -n argocd
+
+# Apply the manifest
+kubectl apply -f install-enterprise.yaml -n argocd
+```
 
 #### Revoking Access
 
-When a customer's license expires:
+When a customer's license expires or needs to be revoked:
 
-1. Go to [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/tokens?type=beta)
-2. Find the token with customer name (e.g., `customer-acme-corp`)
-3. Click **Delete**
-4. Confirm deletion
-5. Update tracking system:
-   ```bash
-   ./scripts/customers/manage.sh revoke "Acme Corp"
-   ```
+```bash
+# Revoke the token instantly
+kubectl exec -n comet deployment/comet-web -- \
+  python manage.py registry_token revoke "Customer Name"
+```
 
 The customer will immediately lose access to pull new images (existing pods continue running until restarted).
+
+#### Managing Tokens
+
+View all customer tokens:
+
+```bash
+# List all tokens with status
+kubectl exec -n comet deployment/comet-web -- \
+  python manage.py registry_token list
+```
+
+View usage statistics:
+
+```bash
+# See pull counts and customer activity
+kubectl exec -n comet deployment/comet-web -- \
+  python manage.py registry_token stats
+```
 
 #### Troubleshooting
 
@@ -221,7 +249,7 @@ The enterprise Helm chart should include:
 ```yaml
 # values.yaml (Enterprise-specific)
 image:
-  repository: ghcr.io/cased/cased-cd-enterprise
+  repository: registry.cased.com/cased/cased-cd-enterprise
   tag: "1.0.0"
   pullPolicy: Always
 
@@ -310,15 +338,15 @@ This helps prioritize enterprise feature development.
 
 ### Credential Management
 
-- **Never commit GitHub PATs to git** - Customer data is stored in `~/.cased-cd-customers.json` (outside project)
-- No need for publisher tokens - GitHub Actions uses automatic `GITHUB_TOKEN`
-- Create **read-only, package-scoped** PATs for customers (never write access)
+- **All customer tokens stored in production database** - Secured by Kubernetes RBAC and database encryption
+- No need for publisher tokens - GitHub Actions uses automatic `GITHUB_TOKEN` for building
+- Registry proxy uses a single GitHub PAT (stored in SSM) to authenticate with GHCR
+- Customer tokens are **image-scoped** - can only pull the enterprise image
 - Use unique token per customer for easy revocation and tracking
-- Name tokens clearly (e.g., `customer-acme-corp`) to identify them later
-- Rotate customer tokens annually or on license renewal
-- Keep `~/.cased-cd-customers.json` backed up securely (contains token history)
-- File is created with `chmod 600` (owner read/write only) for extra security
-- **Package-scoped tokens** cannot access source code or other packages - excellent security isolation
+- Tokens stored with customer name/email in database for audit trail
+- Rotate customer tokens via management command before expiration
+- **All pulls logged** to database with timestamp, IP, and success/failure
+- **Instant revocation** - customer loses access immediately when token revoked
 
 ### Image Scanning
 
@@ -353,25 +381,29 @@ For comprehensive troubleshooting, see `TROUBLESHOOTING.md` and the diagnostic s
 
 ### Customer Can't Pull Enterprise Image
 
-**Error**: `Error response from daemon: pull access denied for ghcr.io/cased/cased-cd-enterprise`
+**Error**: `Error response from daemon: pull access denied for registry.cased.com/cased/cased-cd-enterprise`
 
 **Solutions**:
-1. Verify GitHub PAT hasn't expired
-2. Check token was created with **Packages: Read-only** permission
-3. Verify token is scoped to the correct organization (`cased`)
-4. Verify customer created the imagePullSecret correctly
-5. Test credentials locally:
+1. Verify token hasn't been revoked: `kubectl exec -n comet deployment/comet-web -- python manage.py registry_token list`
+2. Check token hasn't expired
+3. Verify customer created the imagePullSecret correctly with `--docker-server=registry.cased.com`
+4. Test credentials locally:
    ```bash
-   echo $GITHUB_PAT | docker login ghcr.io -u USERNAME --password-stdin
-   docker pull ghcr.io/cased/cased-cd-enterprise:latest
+   echo $TOKEN | docker login registry.cased.com -u customer-name --password-stdin
+   docker pull registry.cased.com/cased/cased-cd-enterprise:latest
    ```
-6. If token is invalid, create a new one and update customer's secret:
+5. If token is invalid, create a new one or update the existing secret:
    ```bash
+   # On your side: get token for customer
+   kubectl exec -n comet deployment/comet-web -- \
+     python manage.py registry_token instructions "Customer Name"
+
+   # Customer updates their secret:
    kubectl delete secret cased-cd-registry -n argocd
    kubectl create secret docker-registry cased-cd-registry \
-     --docker-server=ghcr.io \
-     --docker-username=USERNAME \
-     --docker-password=NEW_GITHUB_PAT \
+     --docker-server=registry.cased.com \
+     --docker-username=customer-name \
+     --docker-password=NEW_TOKEN \
      -n argocd
    ```
 
@@ -385,9 +417,9 @@ For comprehensive troubleshooting, see `TROUBLESHOOTING.md` and the diagnostic s
 **Debug**:
 ```bash
 # Check which image is running
-kubectl get deploy -n argocd cased-cd -o jsonpath='{.spec.template.spec.containers[0].image}'
+kubectl get deploy -n argocd cased-cd-enterprise -o jsonpath='{.spec.template.spec.containers[0].image}'
 
-# Should show: ghcr.io/cased/cased-cd-enterprise:xxx
+# Should show: registry.cased.com/cased/cased-cd-enterprise:xxx
 
 # Check RBAC backend logs
 kubectl logs -n argocd deployment/cased-cd -c rbac-backend

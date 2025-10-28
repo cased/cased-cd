@@ -141,6 +141,8 @@ spec:
         app.kubernetes.io/instance: cased-cd
     spec:
       serviceAccountName: cased-cd
+      imagePullSecrets:
+        - name: cased-cd-registry
       securityContext:
         fsGroup: 101
         runAsNonRoot: true
@@ -222,6 +224,8 @@ spec:
         app.kubernetes.io/component: enterprise
     spec:
       serviceAccountName: cased-cd
+      imagePullSecrets:
+        - name: cased-cd-registry
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
@@ -230,7 +234,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: enterprise
-          image: "ghcr.io/cased/cased-cd-enterprise:0.1.12"
+          image: "registry.cased.com/cased/cased-cd-enterprise:0.1.12"
           imagePullPolicy: IfNotPresent
           command: ["/app/cased-backend"]
           env:
