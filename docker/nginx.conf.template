@@ -54,6 +54,14 @@ http {
         root /usr/share/nginx/html;
         index index.html;
 
+        # Resolver for dynamic upstream resolution
+        # This allows nginx to resolve DNS at request time instead of startup
+        resolver 127.0.0.11 valid=10s ipv6=off;
+        resolver_timeout 5s;
+
+        # Set proxy target as a variable (enables runtime DNS resolution)
+        set $proxy_target "${PROXY_TARGET}";
+
         # Custom error pages
         error_page 429 /429.html;
         location = /429.html {
@@ -123,7 +131,7 @@ http {
             }
 
             # Proxy to backend (enterprise backend or ArgoCD directly)
-            proxy_pass ${PROXY_TARGET}/api/v1/session;
+            proxy_pass $proxy_target/api/v1/session;
             proxy_http_version 1.1;
 
             # SSL settings for HTTPS backends (allows self-signed certs)
@@ -164,7 +172,7 @@ http {
             }
 
             # Proxy to backend (enterprise backend or ArgoCD directly)
-            proxy_pass ${PROXY_TARGET}/api/;
+            proxy_pass $proxy_target/api/;
             proxy_http_version 1.1;
 
             # SSL settings for HTTPS backends (allows self-signed certs)

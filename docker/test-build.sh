@@ -164,11 +164,20 @@ test_nginx_config_generation() {
   docker exec cased-cd-test-config cat /tmp/nginx.conf > /tmp/generated-nginx.conf 2>/dev/null || true
 
   if [ -f /tmp/generated-nginx.conf ]; then
-    # Check that proxy_pass directives use the substituted PROXY_TARGET value directly
-    if grep -q "proxy_pass http://test-enterprise.svc:8081" /tmp/generated-nginx.conf; then
-      pass "nginx config correctly uses PROXY_TARGET in proxy_pass directives"
+    # Check that nginx uses variable for dynamic DNS resolution
+    if grep -q 'set \$proxy_target "http://test-enterprise.svc:8081"' /tmp/generated-nginx.conf; then
+      pass "nginx config correctly sets proxy_target variable"
     else
-      fail "nginx config does not contain expected proxy_pass with PROXY_TARGET"
+      fail "nginx config does not set proxy_target variable correctly"
+      info "Config snippet:"
+      grep -E "proxy_target" /tmp/generated-nginx.conf | head -5
+    fi
+
+    # Check that proxy_pass uses the variable
+    if grep -q 'proxy_pass \$proxy_target' /tmp/generated-nginx.conf; then
+      pass "nginx config uses variable in proxy_pass directives"
+    else
+      fail "nginx config does not use variable in proxy_pass directives"
       info "Config snippet:"
       grep -E "proxy_pass" /tmp/generated-nginx.conf | head -5
     fi
