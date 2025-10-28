@@ -54,9 +54,6 @@ http {
         root /usr/share/nginx/html;
         index index.html;
 
-        # Set proxy target as a variable to avoid DNS resolution at config time
-        set $proxy_backend "${PROXY_TARGET}";
-
         # Custom error pages
         error_page 429 /429.html;
         location = /429.html {
@@ -126,7 +123,7 @@ http {
             }
 
             # Proxy to backend (enterprise backend or ArgoCD directly)
-            proxy_pass $proxy_backend/api/v1/session;
+            proxy_pass ${PROXY_TARGET}/api/v1/session;
             proxy_http_version 1.1;
 
             # SSL settings for HTTPS backends (allows self-signed certs)
@@ -167,7 +164,7 @@ http {
             }
 
             # Proxy to backend (enterprise backend or ArgoCD directly)
-            proxy_pass $proxy_backend/api/;
+            proxy_pass ${PROXY_TARGET}/api/;
             proxy_http_version 1.1;
 
             # SSL settings for HTTPS backends (allows self-signed certs)
