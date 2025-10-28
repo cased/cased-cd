@@ -258,7 +258,7 @@ When a customer purchases enterprise:
   - Audit trail is working (if enabled)
 
 - [ ] **Documentation**
-  - Customer automatically recorded in `scripts/customers/customers.json`
+  - Customer automatically recorded in `~/.cased-cd-customers.json`
   - Set license expiration reminder in calendar/CRM
   - Note any special requirements or customizations
 
@@ -292,12 +292,13 @@ This helps prioritize enterprise feature development.
 
 ### Credential Management
 
-- **Never commit DockerHub tokens to git** - The `scripts/customers/` directory is in `.gitignore` for this reason
+- **Never commit DockerHub tokens to git** - Customer data is stored in `~/.cased-cd-customers.json` (outside project)
 - Store DockerHub publisher token (`DOCKERHUB_TOKEN`) in GitHub secrets only
 - Create **read-only** tokens for customers (never read-write)
 - Use unique token per customer for easy revocation
 - Rotate customer tokens annually or on license renewal
-- Keep `customers.json` backed up securely (contains token history)
+- Keep `~/.cased-cd-customers.json` backed up securely (contains token history)
+- File is created with `chmod 600` (owner read/write only) for extra security
 
 ### Image Scanning
 

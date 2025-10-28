@@ -57,7 +57,9 @@ backend/rbac-proxy
 # CLI build artifacts
 cli/cased-cd
 
-# Customer management (contains sensitive tokens)
+# Customer management
+# Database stored outside project: ~/.cased-cd-customers.json
+# Keeping this for safety in case files are accidentally created here
 scripts/customers/
 .customers.json
 customers.csv
