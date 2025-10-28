@@ -39,9 +39,9 @@ kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep 
 
 **Error:**
 ```
-Failed to pull image "docker.io/casedimages/cased-cd-enterprise:0.1.12":
+Failed to pull image "docker.io/casedimages/cased-cd-enterprise:0.1.14":
 rpc error: code = Unknown desc = failed to pull and unpack image:
-failed to resolve reference "docker.io/casedimages/cased-cd-enterprise:0.1.12":
+failed to resolve reference "docker.io/casedimages/cased-cd-enterprise:0.1.14":
 pull access denied, repository does not exist or may require authentication
 ```
 
@@ -78,7 +78,7 @@ helm upgrade cased-cd cased-cd/cased-cd \
 ```bash
 # Try pulling the image manually
 docker login docker.io -u casedimages -p YOUR_TOKEN_HERE
-docker pull docker.io/casedimages/cased-cd-enterprise:0.1.12
+docker pull docker.io/casedimages/cased-cd-enterprise:0.1.14
 ```
 
 If this fails, contact support@cased.com for a new token.
@@ -267,7 +267,7 @@ curl http://localhost:8081/health
 
 Expected response:
 ```json
-{"status":"ok","version":"0.1.12"}
+{"status":"ok","version":"0.1.14"}
 ```
 
 ---
@@ -284,7 +284,7 @@ kubectl get deployment cased-cd-enterprise -n argocd -o jsonpath='{.spec.templat
 helm upgrade cased-cd cased-cd/cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
-  --set enterprise.image.tag=0.1.12  # ← Specify version
+  --set enterprise.image.tag=0.1.14  # ← Specify version
 ```
 
 ---
