@@ -140,9 +140,9 @@ spec:
         app.kubernetes.io/name: cased-cd
         app.kubernetes.io/instance: cased-cd
     spec:
-      serviceAccountName: cased-cd
       imagePullSecrets:
         - name: cased-cd-registry
+      serviceAccountName: cased-cd
       securityContext:
         fsGroup: 101
         runAsNonRoot: true
@@ -223,9 +223,9 @@ spec:
         app.kubernetes.io/instance: cased-cd
         app.kubernetes.io/component: enterprise
     spec:
-      serviceAccountName: cased-cd
       imagePullSecrets:
         - name: cased-cd-registry
+      serviceAccountName: cased-cd
       securityContext:
         runAsNonRoot: true
         runAsUser: 65532
