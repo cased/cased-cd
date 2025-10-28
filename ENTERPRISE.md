@@ -7,18 +7,18 @@ This document explains how the Cased CD enterprise distribution model works, inc
 Cased CD uses a **private container registry access** model for enterprise licensing:
 
 - **Standard Tier**: Public image at `ghcr.io/cased/cased-cd`
-- **Enterprise Tier**: Private image at `docker.io/casedimages/cased-cd-enterprise`
+- **Enterprise Tier**: Private image at `ghcr.io/cased/cased-cd-enterprise`
 
-Access to the private enterprise image serves as the license mechanism - no license keys required. Each customer receives a unique DockerHub access token for pulling enterprise images.
+Access to the private enterprise image serves as the license mechanism - no license keys required. Each customer receives a unique **package-scoped** GitHub Personal Access Token that provides access ONLY to the enterprise image, ensuring excellent security isolation.
 
 ## Image Distribution
 
 | Tier | Image | Registry | Visibility | Access |
 |------|-------|----------|------------|--------|
-| Standard | `ghcr.io/cased/cased-cd` | GitHub Packages | Public | Anyone |
-| Enterprise | `docker.io/casedimages/cased-cd-enterprise` | DockerHub | Private | Per-customer token |
+| Standard | `ghcr.io/cased/cased-cd` | GitHub Container Registry | Public | Anyone |
+| Enterprise | `ghcr.io/cased/cased-cd-enterprise` | GitHub Container Registry | Private | Package-scoped PAT |
 
-Enterprise images are distributed exclusively via DockerHub with unique access tokens per customer. This provides clean separation from the open source distribution and doesn't require adding customers to the GitHub organization.
+Enterprise images are distributed via GHCR with **fine-grained, package-scoped** Personal Access Tokens. Each customer token can ONLY pull the enterprise image and nothing else, providing superior security compared to account-wide tokens.
 
 ## How Enterprise Detection Works
 
@@ -34,9 +34,9 @@ No license endpoint, no validation API - just endpoint presence detection.
 
 ### Prerequisites
 
-Before building enterprise images, configure GitHub Actions secrets (see `DOCKERHUB-SETUP.md`):
-- `DOCKERHUB_USERNAME`: `casedimages`
-- `DOCKERHUB_TOKEN`: Your DockerHub access token with read/write permissions
+No additional secrets needed! GitHub Actions automatically uses `GITHUB_TOKEN` to publish to GHCR. The workflow is configured to push to both:
+- Public standard image: `ghcr.io/cased/cased-cd`
+- Private enterprise image: `ghcr.io/cased/cased-cd-enterprise`
 
 ### Automated Builds (Recommended)
 
@@ -49,9 +49,10 @@ git push origin v1.0.0
 
 # GitHub Actions will:
 # 1. Build standard image → ghcr.io/cased/cased-cd:v1.0.0 (public)
-# 2. Build enterprise image → docker.io/casedimages/cased-cd-enterprise:v1.0.0 (private)
+# 2. Build enterprise image → ghcr.io/cased/cased-cd-enterprise:v1.0.0 (private)
 # 3. Tag both as :latest
-# 4. Push to respective registries
+# 4. Push to GitHub Container Registry
+# 5. Generate build provenance attestations for supply chain security
 ```
 
 ### Manual Builds
@@ -65,65 +66,73 @@ For local testing or custom builds:
 # Build enterprise tier
 ./scripts/build-enterprise.sh v1.0.0
 
-# Login to registries
+# Login to GitHub Container Registry
 echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
-echo $DOCKERHUB_TOKEN | docker login docker.io -u casedimages --password-stdin
 
 # Push images
 docker push ghcr.io/cased/cased-cd:v1.0.0
-docker push docker.io/casedimages/cased-cd-enterprise:v1.0.0
+docker push ghcr.io/cased/cased-cd-enterprise:v1.0.0
 ```
 
-## Setting Up DockerHub Repository (First Time)
+## Setting Up GHCR Package (First Time)
 
-### 1. Create the Private Repository
+### 1. Verify Package Visibility
 
-1. Log in to [hub.docker.com](https://hub.docker.com)
-2. Go to **Organizations** → `casedimages`
-3. Click **Create Repository**
-   - Name: `cased-cd-enterprise`
-   - Visibility: **Private**
-   - Description: "Cased CD Enterprise - Private container image for commercial customers"
-4. Click **Create**
+After the first GitHub Actions build:
 
-### 2. Verify Privacy Settings
+1. Go to https://github.com/orgs/cased/packages
+2. Find `cased-cd-enterprise` package
+3. Click **Package settings**
+4. Confirm **Visibility** is set to **Private**
+5. This ensures only authenticated users with tokens can pull the image
 
-1. Go to https://hub.docker.com/r/casedimages/cased-cd-enterprise/settings
-2. Confirm **Visibility** is set to **Private**
-3. This ensures only authenticated users with tokens can pull the image
+### 2. Configure Package Access
+
+The enterprise package should be configured to allow fine-grained PAT access:
+
+1. Go to package settings
+2. Under **Manage Actions access**, ensure organization members can create PATs
+3. Package-scoped tokens provide excellent security isolation
 
 ## Granting Customer Access
 
-Enterprise customers receive access via unique DockerHub access tokens.
+Enterprise customers receive access via unique **fine-grained GitHub Personal Access Tokens** that are scoped to ONLY the enterprise package.
 
-### DockerHub Per-Customer Token Distribution
+### GitHub Fine-Grained PAT Distribution
 
-Each customer receives a unique DockerHub access token, providing excellent isolation and revocation capabilities.
+Each customer receives a unique package-scoped PAT, providing superior security isolation. The token can ONLY pull the enterprise image - it cannot access source code, other packages, or perform any write operations.
 
 #### Prerequisites
 
-1. DockerHub organization: `casedimages`
-2. Private repository: `casedimages/cased-cd-enterprise`
-3. GitHub secrets configured (see `DOCKERHUB-SETUP.md`)
+1. GitHub organization: `cased`
+2. Private package: `ghcr.io/cased/cased-cd-enterprise`
+3. Customer tracking system: `~/.cased-cd-customers.json`
 
 #### Creating Customer Access
 
 For each new customer:
 
-1. **Create DockerHub Access Token**
-   - Log in to [hub.docker.com](https://hub.docker.com)
-   - Go to **Account Settings** → **Security** → **Access Tokens**
-   - Click **"New Access Token"**
-   - Description: Customer name (e.g., "Acme Corp")
-   - Permissions: **Read Only**
-   - Copy the token (format: `dckr_pat_xxxxxxxxxxxxx`)
+1. **Create Fine-Grained GitHub PAT**
+   - Log in to **your** GitHub account (that owns `cased` org)
+   - Go to **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens**
+   - Click **"Generate new token"**
+   - Configure:
+     - **Token name**: `customer-acme-corp` (use customer name for tracking)
+     - **Expiration**: 1 year (or custom)
+     - **Resource owner**: `cased` (your organization)
+     - **Repository access**: Select "Public Repositories (read-only)" (most restrictive option)
+       - *Note: This doesn't affect package access, but select this to avoid granting any repo permissions*
+     - **Permissions** → **Account permissions**:
+       - **Packages**: `Read-only` ⚠️ **This is the key permission for GHCR access**
+   - Click **"Generate token"**
+   - **Copy the token** (format: `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx`)
 
 2. **Add Customer to Tracking System**
    ```bash
    ./scripts/customers/manage.sh add \
      "Acme Corp" \
      "admin@acme.com" \
-     "dckr_pat_xxxxxxxxxxxxx"
+     "ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
    ```
 
 3. **Send Installation Instructions**
@@ -134,16 +143,25 @@ For each new customer:
 
    This outputs complete kubectl and helm commands the customer can run directly.
 
+#### Security Benefits
+
+✅ **Package-scoped**: Token works ONLY for `cased-cd-enterprise` package
+✅ **Read-only**: Cannot push, modify, or delete images
+✅ **Org-scoped**: Cannot access packages outside `cased` organization
+✅ **No code access**: Cannot read source code repositories
+✅ **Revocable**: Delete token instantly revokes all access
+✅ **Auditable**: GitHub tracks all package pulls
+
 #### Customer Installation
 
 The customer receives these instructions:
 
 ```bash
-# Step 1: Create Docker registry secret
+# Step 1: Create GitHub Container Registry secret
 kubectl create secret docker-registry cased-cd-registry \
-  --docker-server=docker.io \
-  --docker-username=casedimages \
-  --docker-password=dckr_pat_customer_token \
+  --docker-server=ghcr.io \
+  --docker-username=USERNAME \
+  --docker-password=ghp_customer_token_here \
   -n argocd
 
 # Step 2: Install with Helm
@@ -152,7 +170,7 @@ helm install cased-cd \
   --namespace argocd \
   --set enterprise.enabled=true \
   --set enterprise.auditTrail.enabled=true \
-  --set enterprise.image.repository=docker.io/casedimages/cased-cd-enterprise \
+  --set enterprise.image.repository=ghcr.io/cased/cased-cd-enterprise \
   --set imagePullSecrets[0].name=cased-cd-registry
 
 # Step 3: Access the UI
@@ -160,19 +178,22 @@ kubectl port-forward svc/cased-cd 8080:80 -n argocd
 # Visit: http://localhost:8080
 ```
 
+**Note**: The `--docker-username` can be any valid GitHub username - it's not validated when using a PAT.
+
 #### Revoking Access
 
 When a customer's license expires:
 
-1. Go to [DockerHub Settings](https://hub.docker.com/settings/security)
-2. Find the token with customer name in description
+1. Go to [GitHub Settings → Developer settings → Personal access tokens → Fine-grained tokens](https://github.com/settings/tokens?type=beta)
+2. Find the token with customer name (e.g., `customer-acme-corp`)
 3. Click **Delete**
-4. Update tracking system:
+4. Confirm deletion
+5. Update tracking system:
    ```bash
    ./scripts/customers/manage.sh revoke "Acme Corp"
    ```
 
-The customer will immediately lose access to pull new images (existing pods continue running).
+The customer will immediately lose access to pull new images (existing pods continue running until restarted).
 
 #### Troubleshooting
 
@@ -200,7 +221,7 @@ The enterprise Helm chart should include:
 ```yaml
 # values.yaml (Enterprise-specific)
 image:
-  repository: docker.io/casedimages/cased-cd-enterprise
+  repository: ghcr.io/cased/cased-cd-enterprise
   tag: "1.0.0"
   pullPolicy: Always
 
@@ -243,7 +264,7 @@ When a customer purchases enterprise:
   - Deployment namespace (usually `argocd`)
 
 - [ ] **Grant Access**
-  - Create unique DockerHub access token (read-only)
+  - Create unique fine-grained GitHub PAT (read-only, package-scoped)
   - Add customer to tracking system: `./scripts/customers/manage.sh add "Customer" "email" "token"`
 
 - [ ] **Provide Deployment Assets**
@@ -266,16 +287,13 @@ When a customer purchases enterprise:
 
 ### Package Download Stats
 
-View enterprise image pull statistics on DockerHub:
+View enterprise image pull statistics on GitHub:
 
-1. Log in to [hub.docker.com](https://hub.docker.com)
-2. Go to https://hub.docker.com/r/casedimages/cased-cd-enterprise
-3. View **Insights** tab for:
-   - Total pull count
-   - Pulls by tag/version
-   - Pull trend over time
+1. Go to https://github.com/orgs/cased/packages/container/cased-cd-enterprise
+2. View package **Insights** (if available)
+3. Check recent downloads and versions
 
-**Note**: DockerHub doesn't show which specific users pulled images, only aggregate statistics. Use the customer tracking system (`./scripts/customers/manage.sh list`) to manage active customers.
+**Note**: GitHub provides limited public statistics for private packages. For detailed tracking, use the customer tracking system (`./scripts/customers/manage.sh list`) to manage active customers and token expiration dates.
 
 ### Usage Analytics
 
@@ -292,24 +310,28 @@ This helps prioritize enterprise feature development.
 
 ### Credential Management
 
-- **Never commit DockerHub tokens to git** - Customer data is stored in `~/.cased-cd-customers.json` (outside project)
-- Store DockerHub publisher token (`DOCKERHUB_TOKEN`) in GitHub secrets only
-- Create **read-only** tokens for customers (never read-write)
-- Use unique token per customer for easy revocation
+- **Never commit GitHub PATs to git** - Customer data is stored in `~/.cased-cd-customers.json` (outside project)
+- No need for publisher tokens - GitHub Actions uses automatic `GITHUB_TOKEN`
+- Create **read-only, package-scoped** PATs for customers (never write access)
+- Use unique token per customer for easy revocation and tracking
+- Name tokens clearly (e.g., `customer-acme-corp`) to identify them later
 - Rotate customer tokens annually or on license renewal
 - Keep `~/.cased-cd-customers.json` backed up securely (contains token history)
 - File is created with `chmod 600` (owner read/write only) for extra security
+- **Package-scoped tokens** cannot access source code or other packages - excellent security isolation
 
 ### Image Scanning
 
-DockerHub automatically scans container images for vulnerabilities:
+Enable security scanning for GHCR packages:
 
-1. Log in to [hub.docker.com](https://hub.docker.com)
-2. Go to repository: `casedimages/cased-cd-enterprise`
-3. Check **Tags** tab
-4. Click on a tag to see security scan results
-5. Review any CVEs found
+1. Go to https://github.com/orgs/cased/packages/container/cased-cd-enterprise
+2. Navigate to **Package settings**
+3. Enable **Dependency graph** and **Dependabot alerts** (if available)
+4. GitHub will scan for known vulnerabilities
+5. Review security advisories in the GitHub Security tab
 6. Update dependencies and rebuild if needed
+
+Alternatively, use third-party scanning tools like Trivy or Snyk for comprehensive vulnerability scanning.
 
 ### Supply Chain Security
 
@@ -317,12 +339,13 @@ The GitHub Actions workflow implements:
 - Dependabot for dependency updates
 - SHA-pinned actions for reproducibility
 - Multi-platform builds (amd64, arm64)
-- Build provenance via GitHub attestations (for GHCR standard image)
+- Build provenance via GitHub attestations (for both standard and enterprise images)
+- Artifact attestation with subject digest tracking
 
 **Future enhancements**:
-- Docker Content Trust (DCT) for image signing on DockerHub
-- SBOM generation and publishing
+- SBOM (Software Bill of Materials) generation and publishing
 - Cosign signatures for supply chain verification
+- SLSA provenance level 3 compliance
 
 ## Troubleshooting
 
@@ -330,24 +353,25 @@ For comprehensive troubleshooting, see `TROUBLESHOOTING.md` and the diagnostic s
 
 ### Customer Can't Pull Enterprise Image
 
-**Error**: `Error response from daemon: pull access denied for docker.io/casedimages/cased-cd-enterprise`
+**Error**: `Error response from daemon: pull access denied for ghcr.io/cased/cased-cd-enterprise`
 
 **Solutions**:
-1. Verify DockerHub token hasn't expired
-2. Check token was created with **Read** permission
-3. Verify customer created the imagePullSecret correctly
-4. Test credentials locally:
+1. Verify GitHub PAT hasn't expired
+2. Check token was created with **Packages: Read-only** permission
+3. Verify token is scoped to the correct organization (`cased`)
+4. Verify customer created the imagePullSecret correctly
+5. Test credentials locally:
    ```bash
-   echo $DOCKERHUB_TOKEN | docker login docker.io -u casedimages --password-stdin
-   docker pull docker.io/casedimages/cased-cd-enterprise:latest
+   echo $GITHUB_PAT | docker login ghcr.io -u USERNAME --password-stdin
+   docker pull ghcr.io/cased/cased-cd-enterprise:latest
    ```
-5. If token is invalid, create a new one and update customer's secret:
+6. If token is invalid, create a new one and update customer's secret:
    ```bash
    kubectl delete secret cased-cd-registry -n argocd
    kubectl create secret docker-registry cased-cd-registry \
-     --docker-server=docker.io \
-     --docker-username=casedimages \
-     --docker-password=NEW_TOKEN \
+     --docker-server=ghcr.io \
+     --docker-username=USERNAME \
+     --docker-password=NEW_GITHUB_PAT \
      -n argocd
    ```
 
@@ -363,7 +387,7 @@ For comprehensive troubleshooting, see `TROUBLESHOOTING.md` and the diagnostic s
 # Check which image is running
 kubectl get deploy -n argocd cased-cd -o jsonpath='{.spec.template.spec.containers[0].image}'
 
-# Should show: docker.io/casedimages/cased-cd-enterprise:xxx
+# Should show: ghcr.io/cased/cased-cd-enterprise:xxx
 
 # Check RBAC backend logs
 kubectl logs -n argocd deployment/cased-cd -c rbac-backend
