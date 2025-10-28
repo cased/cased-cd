@@ -5,10 +5,10 @@ kind: ServiceAccount
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.14
+    helm.sh/chart: cased-cd-0.1.15
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.14"
+    app.kubernetes.io/version: "0.1.15"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: cased-cd/templates/service.yaml
@@ -17,10 +17,10 @@ kind: Service
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.14
+    helm.sh/chart: cased-cd-0.1.15
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.14"
+    app.kubernetes.io/version: "0.1.15"
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
@@ -39,10 +39,10 @@ kind: Deployment
 metadata:
   name: cased-cd
   labels:
-    helm.sh/chart: cased-cd-0.1.14
+    helm.sh/chart: cased-cd-0.1.15
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.1.14"
+    app.kubernetes.io/version: "0.1.15"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -73,7 +73,7 @@ spec:
             readOnlyRootFilesystem: false
             seccompProfile:
               type: RuntimeDefault
-          image: ghcr.io/cased/cased-cd:0.1.14
+          image: ghcr.io/cased/cased-cd:0.1.15
           imagePullPolicy: IfNotPresent
           command: ["/entrypoint.sh"]
           env:
