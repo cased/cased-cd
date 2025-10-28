@@ -47,7 +47,6 @@ DEPLOY.md
 CONTRIBUTING.md
 LICENSE
 *.md
-!CLAUDE.md
 
 # Development files
 .env*
