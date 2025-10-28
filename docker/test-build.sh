@@ -164,20 +164,13 @@ test_nginx_config_generation() {
   docker exec cased-cd-test-config cat /tmp/nginx.conf > /tmp/generated-nginx.conf 2>/dev/null || true
 
   if [ -f /tmp/generated-nginx.conf ]; then
-    # Check that proxy_backend variable is set with PROXY_TARGET
-    if grep -q "set \$proxy_backend \"http://test-enterprise.svc:8081\"" /tmp/generated-nginx.conf; then
-      pass "nginx config correctly sets proxy_backend variable"
+    # Check that proxy_pass directives use the substituted PROXY_TARGET value directly
+    if grep -q "proxy_pass http://test-enterprise.svc:8081" /tmp/generated-nginx.conf; then
+      pass "nginx config correctly uses PROXY_TARGET in proxy_pass directives"
     else
-      fail "nginx config does not contain expected proxy_backend variable"
+      fail "nginx config does not contain expected proxy_pass with PROXY_TARGET"
       info "Config snippet:"
-      grep -E "(set \$proxy_backend|proxy_pass)" /tmp/generated-nginx.conf | head -5
-    fi
-
-    # Check that proxy_pass uses the variable
-    if grep -q "proxy_pass \$proxy_backend" /tmp/generated-nginx.conf; then
-      pass "proxy_pass directives correctly use variable"
-    else
-      fail "proxy_pass directives not using variable"
+      grep -E "proxy_pass" /tmp/generated-nginx.conf | head -5
     fi
 
     # Check that template variables are not left unsubstituted
@@ -216,13 +209,24 @@ test_health_endpoint() {
   fi
 
   # Wait for nginx to start
-  sleep 3
+  sleep 5
+
+  # Check if container is running
+  if ! docker ps | grep -q cased-cd-test-health; then
+    fail "Container not running - check logs:"
+    docker logs cased-cd-test-health 2>&1 | tail -20
+    docker rm -f cased-cd-test-health > /dev/null 2>&1 || true
+    echo ""
+    return
+  fi
 
   # Check health endpoint
   if curl -f -s http://localhost:18080/health > /dev/null 2>&1; then
     pass "Health check endpoint responds successfully"
   else
     fail "Health check endpoint not responding"
+    info "Container logs:"
+    docker logs cased-cd-test-health 2>&1 | tail -10
   fi
 
   # Cleanup
