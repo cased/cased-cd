@@ -96,14 +96,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry (GHCR)
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Log in to DockerHub
         if: github.event_name != 'pull_request'
         uses: docker/login-action@v3
@@ -115,9 +107,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise
-            docker.io/casedimages/cased-cd-enterprise
+          images: docker.io/casedimages/cased-cd-enterprise
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -147,13 +137,9 @@ jobs:
             BUILD_DATE=${{ github.event.head_commit.timestamp }}
             VCS_REF=${{ github.sha }}
 
-      - name: Generate artifact attestation
-        if: github.event_name != 'pull_request'
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise
-          subject-digest: ${{ steps.build.outputs.digest }}
-          push-to-registry: true
+      # Note: Artifact attestation is a GitHub-specific feature for GHCR
+      # DockerHub uses Docker Content Trust (DCT) for image signing
+      # For future: Consider implementing cosign for supply chain security
 
   summary:
     name: Build Summary
@@ -170,33 +156,29 @@ jobs:
           ```
           ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd:${{ github.ref_name }}
           ```
+          - **Registry**: GitHub Container Registry (GHCR)
           - **Tier**: Free/Open Source
           - **Visibility**: Public
           - **Access**: Anyone can pull
 
           ### Enterprise Image (Private)
-          **GHCR:**
-          ```
-          ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise:${{ github.ref_name }}
-          ```
-
-          **DockerHub:**
           ```
           docker.io/casedimages/cased-cd-enterprise:${{ github.ref_name }}
           ```
-
+          - **Registry**: DockerHub
           - **Tier**: Commercial
           - **Visibility**: Private (requires credentials)
-          - **Access**: Enterprise customers only
+          - **Access**: Enterprise customers with unique tokens
 
           ### Platforms
           - `linux/amd64`
           - `linux/arm64`
 
           ### Next Steps
-          - View GHCR packages: https://github.com/orgs/${{ env.ORG }}/packages
-          - View DockerHub: https://hub.docker.com/r/casedimages/cased-cd-enterprise
-          - Ensure both repos are set to **Private**
+          - View standard image: https://github.com/orgs/${{ env.ORG }}/packages/container/cased-cd
+          - View enterprise image: https://hub.docker.com/r/casedimages/cased-cd-enterprise
+          - Ensure enterprise repo is set to **Private** on DockerHub
           - Use `./scripts/customers/manage.sh` to provision customer access
-          - See [ENTERPRISE.md](https://github.com/${{ github.repository }}/blob/main/ENTERPRISE.md) for customer access instructions
+          - See [ENTERPRISE.md](https://github.com/${{ github.repository }}/blob/main/ENTERPRISE.md) for customer onboarding
+          - See [TROUBLESHOOTING.md](https://github.com/${{ github.repository }}/blob/main/TROUBLESHOOTING.md) for support
           EOF
