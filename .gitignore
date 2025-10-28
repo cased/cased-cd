@@ -56,3 +56,8 @@ backend/rbac-proxy
 
 # CLI build artifacts
 cli/cased-cd
+
+# Customer management (contains sensitive tokens)
+scripts/customers/
+.customers.json
+customers.csv
