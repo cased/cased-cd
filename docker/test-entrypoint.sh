@@ -95,22 +95,23 @@ EOF
   fi
 }
 
-# Test 3: nginx template has PROXY_TARGET variable
+# Test 3: nginx template uses PROXY_TARGET with variable pattern
 test_nginx_template() {
-  info "Test 3: nginx template uses PROXY_TARGET"
+  info "Test 3: nginx template uses PROXY_TARGET with variable pattern"
 
-  if grep -q '${PROXY_TARGET}' "$SCRIPT_DIR/nginx.conf.template"; then
-    pass "nginx template uses PROXY_TARGET variable"
+  # Check that nginx sets $proxy_target variable from ${PROXY_TARGET}
+  if grep -q 'set \$proxy_target "\${PROXY_TARGET}"' "$SCRIPT_DIR/nginx.conf.template"; then
+    pass "nginx template sets \$proxy_target from PROXY_TARGET"
   else
-    fail "nginx template should use PROXY_TARGET, not ARGOCD_SERVER"
+    fail "nginx template should set \$proxy_target variable"
   fi
 
-  # Check it's used in the right places
-  PROXY_COUNT=$(grep -c '${PROXY_TARGET}' "$SCRIPT_DIR/nginx.conf.template" || true)
+  # Check that proxy_pass uses the nginx variable (enables dynamic DNS)
+  PROXY_COUNT=$(grep -c 'proxy_pass \$proxy_target' "$SCRIPT_DIR/nginx.conf.template" || true)
   if [ "$PROXY_COUNT" -ge 2 ]; then
-    pass "PROXY_TARGET used in $PROXY_COUNT locations (login + API)"
+    pass "proxy_pass uses \$proxy_target in $PROXY_COUNT locations"
   else
-    fail "PROXY_TARGET should be used at least twice (found $PROXY_COUNT)"
+    fail "proxy_pass should use \$proxy_target at least twice (found $PROXY_COUNT)"
   fi
 }
 
@@ -123,12 +124,19 @@ test_nginx_syntax() {
   cd "$TEST_DIR"
   envsubst '${PROXY_TARGET}' < "$SCRIPT_DIR/nginx.conf.template" > nginx.conf
 
-  # Validate that substitution worked
-  if grep -q "proxy_pass http://test-server:80" nginx.conf; then
-    pass "Template substitution produces valid proxy_pass directives"
+  # Validate that PROXY_TARGET was substituted into the set directive
+  if grep -q 'set \$proxy_target "http://test-server:80"' nginx.conf; then
+    pass "Template substitution sets \$proxy_target correctly"
   else
-    fail "Template substitution failed"
+    fail "Template substitution failed - \$proxy_target not set correctly"
     return
+  fi
+
+  # Validate that proxy_pass uses the variable
+  if grep -q 'proxy_pass \$proxy_target' nginx.conf; then
+    pass "proxy_pass uses nginx variable for dynamic DNS"
+  else
+    fail "proxy_pass should use \$proxy_target variable"
   fi
 
   # Validate no unsubstituted variables remain
