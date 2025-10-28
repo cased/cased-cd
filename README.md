@@ -295,9 +295,25 @@ kubectl apply -f https://cased.github.io/cased-cd/install-enterprise.yaml
 kubectl port-forward -n argocd svc/cased-cd 8080:80
 ```
 
-**Note:** The enterprise manifest includes a PVC for audit logs. If your cluster doesn't have a default storage class, you'll need to either:
-- Use Helm to configure storage class explicitly, or
-- Edit the manifest to specify your storage class before applying
+**Note:** The enterprise manifest includes a PVC for audit logs. If your cluster doesn't have a default storage class, you have several options:
+
+1. **Disable audit trails** (simplest for testing):
+   ```bash
+   helm install cased-cd https://cased.github.io/cased-cd/cased-cd-0.1.14.tgz \
+     --namespace argocd \
+     --set enterprise.enabled=true \
+     --set enterprise.auditTrail.enabled=false \
+     --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
+     --set imagePullSecrets[0].name=cased-cd-registry
+   ```
+
+2. **Install a storage provisioner** (for Talos/k3d/kind):
+   ```bash
+   kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+   kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+   ```
+
+3. **Edit the manifest** to specify your storage class before applying
 
 **Important**: The static `install.yaml` assumes ArgoCD is installed in the `argocd` namespace with the default service name `argocd-server`. If your setup is different, you'll need to either:
 
