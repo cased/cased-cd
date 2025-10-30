@@ -47,7 +47,7 @@ kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd | grep -A 5 "E
 
 **Error:**
 ```
-Failed to pull image "ghcr.io/cased/cased-cd:0.1.21":
+Failed to pull image "ghcr.io/cased/cased-cd:0.2.0":
 rpc error: code = Unknown desc = failed to pull and unpack image
 ```
 
@@ -69,7 +69,7 @@ The community image is public and shouldn't require authentication. This usually
    ```bash
    kubectl get deployment cased-cd -n argocd -o jsonpath='{.spec.template.spec.containers[0].image}'
    ```
-   Should be: `ghcr.io/cased/cased-cd:0.1.21` (or another valid version)
+   Should be: `ghcr.io/cased/cased-cd:0.2.0` (or another valid version)
 
 ---
 
