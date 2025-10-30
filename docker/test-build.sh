@@ -42,27 +42,9 @@ test_build_standard() {
   echo ""
 }
 
-# Test 2: Build enterprise image
-test_build_enterprise() {
-  section "Test 2: Build enterprise Docker image"
-
-  if docker build \
-    --target enterprise \
-    --tag cased-cd-test:enterprise \
-    --file "$PROJECT_ROOT/Dockerfile" \
-    "$PROJECT_ROOT" > /tmp/docker-build-enterprise.log 2>&1; then
-    pass "Enterprise image builds successfully"
-  else
-    fail "Enterprise image build failed (see /tmp/docker-build-enterprise.log)"
-    cat /tmp/docker-build-enterprise.log
-  fi
-
-  echo ""
-}
-
-# Test 3: Standard image configuration (no enterprise)
+# Test 2: Standard image configuration (no enterprise backend)
 test_standard_container_config() {
-  section "Test 3: Standard container configuration"
+  section "Test 2: Standard container configuration"
 
   # Start container with standard config
   CONTAINER_ID=$(docker run -d \
@@ -97,9 +79,9 @@ test_standard_container_config() {
   echo ""
 }
 
-# Test 4: Enterprise image configuration
+# Test 3: Enterprise mode configuration
 test_enterprise_container_config() {
-  section "Test 4: Enterprise container configuration"
+  section "Test 3: Enterprise mode configuration"
 
   # Start standard container with enterprise backend env var
   CONTAINER_ID=$(docker run -d \
@@ -141,9 +123,9 @@ test_enterprise_container_config() {
   echo ""
 }
 
-# Test 5: nginx configuration is generated correctly
+# Test 4: nginx configuration is generated correctly
 test_nginx_config_generation() {
-  section "Test 5: nginx configuration generation"
+  section "Test 4: nginx configuration generation"
 
   # Start container and extract generated config
   CONTAINER_ID=$(docker run -d \
@@ -200,9 +182,9 @@ test_nginx_config_generation() {
   echo ""
 }
 
-# Test 6: Health check endpoint works
+# Test 5: Health check endpoint works
 test_health_endpoint() {
-  section "Test 6: Health check endpoint"
+  section "Test 5: Health check endpoint"
 
   # Start container with port mapping
   CONTAINER_ID=$(docker run -d \
@@ -248,7 +230,7 @@ test_health_endpoint() {
 cleanup() {
   info "Cleaning up test containers and images..."
   docker rm -f cased-cd-test-standard cased-cd-test-enterprise-mode cased-cd-test-config cased-cd-test-health > /dev/null 2>&1 || true
-  docker rmi -f cased-cd-test:standard cased-cd-test:enterprise > /dev/null 2>&1 || true
+  docker rmi -f cased-cd-test:standard > /dev/null 2>&1 || true
   rm -f /tmp/docker-build-*.log /tmp/generated-nginx.conf
 }
 
@@ -256,7 +238,6 @@ trap cleanup EXIT
 
 # Run tests
 test_build_standard
-test_build_enterprise
 test_standard_container_config
 test_enterprise_container_config
 test_nginx_config_generation
