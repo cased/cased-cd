@@ -1,6 +1,6 @@
-# Cased CD Enterprise - Troubleshooting Guide
+# Cased CD - Troubleshooting Guide
 
-This guide helps diagnose and fix common installation issues.
+This guide helps diagnose and fix common installation issues for Cased CD Community Edition.
 
 > **⚠️ Important: Namespace Configuration**
 >
@@ -11,20 +11,19 @@ This guide helps diagnose and fix common installation issues.
 > kubectl get pods --all-namespaces | grep cased-cd
 > ```
 
-## Quick Diagnostic Script
+## Quick Diagnostic Commands
 
-Run this first to get a health report:
-
-```bash
-curl -sL https://raw.githubusercontent.com/cased/cased-cd/main/scripts/diagnose.sh | bash
-```
-
-Or manually:
+Run these first to get a health report:
 
 ```bash
+# Check pod status
 kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
-kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd
+
+# View recent logs
 kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=50
+
+# Describe pod for events
+kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd
 ```
 
 ---
@@ -36,62 +35,41 @@ kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=50
 **Symptom:**
 ```
 NAME                        READY   STATUS             RESTARTS   AGE
-cased-cd-enterprise-xxx     0/1     ImagePullBackOff   0          2m
+cased-cd-xxx                0/1     ImagePullBackOff   0          2m
 ```
 
 **Check the error:**
 ```bash
-kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep -A 5 "Events:"
+kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd | grep -A 5 "Events:"
 ```
 
-#### Cause A: imagePullSecret Not Created
+#### Cause: Cannot Pull Image from GitHub Container Registry
 
 **Error:**
 ```
-Failed to pull image "registry.cased.com/cased/cased-cd-enterprise:0.1.16":
-rpc error: code = Unknown desc = failed to pull and unpack image:
-failed to resolve reference "registry.cased.com/cased/cased-cd-enterprise:0.1.16":
-pull access denied, repository does not exist or may require authentication
+Failed to pull image "ghcr.io/cased/cased-cd:0.1.21":
+rpc error: code = Unknown desc = failed to pull and unpack image
 ```
 
 **Fix:**
-```bash
-# Create the secret with your customer token (provided by Cased support)
-kubectl create secret docker-registry cased-cd-registry \
-  --docker-server=registry.cased.com \
-  --docker-username="YOUR_CUSTOMER_NAME" \
-  --docker-password="YOUR_CUSTOMER_TOKEN" \
-  -n argocd
 
-# Verify it exists
-kubectl get secret cased-cd-registry -n argocd
-```
+The community image is public and shouldn't require authentication. This usually means:
 
-#### Cause B: Wrong Secret Name in Helm Values
+1. **Network connectivity issue** - Your cluster cannot reach ghcr.io
+   ```bash
+   # Test from a pod in your cluster
+   kubectl run test --rm -it --image=alpine -- wget -O- https://ghcr.io
+   ```
 
-**Fix:**
-```bash
-# Check what secret name you used
-kubectl get secrets -n argocd | grep docker-registry
+2. **Rate limiting** - GitHub Container Registry has rate limits
+   - Wait a few minutes and try again
+   - Or use a specific version tag instead of `latest`
 
-# Reinstall with correct secret name
-helm upgrade cased-cd cased-cd/cased-cd \
-  --namespace argocd \
-  --set enterprise.enabled=true \
-  --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
-  --set imagePullSecrets[0].name=cased-cd-registry  # ← Must match secret name
-```
-
-#### Cause C: Token Expired or Invalid
-
-**Check token validity:**
-```bash
-# Try pulling the image manually
-echo "YOUR_CUSTOMER_TOKEN" | docker login registry.cased.com -u "YOUR_CUSTOMER_NAME" --password-stdin
-docker pull registry.cased.com/cased/cased-cd-enterprise:0.1.16
-```
-
-If this fails, contact support@cased.com for a new token.
+3. **Wrong image name** - Check your deployment
+   ```bash
+   kubectl get deployment cased-cd -n argocd -o jsonpath='{.spec.template.spec.containers[0].image}'
+   ```
+   Should be: `ghcr.io/cased/cased-cd:0.1.21` (or another valid version)
 
 ---
 
@@ -100,12 +78,12 @@ If this fails, contact support@cased.com for a new token.
 **Symptom:**
 ```
 NAME                        READY   STATUS             RESTARTS   AGE
-cased-cd-enterprise-xxx     0/1     CrashLoopBackOff   5          5m
+cased-cd-xxx                0/1     CrashLoopBackOff   5          5m
 ```
 
 **Check logs:**
 ```bash
-kubectl logs -n argocd -l app.kubernetes.io/component=enterprise --tail=100
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=100
 ```
 
 #### Cause A: Cannot Connect to ArgoCD Server
@@ -113,6 +91,7 @@ kubectl logs -n argocd -l app.kubernetes.io/component=enterprise --tail=100
 **Error in logs:**
 ```
 Failed to connect to ArgoCD server: dial tcp 10.96.0.1:443: connect: connection refused
+nginx: [emerg] host not found in upstream "argocd-server.argocd.svc.cluster.local"
 ```
 
 **Check ArgoCD is running:**
@@ -120,157 +99,54 @@ Failed to connect to ArgoCD server: dial tcp 10.96.0.1:443: connect: connection 
 kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server
 ```
 
-**Fix:**
+**Fix 1: If ArgoCD server isn't running**
 ```bash
-# If ArgoCD server isn't running, install/restart it first
-kubectl rollout status deployment/argocd-server -n argocd
+# Check ArgoCD installation
+kubectl get all -n argocd
 
-# Then restart Cased CD
-kubectl rollout restart deployment/cased-cd-enterprise -n argocd
+# If ArgoCD isn't installed, install it first:
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# Wait for ArgoCD to be ready
+kubectl wait --for=condition=available --timeout=600s deployment/argocd-server -n argocd
 ```
 
-#### Cause B: Missing Environment Variables
+**Fix 2: If ArgoCD is in a different namespace or has custom service name**
 
-**Check env vars are set:**
+Using Helm (recommended):
 ```bash
-kubectl get deployment cased-cd-enterprise -n argocd -o yaml | grep -A 10 "env:"
+helm upgrade cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set argocd.server="https://my-argocd.custom-namespace.svc.cluster.local"
 ```
 
-Should include:
-```yaml
-env:
-  - name: ARGOCD_SERVER
-    value: "https://argocd-server.argocd.svc.cluster.local"
-  - name: PORT
-    value: "8081"
+Or edit the static install.yaml before applying.
+
+#### Cause B: Wrong ArgoCD Server URL
+
+**Check the configured URL:**
+```bash
+kubectl get deployment cased-cd -n argocd -o yaml | grep -A 2 "ARGOCD_SERVER"
+```
+
+**Default value:** `https://argocd-server.argocd.svc.cluster.local`
+
+If your ArgoCD uses a different namespace or service name, update it:
+```bash
+helm upgrade cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set argocd.server="https://argocd-server.NAMESPACE.svc.cluster.local"
 ```
 
 ---
 
-### 3. PersistentVolumeClaim Stuck in `Pending`
-
-**Symptom:**
-```bash
-$ kubectl get pvc -n argocd
-NAME                          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS
-cased-cd-enterprise-audit     Pending
-```
-
-**Check the error:**
-```bash
-kubectl describe pvc cased-cd-enterprise-audit -n argocd
-```
-
-#### Cause A: No Default StorageClass
-
-**Error:**
-```
-no persistent volumes available for this claim and no storage class is set
-```
-
-**Check storage classes:**
-```bash
-kubectl get storageclass
-```
-
-**Fix - Option 1: Use existing storage class:**
-```bash
-helm upgrade cased-cd cased-cd/cased-cd \
-  --namespace argocd \
-  --set enterprise.enabled=true \
-  --set enterprise.auditTrail.storageClass=gp2  # ← Use your storage class name
-```
-
-**Fix - Option 2: Disable PVC (audit logs go to pod logs):**
-```bash
-helm upgrade cased-cd cased-cd/cased-cd \
-  --namespace argocd \
-  --set enterprise.enabled=true \
-  --set enterprise.auditTrail.enabled=false  # ← Disable persistent audit logs
-```
-
-#### Cause B: Missing EBS CSI Driver (AWS EKS)
-
-**Error:**
-```
-waiting for first consumer to be created before binding
-Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com'
-or manually by the system administrator
-```
-
-**On AWS EKS**, the EBS CSI driver is required for persistent volumes but is **not installed by default**.
-
-**Check if EBS CSI driver is installed:**
-```bash
-kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
-aws eks list-addons --cluster-name YOUR_CLUSTER_NAME
-```
-
-**Fix - Install EBS CSI driver:**
-
-1. Create IAM role for the driver:
-```bash
-# Get your cluster's OIDC provider
-OIDC_ID=$(aws eks describe-cluster --name YOUR_CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
-
-# Create trust policy
-cat > ebs-csi-trust-policy.json << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {
-      "Federated": "arn:aws:iam::YOUR_ACCOUNT_ID:oidc-provider/oidc.eks.REGION.amazonaws.com/id/$OIDC_ID"
-    },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": {
-      "StringEquals": {
-        "oidc.eks.REGION.amazonaws.com/id/$OIDC_ID:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa",
-        "oidc.eks.REGION.amazonaws.com/id/$OIDC_ID:aud": "sts.amazonaws.com"
-      }
-    }
-  }]
-}
-EOF
-
-# Create IAM role
-aws iam create-role \
-  --role-name AmazonEKS_EBS_CSI_DriverRole \
-  --assume-role-policy-document file://ebs-csi-trust-policy.json
-
-# Attach policy
-aws iam attach-role-policy \
-  --role-name AmazonEKS_EBS_CSI_DriverRole \
-  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy
-```
-
-2. Install the addon:
-```bash
-aws eks create-addon \
-  --cluster-name YOUR_CLUSTER_NAME \
-  --addon-name aws-ebs-csi-driver \
-  --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole
-```
-
-3. Wait for it to become active (takes ~60 seconds):
-```bash
-aws eks describe-addon \
-  --cluster-name YOUR_CLUSTER_NAME \
-  --addon-name aws-ebs-csi-driver \
-  --query 'addon.status'
-```
-
-Once the driver is active, the PVC will automatically bind.
-
----
-
-### 4. Cannot Access UI (Connection Refused)
+### 3. Cannot Access UI (Connection Refused)
 
 **Symptom:**
 ```bash
 $ kubectl port-forward svc/cased-cd 8080:80 -n argocd
 Forwarding from 127.0.0.1:8080 -> 8080
-Forwarding from [::1]:8080 -> 8080
 
 $ curl http://localhost:8080
 curl: (7) Failed to connect to localhost port 8080: Connection refused
@@ -279,6 +155,11 @@ curl: (7) Failed to connect to localhost port 8080: Connection refused
 **Check pod is running:**
 ```bash
 kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
+```
+
+If pod shows `0/1 Ready`, check logs:
+```bash
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd
 ```
 
 **Check service:**
@@ -292,100 +173,135 @@ kubectl describe svc cased-cd -n argocd
 kubectl get endpoints cased-cd -n argocd
 ```
 
-If endpoints are empty, the pod isn't ready. Check pod health:
+If endpoints are empty, the pod isn't passing health checks:
 ```bash
 kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd
 ```
 
 ---
 
-### 5. RBAC Errors (Enterprise Features Not Working)
-
-**Symptom:**
-```
-Enterprise features show "Access Denied" or don't work
-```
-
-**Check RBAC role exists:**
-```bash
-kubectl get role cased-cd-enterprise -n argocd
-kubectl get rolebinding cased-cd-enterprise -n argocd
-```
-
-**Verify permissions:**
-```bash
-kubectl describe role cased-cd-enterprise -n argocd
-```
-
-Should allow:
-- `get`, `update`, `patch` on ConfigMaps: `argocd-rbac-cm`, `argocd-notifications-cm`
-- `get`, `update`, `patch` on Secrets: `argocd-secret`
-
-**Fix:**
-```bash
-# Reinstall with enterprise enabled
-helm upgrade cased-cd cased-cd/cased-cd \
-  --namespace argocd \
-  --set enterprise.enabled=true \
-  --install
-```
-
----
-
-### 6. Health Checks Failing
+### 4. Health Checks Failing
 
 **Check liveness/readiness probes:**
 ```bash
-kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep -A 10 "Liveness\|Readiness"
+kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd | grep -A 10 "Liveness\|Readiness"
 ```
 
 **Test health endpoint manually:**
 ```bash
 # Port-forward to the pod directly
-kubectl port-forward -n argocd pod/cased-cd-enterprise-xxx 8081:8081
+POD_NAME=$(kubectl get pod -n argocd -l app.kubernetes.io/name=cased-cd -o jsonpath='{.items[0].metadata.name}')
+kubectl port-forward -n argocd pod/$POD_NAME 8081:8080
 
 # Test in another terminal
 curl http://localhost:8081/health
 ```
 
 Expected response:
-```json
-{"status":"ok","version":"0.1.16"}
+```
+OK
 ```
 
 ---
 
-### 7. Wrong Image Version
+### 5. Login Issues
 
-**Check what image is running:**
+**Symptom:** Cannot log in with ArgoCD credentials
+
+**Get ArgoCD admin password:**
 ```bash
-kubectl get deployment cased-cd-enterprise -n argocd -o jsonpath='{.spec.template.spec.containers[0].image}'
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+echo
 ```
 
-**Update to latest:**
+**Check ArgoCD API is accessible from Cased CD pod:**
 ```bash
-helm upgrade cased-cd cased-cd/cased-cd \
+POD_NAME=$(kubectl get pod -n argocd -l app.kubernetes.io/name=cased-cd -o jsonpath='{.items[0].metadata.name}')
+
+kubectl exec -n argocd $POD_NAME -- wget -O- http://argocd-server.argocd.svc.cluster.local/api/version
+```
+
+If this fails, there's a network connectivity issue between Cased CD and ArgoCD.
+
+---
+
+### 6. Nginx Configuration Errors
+
+**Check nginx logs in the pod:**
+```bash
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd | grep nginx
+```
+
+Common errors:
+
+**Error: "host not found in upstream"**
+```
+nginx: [emerg] host not found in upstream "argocd-server.argocd.svc.cluster.local"
+```
+
+Fix: ArgoCD server doesn't exist or is in a different namespace. Update `argocd.server` value.
+
+**Error: "bind() to 0.0.0.0:80 failed"**
+```
+nginx: [emerg] bind() to 0.0.0.0:80 failed (13: Permission denied)
+```
+
+Fix: This shouldn't happen with our default configuration. Check pod security context is correct.
+
+---
+
+### 7. Ingress Not Working
+
+**Check ingress resource:**
+```bash
+kubectl get ingress -n argocd
+kubectl describe ingress cased-cd -n argocd
+```
+
+**Check ingress controller is running:**
+```bash
+# For nginx ingress
+kubectl get pods -n ingress-nginx
+
+# For other ingress controllers, check their namespace
+```
+
+**Check ingress class:**
+```bash
+kubectl get ingressclass
+```
+
+Make sure your Helm values specify the correct ingress class:
+```yaml
+ingress:
+  enabled: true
+  className: "nginx"  # or whatever your cluster uses
+```
+
+---
+
+### 8. TLS/HTTPS Issues with ArgoCD
+
+If your ArgoCD server uses self-signed certificates, you may see TLS errors.
+
+**Fix: Enable insecure mode**
+```bash
+helm upgrade cased-cd cased/cased-cd \
   --namespace argocd \
-  --set enterprise.enabled=true \
-  --set enterprise.image.tag=0.1.16  # ← Specify version
+  --set argocd.insecure=true
 ```
+
+This tells nginx to skip TLS certificate verification when proxying to ArgoCD.
 
 ---
 
 ## Debug Mode
 
-Enable verbose logging:
+Get more verbose output from nginx:
 
 ```bash
-helm upgrade cased-cd cased-cd/cased-cd \
-  --namespace argocd \
-  --set enterprise.enabled=true \
-  --set enterprise.debug=true
-```
-
-Then check logs:
-```bash
-kubectl logs -n argocd -l app.kubernetes.io/component=enterprise -f
+# View all logs (not just errors)
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd -f
 ```
 
 ---
@@ -402,36 +318,36 @@ echo "=== Cased CD Debug Report ==="
 echo "Date: $(date)"
 echo ""
 
+echo "=== Kubernetes Version ==="
+kubectl version --short
+
+echo ""
 echo "=== Pods ==="
 kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
 
 echo ""
 echo "=== Deployments ==="
-kubectl get deployments -n argocd -l app.kubernetes.io/name=cased-cd
+kubectl get deployments -n argocd -l app.kubernetes.io/name=cased-cd -o wide
 
 echo ""
 echo "=== Services ==="
 kubectl get svc -n argocd -l app.kubernetes.io/name=cased-cd
 
 echo ""
-echo "=== PVCs ==="
-kubectl get pvc -n argocd -l app.kubernetes.io/name=cased-cd
-
-echo ""
-echo "=== Secrets ==="
-kubectl get secrets -n argocd | grep cased
+echo "=== ArgoCD Server Status ==="
+kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server
 
 echo ""
 echo "=== Recent Pod Events ==="
 kubectl get events -n argocd --sort-by='.lastTimestamp' | grep cased-cd | tail -20
 
 echo ""
-echo "=== Pod Logs (Last 50 lines) ==="
-kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=50
+echo "=== Pod Logs (Last 100 lines) ==="
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=100
 
 echo ""
-echo "=== Enterprise Pod Logs (Last 50 lines) ==="
-kubectl logs -n argocd -l app.kubernetes.io/component=enterprise --tail=50 2>/dev/null || echo "No enterprise pods found"
+echo "=== Cased CD Configuration ==="
+kubectl get deployment cased-cd -n argocd -o yaml | grep -A 5 "env:"
 ```
 
 Save as `debug-report.sh`, run it:
@@ -440,16 +356,20 @@ chmod +x debug-report.sh
 ./debug-report.sh > debug-report.txt
 ```
 
-Send `debug-report.txt` to support@cased.com
-
 ### Contact Support
 
+- **GitHub Issues**: https://github.com/cased/cased-cd/issues
 - **Email**: support@cased.com
 - **Documentation**: https://cased.github.io/cased-cd
-- **GitHub Issues**: https://github.com/cased/cased-cd/issues
 
-Include:
+Please include:
 - Kubernetes version: `kubectl version --short`
 - ArgoCD version: `kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o jsonpath='{.items[0].spec.containers[0].image}'`
 - Debug report from above
 - Steps to reproduce the issue
+
+---
+
+## Upgrading to Enterprise
+
+For advanced features including RBAC management, audit trail, user management, and notifications, visit https://cased.com to learn about Cased CD Enterprise.

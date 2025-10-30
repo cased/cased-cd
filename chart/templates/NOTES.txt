@@ -39,55 +39,10 @@
 3. Configuration:
    ArgoCD Server: {{ .Values.argocd.server }}
 
-{{- if .Values.enterprise.enabled }}
-
-4. Enterprise Features Enabled:
-   - RBAC Management
-   {{- if .Values.enterprise.auditTrail.enabled }}
-   - Audit Trail (PersistentVolume)
-   {{- else }}
-   - Audit Trail (stdout only, no PVC)
-   {{- end }}
-   - User Management
-   - Notification Services
-
-   {{- if .Values.enterprise.auditTrail.enabled }}
-   Check audit PVC status:
-   kubectl get pvc -n {{ .Release.Namespace }} {{ include "cased-cd.fullname" . }}-enterprise-audit
-
-   ⚠️  If PVC is stuck in Pending state:
-
-   Check if a default storage class exists:
-   kubectl get storageclass
-
-   If no storage class is marked (default), you must set one explicitly:
-   helm upgrade {{ .Release.Name }} cased/cased-cd \
-     --namespace {{ .Release.Namespace }} \
-     --reuse-values \
-     --set enterprise.persistence.storageClass=<storage-class-name>
-
-   Common storage classes:
-   - AWS EKS: gp2, gp3
-   - Google GKE: standard, standard-rwo
-   - Azure AKS: default, managed-premium
-   - k3d/k3s: local-path
-
-   To disable persistent audit logging (no PVC required):
-   --set enterprise.auditTrail.enabled=false
-   {{- else }}
-
-   Note: Persistent audit logging is disabled. Audit events are logged to stdout only.
-   To enable persistent audit logging with PVC:
-   --set enterprise.auditTrail.enabled=true
-   {{- end }}
-
-5. Learn more about Cased:
-{{- else }}
-
-4. Learn more about Cased:
-{{- end }}
+4. Learn more:
    Website: https://cased.com
-   Docs: https://docs.cased.com
+   Documentation: https://cased.github.io/cased-cd
+   Enterprise Edition: https://cased.com (RBAC, Audit Trail, User Management, Notifications)
 
 Thank you for using Cased CD!
 For support, visit https://github.com/cased/cased-cd/issues

@@ -38,10 +38,6 @@ spec:
           env:
             - name: ARGOCD_SERVER
               value: {{ .Values.argocd.server | quote }}
-            {{- if .Values.enterprise.enabled }}
-            - name: ENTERPRISE_BACKEND_SERVICE
-              value: {{ include "cased-cd.fullname" . }}-enterprise.{{ .Release.Namespace }}.svc.cluster.local
-            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort }}
