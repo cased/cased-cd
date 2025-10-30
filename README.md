@@ -11,7 +11,7 @@ Built by [**Cased**](https://cased.com).
 
 ---
 
-## ✨ Features
+## Features
 
 - **Modern UI/UX** - Clean, intuitive interface built with React and Tailwind CSS
 - **Dark Mode** - Full dark mode support with automatic system detection
@@ -28,7 +28,7 @@ Built by [**Cased**](https://cased.com).
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
@@ -64,7 +64,7 @@ Then open http://localhost:8080 and log in with your ArgoCD credentials.
 
 ---
 
-## 📖 Configuration
+## Configuration
 
 ### Custom ArgoCD Server
 
@@ -97,48 +97,21 @@ ingress:
 
 ---
 
-## 🎯 Enterprise Edition
+## Enterprise Edition
 
 Upgrade to **Cased CD Enterprise** for advanced features:
 
-- **🔐 RBAC Management** - Fine-grained per-application permissions
-- **👥 User Management** - Create and delete users from the UI
-- **📋 Audit Trail** - Comprehensive logging with persistent storage
-- **🔔 Notifications** - Slack, Webhook, Email, and GitHub integrations
-- **📊 Advanced Permissions** - Granular control over sync, rollback, delete
+- **RBAC Management** - Fine-grained per-application permissions
+- **User Management** - Create and delete users from the UI
+- **Audit Trail** - Comprehensive logging with persistent storage
+- **Notifications** - Slack, Webhook, Email, and GitHub integrations
+- **Advanced Permissions** - Granular control over sync, rollback, delete
 
-[**Contact us**](mailto:enterprise@cased.com) to learn more about Enterprise features.
-
----
-
-## 🏗️ Architecture
-
-```
-┌─────────────────────────────────────┐
-│         Your Browser                │
-│  (React SPA + Dark Mode)            │
-└──────────────┬──────────────────────┘
-               │ HTTPS
-               ▼
-┌─────────────────────────────────────┐
-│      Cased CD (nginx)               │
-│  - Serves React frontend            │
-│  - Proxies API calls to ArgoCD      │
-└──────────────┬──────────────────────┘
-               │ HTTP/HTTPS
-               ▼
-┌─────────────────────────────────────┐
-│      ArgoCD Server                  │
-│  - Standard ArgoCD API (v2.0+)      │
-│  - No modifications required        │
-└─────────────────────────────────────┘
-```
-
-**Community Edition** = Pure frontend with nginx proxy. No backend, no data storage.
+[**Learn more**](https://cased.com) about Enterprise features.
 
 ---
 
-## 🔧 Development
+## Development
 
 ```bash
 # Clone the repository
@@ -160,7 +133,7 @@ docker build --target standard -t cased-cd:latest .
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 - **Installation Guide**: See [Installation](#-quick-start) above
 - **Troubleshooting**: See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
@@ -169,7 +142,7 @@ docker build --target standard -t cased-cd:latest .
 
 ---
 
-## 🔒 Security
+## Security
 
 - **Non-root Containers** - Runs as user 101 (nginx)
 - **Read-only Filesystem** - Minimal write permissions
@@ -181,23 +154,15 @@ Report security vulnerabilities to security@cased.com.
 
 ---
 
-## 📜 License
+## License
 
 Licensed under the **Functional Source License 1.1** (FSL-1.1).
-
-**TL;DR**:
-- ✅ Use freely for any purpose
-- ✅ Modify and customize
-- ✅ Self-host for your organization
-- ✅ Contribute back to the project
-- ❌ Can't offer as a competing hosted service
-- ⏰ Converts to Apache 2.0 after 2 years
 
 See [LICENSE.md](LICENSE.md) for full details.
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our contributing guidelines (coming soon).
 
@@ -209,7 +174,7 @@ We welcome contributions! Please see our contributing guidelines (coming soon).
 
 ---
 
-## 💬 Support & Community
+## Support & Community
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/cased/cased-cd/issues)
 - **Email**: support@cased.com
@@ -217,7 +182,7 @@ We welcome contributions! Please see our contributing guidelines (coming soon).
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built on top of:
 - [ArgoCD](https://argo-cd.readthedocs.io/) - GitOps continuous delivery for Kubernetes
@@ -229,4 +194,4 @@ Built on top of:
 
 ---
 
-**Made with ❤️ by [Cased](https://cased.com)**
+**Made by [Cased](https://cased.com)**
