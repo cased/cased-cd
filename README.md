@@ -162,18 +162,6 @@ See [LICENSE.md](LICENSE.md) for full details.
 
 ---
 
-## Contributing
-
-We welcome contributions! Please see our contributing guidelines (coming soon).
-
-**Development Setup**:
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
----
-
 ## Support & Community
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/cased/cased-cd/issues)
