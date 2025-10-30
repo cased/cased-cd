@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Package Helm chart
+        run: |
+          helm package chart/ --destination .
+          CHART_VERSION=$(helm show chart chart | grep '^version:' | awk '{print $2}')
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          # Generate changelog
+          if [ -z "$PREVIOUS_TAG" ]; then
+            echo "CHANGELOG=Initial release" >> $GITHUB_OUTPUT
+          else
+            CHANGELOG=$(git log ${PREVIOUS_TAG}..HEAD --pretty=format:"- %s (%h)" --no-merges)
+            # Escape newlines for GitHub output
+            echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGELOG" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: |
+            ## Cased CD ${{ github.ref_name }}
+
+            A modern, beautiful UI for ArgoCD.
+
+            ### Installation
+
+            **Standard (Free) - Using Helm:**
+            ```bash
+            helm install cased-cd oci://ghcr.io/cased/cased-cd-chart --version ${{ env.CHART_VERSION }}
+            ```
+
+            **Standard (Free) - Using Docker:**
+            ```bash
+            docker pull ghcr.io/cased/cased-cd:${{ github.ref_name }}
+            ```
+
+            **Enterprise - Contact Us:**
+            Enterprise customers should contact support@cased.com for access to:
+            - Private registry credentials
+            - Enterprise Helm chart
+            - Advanced RBAC and user management features
+
+            **Enterprise Docker Image:**
+            ```bash
+            docker pull ghcr.io/cased/cased-cd-enterprise:${{ github.ref_name }}
+            ```
+            *Requires authentication - see [ENTERPRISE.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/ENTERPRISE.md)*
+
+            ### What's Changed
+
+            ${{ steps.changelog.outputs.CHANGELOG }}
+
+            ---
+
+            **Full Documentation**: [DEPLOY.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/DEPLOY.md)
+
+            **Enterprise Guide**: [ENTERPRISE.md](https://github.com/cased/cased-cd/blob/${{ github.ref_name }}/ENTERPRISE.md)
+
+            **Built by [Cased](https://cased.com)**
+          files: |
+            cased-cd-*.tgz
+          draft: false
+          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
+
+      - name: Push Helm chart to OCI registry
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          helm push cased-cd-*.tgz oci://ghcr.io/${{ github.repository_owner }}

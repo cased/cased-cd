@@ -1,0 +1,79 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist
+build
+.vite
+.turbo
+
+# Testing
+coverage
+.nyc_output
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+__tests__
+test
+tests
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+README.md
+DEPLOY.md
+CONTRIBUTING.md
+LICENSE
+*.md
+
+# Development files
+.env*
+!.env.example
+.eslintrc*
+.prettierrc*
+vitest.config.ts
+
+# Scripts
+scripts/
+mock-server.js
+.argocd-credentials
+
+# Helm chart (not needed in Docker image)
+chart/
+
+# Docker
+Dockerfile*
+.dockerignore
+docker-compose*.yml
+
+# Logs
+logs
+*.log
+
+# Temporary files
+tmp
+temp
+.tmp
+.cache

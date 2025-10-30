@@ -1,0 +1,193 @@
+name: Build and Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  ORG: ${{ github.repository_owner }}
+
+jobs:
+  build-standard:
+    name: Build Standard Image (Public)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for standard image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push standard image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: standard
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=frontend
+            type=gha,scope=standard
+          cache-to: type=gha,mode=max,scope=standard
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  build-enterprise:
+    name: Build Enterprise Image (Private)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry (GHCR)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for enterprise image
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push enterprise image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: enterprise
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=frontend
+            type=gha,scope=backend
+            type=gha,scope=enterprise
+          cache-to: type=gha,mode=max,scope=enterprise
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ github.ref_name }}
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            VCS_REF=${{ github.sha }}
+
+      - name: Generate artifact attestation
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+  summary:
+    name: Build Summary
+    needs: [build-standard, build-enterprise]
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Generate summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY <<'EOF'
+          ## 🚀 Docker Images Built Successfully
+
+          ### Standard Image (Public)
+          ```
+          ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd:${{ github.ref_name }}
+          ```
+          - **Registry**: GitHub Container Registry (GHCR)
+          - **Tier**: Free/Open Source
+          - **Visibility**: Public
+          - **Access**: Anyone can pull
+
+          ### Enterprise Image (Private)
+          ```
+          ${{ env.REGISTRY }}/${{ env.ORG }}/cased-cd-enterprise:${{ github.ref_name }}
+          ```
+          - **Registry**: GitHub Container Registry (GHCR)
+          - **Tier**: Commercial
+          - **Visibility**: Private (requires credentials)
+          - **Access**: Enterprise customers with package-scoped tokens
+
+          ### Platforms
+          - `linux/amd64`
+          - `linux/arm64`
+
+          ### Security
+          - ✅ Package-scoped tokens (customers can ONLY access cased-cd-enterprise)
+          - ✅ Build provenance attestation included
+          - ✅ Supply chain security via GitHub
+
+          ### Next Steps
+          - View packages: https://github.com/orgs/${{ env.ORG }}/packages
+          - Ensure enterprise package is set to **Private**
+          - Create fine-grained PATs for customers (scoped to this package only)
+          - See [ENTERPRISE.md](https://github.com/${{ github.repository }}/blob/main/ENTERPRISE.md) for customer onboarding
+          - See [TROUBLESHOOTING.md](https://github.com/${{ github.repository }}/blob/main/TROUBLESHOOTING.md) for support
+          EOF

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: cased-cd
+description: A modern UI for ArgoCD
+type: application
+version: 0.1.21
+appVersion: "0.1.21"
+keywords:
+  - argocd
+  - gitops
+  - kubernetes
+  - continuous-delivery
+home: https://cased.com
+sources:
+  - https://github.com/cased/cased-cd
+maintainers:
+  - name: Cased
+    email: support@cased.com
+    url: https://cased.com
+icon: https://cased.com/icon.png
