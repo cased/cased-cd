@@ -3,9 +3,9 @@ entries:
   cased-cd:
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2025-10-30T06:51:53.60499765Z"
+    created: "2025-10-30T06:54:54.06078585Z"
     description: A modern UI for ArgoCD
-    digest: 1b0b251200c03184addb4f4d553c110bf7c22b810e73fff4361879dec08c9b9d
+    digest: 5d95bd78dbd865c2b8ede215cf660e33c01e0ad68d47799112db4eb3956b3e4d
     home: https://cased.com
     icon: https://cased.com/icon.png
     keywords:
@@ -26,7 +26,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 0.1.21
-    created: "2025-10-30T06:51:53.600185921Z"
+    created: "2025-10-30T06:54:54.056469403Z"
     description: A modern UI for ArgoCD
     digest: 3c126eeca022abd003c91b9ac0a008abfcabe88bb725aca075cac9dcb92cee4f
     home: https://cased.com
@@ -49,7 +49,7 @@ entries:
     version: 0.1.21
   - apiVersion: v2
     appVersion: 0.1.20
-    created: "2025-10-30T06:51:53.599607916Z"
+    created: "2025-10-30T06:54:54.055820299Z"
     description: A modern UI for ArgoCD
     digest: b247c491a1110cac63294117cce9ec0922536f72b3ab778bc35f34cfb87f39a8
     home: https://cased.com
@@ -72,7 +72,7 @@ entries:
     version: 0.1.20
   - apiVersion: v2
     appVersion: 0.1.19
-    created: "2025-10-30T06:51:53.598596397Z"
+    created: "2025-10-30T06:54:54.054786544Z"
     description: A modern UI for ArgoCD
     digest: e790ec428a2df6bf175110aeea25ced038562f6a734e228918edf045b7fd8fb2
     home: https://cased.com
@@ -95,7 +95,7 @@ entries:
     version: 0.1.19
   - apiVersion: v2
     appVersion: 0.1.17
-    created: "2025-10-30T06:51:53.59752866Z"
+    created: "2025-10-30T06:54:54.053377932Z"
     description: A modern UI for ArgoCD
     digest: 7f2a6a7e6a35febb6de6fcdb828b46cbfccf3604e502973f155f88f7af57d196
     home: https://cased.com
@@ -118,7 +118,7 @@ entries:
     version: 0.1.17
   - apiVersion: v2
     appVersion: 0.1.16
-    created: "2025-10-30T06:51:53.595626735Z"
+    created: "2025-10-30T06:54:54.051592993Z"
     description: A modern UI for ArgoCD
     digest: 753ae175c4314abbdbcc94c6d836d1b4b3cc20a445d27afc6ee31acd7a9b9eb1
     home: https://cased.com
@@ -141,7 +141,7 @@ entries:
     version: 0.1.16
   - apiVersion: v2
     appVersion: 0.1.15
-    created: "2025-10-30T06:51:53.595089415Z"
+    created: "2025-10-30T06:54:54.050999728Z"
     description: A modern UI for ArgoCD
     digest: 6c047338becbd4115a881001d984ee5b5f8fe1aeaaf356ad33787dd2bfc6f46a
     home: https://cased.com
@@ -164,7 +164,7 @@ entries:
     version: 0.1.15
   - apiVersion: v2
     appVersion: 0.1.14
-    created: "2025-10-30T06:51:53.594531526Z"
+    created: "2025-10-30T06:54:54.050443789Z"
     description: A modern UI for ArgoCD
     digest: 30183a2ae748471ee02d694ad712ecd55718e78836ee21c153366483e66bac55
     home: https://cased.com
@@ -187,7 +187,7 @@ entries:
     version: 0.1.14
   - apiVersion: v2
     appVersion: 0.1.12
-    created: "2025-10-30T06:51:53.593967164Z"
+    created: "2025-10-30T06:54:54.049869206Z"
     description: A modern UI for ArgoCD
     digest: 9e315074e07431d427ff29752b1b6c13262d73536d65373d07fc3c88fbe91924
     home: https://cased.com
@@ -210,7 +210,7 @@ entries:
     version: 0.1.12
   - apiVersion: v2
     appVersion: 0.1.11
-    created: "2025-10-30T06:51:53.593405646Z"
+    created: "2025-10-30T06:54:54.049330357Z"
     description: A modern UI for ArgoCD
     digest: d4e3dc0cd2939da9d339ffc1891d6c6f472826f8e7e6772346b4a479f97a8f45
     home: https://cased.com
@@ -233,7 +233,7 @@ entries:
     version: 0.1.11
   - apiVersion: v2
     appVersion: 0.1.10
-    created: "2025-10-30T06:51:53.59284905Z"
+    created: "2025-10-30T06:54:54.048771355Z"
     description: A modern UI for ArgoCD
     digest: eac052f9f060660c2692b4d6f1805525ea5e40aa388a40fdc4d49eec130257fc
     home: https://cased.com
@@ -256,7 +256,7 @@ entries:
     version: 0.1.10
   - apiVersion: v2
     appVersion: 0.1.9
-    created: "2025-10-30T06:51:53.603723094Z"
+    created: "2025-10-30T06:54:54.060178593Z"
     description: A modern UI for ArgoCD
     digest: 1db654af2efb6bc32ff5568fe0783cf513172d8b8ed0a31848c2e8b9c642bb75
     home: https://cased.com
@@ -279,7 +279,7 @@ entries:
     version: 0.1.9
   - apiVersion: v2
     appVersion: 0.1.8
-    created: "2025-10-30T06:51:53.603039155Z"
+    created: "2025-10-30T06:54:54.059645333Z"
     description: A modern UI for ArgoCD
     digest: b1e3273de54e6a03d484d6cb607a30e2d4a63f44eff9f293815e87020da97282
     home: https://cased.com
@@ -302,7 +302,7 @@ entries:
     version: 0.1.8
   - apiVersion: v2
     appVersion: 0.1.7
-    created: "2025-10-30T06:51:53.602514355Z"
+    created: "2025-10-30T06:54:54.059134171Z"
     description: A modern UI for ArgoCD
     digest: 2617a35d5c0a2ae132752bd7a22f7e6909c423f9a0f761d76118e03e06b0720e
     home: https://cased.com
@@ -325,7 +325,7 @@ entries:
     version: 0.1.7
   - apiVersion: v2
     appVersion: 0.1.6
-    created: "2025-10-30T06:51:53.602019869Z"
+    created: "2025-10-30T06:54:54.058619043Z"
     description: A modern UI for ArgoCD
     digest: 469c9ee012a70c35f4ef01a19d81ae60b0e9e64dbb1d62e55164f5e5068aa1d6
     home: https://cased.com
@@ -348,7 +348,7 @@ entries:
     version: 0.1.6
   - apiVersion: v2
     appVersion: 0.1.5
-    created: "2025-10-30T06:51:53.601529231Z"
+    created: "2025-10-30T06:54:54.058149526Z"
     description: A modern UI for ArgoCD
     digest: c7a9a6843883db0b1c34829952329691ac5c1c94ed655768fa06b31dd38942a2
     home: https://cased.com
@@ -371,7 +371,7 @@ entries:
     version: 0.1.5
   - apiVersion: v2
     appVersion: 0.1.4
-    created: "2025-10-30T06:51:53.601070117Z"
+    created: "2025-10-30T06:54:54.057677946Z"
     description: A modern UI for ArgoCD
     digest: 5ef2cadf07fa17d87aebb8f92def5ce1269470b5c409ec4cc5a8fe2565dab2cb
     home: https://cased.com
@@ -394,7 +394,7 @@ entries:
     version: 0.1.4
   - apiVersion: v2
     appVersion: 0.1.3
-    created: "2025-10-30T06:51:53.600625966Z"
+    created: "2025-10-30T06:54:54.05717826Z"
     description: A modern UI for ArgoCD
     digest: b20bd6a66bb9bcfb754a62b1f7e43f5b11e3be8227da83b020fa80fb26567f30
     home: https://cased.com
@@ -417,7 +417,7 @@ entries:
     version: 0.1.3
   - apiVersion: v2
     appVersion: 0.1.2
-    created: "2025-10-30T06:51:53.599030785Z"
+    created: "2025-10-30T06:54:54.05523092Z"
     description: A modern UI for ArgoCD
     digest: 0ea8d76894428e91723d435006a7a1ead583d48c3a3500fd608fe883bfdd9463
     home: https://cased.com
@@ -440,7 +440,7 @@ entries:
     version: 0.1.2
   - apiVersion: v2
     appVersion: 0.1.1
-    created: "2025-10-30T06:51:53.592277545Z"
+    created: "2025-10-30T06:54:54.048191174Z"
     description: A modern UI for ArgoCD
     digest: 72617e4bc645a7d8eaced53d6b3009be60901bcc77a398a54d17278e9278903f
     home: https://cased.com
@@ -463,7 +463,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2025-10-30T06:51:53.591796683Z"
+    created: "2025-10-30T06:54:54.047739014Z"
     description: A modern UI for ArgoCD
     digest: fd58817e6bb6776c9734ecded3c65be0ebe3ec3b957a46029f395d17729ce26d
     home: https://cased.com
@@ -484,4 +484,4 @@ entries:
     urls:
     - https://cased.github.io/cased-cd/cased-cd-0.1.0.tgz
     version: 0.1.0
-generated: "2025-10-30T06:51:53.591212169Z"
+generated: "2025-10-30T06:54:54.047102643Z"
