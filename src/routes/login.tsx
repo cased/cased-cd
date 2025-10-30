@@ -145,9 +145,14 @@ function LoginPage() {
             <p className="text-xs text-neutral-500">
               Powered by ArgoCD • Built by Cased
             </p>
-            <p className="text-xs text-neutral-400 mt-1">
-              v{import.meta.env.PACKAGE_VERSION || '0.1.15'}
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-2">
+              <span className="text-xs text-neutral-400">
+                v{import.meta.env.PACKAGE_VERSION || '0.1.15'}
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200">
+                {import.meta.env.VITE_IS_ENTERPRISE === 'true' ? 'Enterprise Edition' : 'Community Edition'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
