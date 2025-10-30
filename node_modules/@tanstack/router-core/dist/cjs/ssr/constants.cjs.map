@@ -1,0 +1,1 @@
+{"version":3,"file":"constants.cjs","sources":["../../../src/ssr/constants.ts"],"sourcesContent":["export const GLOBAL_TSR = '$_TSR'\n"],"names":[],"mappings":";;AAAO,MAAM,aAAa;;"}

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cased CD - A Modern UI for ArgoCD</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      line-height: 1.6;
+      color: #1a1a1a;
+      background: #fafafa;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 60px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #000;
+    }
+
+    .tagline {
+      font-size: 1.25rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .version {
+      display: inline-block;
+      background: #f0f0f0;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      font-family: 'Monaco', 'Courier New', monospace;
+      color: #555;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      margin-top: 50px;
+      margin-bottom: 20px;
+      color: #000;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: #000;
+    }
+
+    p {
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    ul, ol {
+      margin-bottom: 15px;
+      margin-left: 25px;
+    }
+
+    li {
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #c7254e;
+    }
+
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin-bottom: 20px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    .feature-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .feature {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e0e0e0;
+    }
+
+    .feature strong {
+      color: #000;
+    }
+
+    .enterprise-feature {
+      background: #e8f5e9;
+      border-color: #4caf50;
+    }
+
+    .enterprise-badge {
+      display: inline-block;
+      background: #4caf50;
+      color: white;
+      padding: 1px 6px;
+      border-radius: 2px;
+      font-size: 0.65rem;
+      font-weight: 600;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    .note {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .note p {
+      margin: 0;
+      color: #1565c0;
+    }
+
+    .warning {
+      background: #fff3e0;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+
+    .warning p {
+      margin: 0;
+      color: #e65100;
+    }
+
+    footer {
+      margin-top: 80px;
+      padding-top: 30px;
+      border-top: 1px solid #e0e0e0;
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+    }
+
+    a {
+      color: #2196f3;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .docker-badge {
+      display: inline-block;
+      margin-top: 10px;
+      background: #0db7ed;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .docker-badge:hover {
+      background: #0a9cd1;
+      text-decoration: none;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-size: 1rem;
+      color: #666;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+    }
+
+    .tab:hover {
+      color: #000;
+    }
+
+    .tab.active {
+      color: #2196f3;
+      border-bottom-color: #2196f3;
+      font-weight: 600;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+  <script>
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+
+      // Show selected tab
+      document.getElementById(tabName).classList.add('active');
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+
+      // Update URL hash without scrolling
+      history.replaceState(null, null, `#${tabName}`);
+    }
+
+    // Initialize tab from URL hash on page load
+    function initTabFromHash() {
+      const hash = window.location.hash.slice(1); // Remove '#' prefix
+      if (hash === 'enterprise' || hash === 'community') {
+        switchTab(hash);
+      }
+    }
+
+    // Listen for hash changes (browser back/forward buttons)
+    window.addEventListener('hashchange', function() {
+      const hash = window.location.hash.slice(1);
+      if (hash === 'enterprise' || hash === 'community') {
+        switchTab(hash);
+      }
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', initTabFromHash);
+  </script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Cased CD</h1>
+      <p class="tagline">A modern, beautiful UI for ArgoCD</p>
+      <span class="version">v0.1.21</span>
+      <br>
+      <a href="https://github.com/cased/cased-cd/pkgs/container/cased-cd" class="docker-badge">
+        📦 ghcr.io/cased/cased-cd
+      </a>
+    </header>
+
+    <section>
+      <h2>Overview</h2>
+      <p>
+        Cased CD is a completely redesigned user interface for ArgoCD, built with modern web technologies
+        for a superior user experience. It works seamlessly with your existing ArgoCD installation -
+        no backend modifications required.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature">
+          <div><strong>Modern UI/UX</strong></div>
+          <div>Clean, intuitive interface built with React and Tailwind CSS</div>
+        </div>
+        <div class="feature">
+          <div><strong>Dark Mode</strong></div>
+          <div>Full dark mode support</div>
+        </div>
+        <div class="feature">
+          <div><strong>Real-time Updates</strong></div>
+          <div>Live sync status and resource health monitoring</div>
+        </div>
+        <div class="feature">
+          <div><strong>Resource Visualization</strong></div>
+          <div>Tree view, network graph, and list views</div>
+        </div>
+        <div class="feature">
+          <div><strong>Deployment History</strong></div>
+          <div>Track and rollback to previous versions</div>
+        </div>
+        <div class="feature">
+          <div><strong>No Backend Changes</strong></div>
+          <div>Works with standard ArgoCD API (v2.0+)</div>
+        </div>
+        <div class="feature enterprise-feature">
+          <div><strong>RBAC Management</strong> <span class="enterprise-badge">ENTERPRISE</span></div>
+          <div>Fine-grained role-based access control</div>
+        </div>
+        <div class="feature enterprise-feature">
+          <div><strong>Audit Trail</strong> <span class="enterprise-badge">ENTERPRISE</span></div>
+          <div>Complete action history with before/after tracking</div>
+        </div>
+        <div class="feature enterprise-feature">
+          <div><strong>User Management</strong> <span class="enterprise-badge">ENTERPRISE</span></div>
+          <div>Create and manage users directly from UI</div>
+        </div>
+        <div class="feature enterprise-feature">
+          <div><strong>Notifications</strong> <span class="enterprise-badge">ENTERPRISE</span></div>
+          <div>Slack, Webhook, and Email integrations</div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Quick Start</h2>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="community" onclick="switchTab('community')">Community Edition</button>
+        <button class="tab" data-tab="enterprise" onclick="switchTab('enterprise')">Enterprise Edition</button>
+      </div>
+
+      <div id="community" class="tab-content active">
+        <h3>Install with Helm (Recommended)</h3>
+        <pre><code># Add the Cased Helm repository
+helm repo add cased https://cased.github.io/cased-cd
+helm repo update
+
+# Install Cased CD in the argocd namespace
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --create-namespace</code></pre>
+
+        <p>Access Cased CD at <code>http://localhost:8080</code> (via port-forward) or configure an Ingress for external access.</p>
+
+        <h3>Install with kubectl</h3>
+        <p><strong>Note:</strong> This installs the <strong>standard (non-enterprise)</strong> version only. For enterprise features, see the Enterprise tab.</p>
+        <pre><code># Apply the manifests
+kubectl apply -f https://cased.github.io/cased-cd/install.yaml
+
+# Access via port-forward
+kubectl port-forward -n argocd svc/cased-cd 8080:80</code></pre>
+
+        <div class="warning">
+          <p><strong>Important:</strong> The static <code>install.yaml</code> assumes ArgoCD is installed in the <code>argocd</code> namespace with the default service name <code>argocd-server</code>. If your setup is different, you'll need to either:</p>
+          <ol>
+            <li><strong>Use Helm instead</strong> (recommended - allows easy configuration with <code>--set argocd.server=...</code>)</li>
+            <li><strong>Edit the install.yaml</strong> before applying - download it, find line 164, and update the <code>ARGOCD_SERVER</code> environment variable to match your ArgoCD server location</li>
+          </ol>
+        </div>
+
+        <h3>Run with Docker</h3>
+        <pre><code>docker run -d \
+  -p 8080:80 \
+  -e ARGOCD_SERVER=http://argocd-server.argocd.svc.cluster.local:80 \
+  ghcr.io/cased/cased-cd:latest</code></pre>
+      </div>
+
+      <div id="enterprise" class="tab-content">
+        <div class="note">
+          <p><strong>Prerequisites:</strong> Existing ArgoCD installation (v2.0+), Kubernetes cluster with default StorageClass for audit log PVC, and enterprise credentials for accessing the private container image</p>
+        </div>
+
+        <h3>Authentication</h3>
+        <p>The enterprise backend image (<code>registry.cased.com/cased/cased-cd-enterprise</code>) requires authentication. Enterprise customers should contact Cased support to receive their registry token, then create an imagePullSecret:</p>
+
+        <pre><code># Contact support@cased.com to receive your registry token
+# Then create the secret in your cluster:
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=token \
+  --docker-password="YOUR_REGISTRY_TOKEN" \
+  --namespace=argocd</code></pre>
+
+        <div class="note">
+          <p><strong>Benefits:</strong> Cased's registry proxy provides instant token revocation, scoped access, and complete audit trails of all image pulls.</p>
+        </div>
+
+        <h3>Storage Requirements</h3>
+        <p>Enterprise includes a persistent audit trail (enabled by default) that requires storage. The chart automatically uses your cluster's default storage class.</p>
+
+        <div class="note">
+          <p><strong>Note:</strong> If your cluster (e.g., Talos, vanilla Kubernetes, custom clusters) doesn't have a default storage class, you can either:</p>
+          <ul style="margin-top: 10px;">
+            <li>Specify a storage class explicitly:<br>
+              <pre style="margin-top: 5px;"><code>--set enterprise.persistence.storageClass=&lt;your-storage-class&gt;</code></pre>
+            </li>
+            <li>Or disable persistent audit logging (audit events logged to stdout only):<br>
+              <pre style="margin-top: 5px;"><code>--set enterprise.auditTrail.enabled=false</code></pre>
+            </li>
+          </ul>
+        </div>
+
+        <p><strong>Common storage classes by platform:</strong></p>
+        <ul>
+          <li>AWS EKS: <code>gp2</code>, <code>gp3</code></li>
+          <li>Google GKE: <code>standard</code>, <code>standard-rwo</code></li>
+          <li>Azure AKS: <code>default</code>, <code>managed-premium</code></li>
+          <li>k3d/k3s: <code>local-path</code></li>
+        </ul>
+
+        <h3>Deploy with Helm</h3>
+        <pre><code># Add the Cased Helm repository
+helm repo add cased https://cased.github.io/cased-cd
+helm repo update
+
+# Install Cased CD Enterprise
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.persistence.size=10Gi \
+  --set imagePullSecrets[0].name=cased-cd-registry</code></pre>
+
+        <h3>Deploy with ArgoCD</h3>
+        <p>If you're using ArgoCD to manage your applications, add <code>imagePullSecrets</code> to your Application's Helm values:</p>
+
+        <pre><code>apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cased-cd
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://cased.github.io/cased-cd
+    chart: cased-cd
+    targetRevision: 0.1.20
+    helm:
+      values: |
+        # Registry secret for enterprise image
+        imagePullSecrets:
+          - name: cased-cd-registry
+
+        # Enterprise configuration
+        enterprise:
+          enabled: true
+          auditTrail:
+            enabled: true
+          image:
+            repository: registry.cased.com/cased/cased-cd-enterprise
+
+        # Your ArgoCD server
+        argocd:
+          server: "https://argocd-server.argocd.svc.cluster.local"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true</code></pre>
+
+        <div class="note">
+          <p><strong>Important:</strong> Create the <code>cased-cd-registry</code> secret <em>before</em> syncing the Application. ArgoCD cannot use <code>--set</code> flags, so you must configure imagePullSecrets in the <code>helm.values</code> section.</p>
+        </div>
+
+        <h3>Deploy with kubectl</h3>
+
+        <p><strong>Option 1: Full Installation (with persistent audit trail)</strong></p>
+        <pre><code># First, create the imagePullSecret for the private enterprise image
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=token \
+  --docker-password="YOUR_REGISTRY_TOKEN" \
+  --namespace=argocd
+
+# Apply the enterprise manifests
+kubectl apply -f https://cased.github.io/cased-cd/install-enterprise.yaml</code></pre>
+
+        <div class="note">
+          <p><strong>Note:</strong> This manifest includes a PVC for audit logs. Requires a cluster with a default storage class.</p>
+        </div>
+
+        <p><strong>Option 2: Minimal Installation (no storage required)</strong></p>
+        <p>For clusters without a default storage class (Talos, bare-metal, etc.), use the minimal manifest:</p>
+        <pre><code># First, create the imagePullSecret
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username=token \
+  --docker-password="YOUR_REGISTRY_TOKEN" \
+  --namespace=argocd
+
+# Apply the minimal enterprise manifests (no PVC)
+kubectl apply -f https://cased.github.io/cased-cd/install-enterprise-minimal.yaml</code></pre>
+
+        <div class="note">
+          <p><strong>Note:</strong> The minimal manifest disables persistent audit logging. Audit events are still logged to stdout and can be collected via your log aggregation system.</p>
+        </div>
+
+        <h3>What Gets Deployed</h3>
+        <ul>
+          <li>✅ Cased CD frontend (static React app)</li>
+          <li>✅ Enterprise backend (RBAC, audit, notifications, user management)</li>
+          <li>✅ PersistentVolumeClaim for audit logs (automatically provisioned)</li>
+          <li>✅ Kubernetes RBAC roles for ConfigMap/Secret access</li>
+        </ul>
+
+        <h3>Access the UI</h3>
+        <pre><code># Port-forward to access locally
+kubectl port-forward -n argocd svc/cased-cd 8080:80
+
+# Then open http://localhost:8080
+# Login with your ArgoCD credentials</code></pre>
+
+        <h3>Configure External Access (Ingress)</h3>
+        <pre><code>helm upgrade cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set imagePullSecrets[0].name=cased-cd-registry \
+  --set ingress.enabled=true \
+  --set ingress.className=nginx \
+  --set ingress.hosts[0].host=cased-cd.example.com \
+  --set ingress.hosts[0].paths[0].path=/ \
+  --set ingress.hosts[0].paths[0].pathType=Prefix</code></pre>
+
+        <h3>Customize Audit Storage</h3>
+        <pre><code># Use larger PVC (default: 10Gi supports ~20M events)
+helm install cased-cd cased/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.persistence.size=50Gi \
+  --set enterprise.persistence.storageClass=fast-ssd \
+  --set imagePullSecrets[0].name=cased-cd-registry</code></pre>
+
+        <h3>Verify Deployment</h3>
+        <pre><code># Check pods are running
+kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
+
+# Check audit PVC was created
+kubectl get pvc -n argocd -l app.kubernetes.io/component=enterprise
+
+# View audit logs
+kubectl exec -n argocd deployment/cased-cd-enterprise -- \
+  tail -f /data/audit/events.jsonl</code></pre>
+
+        <h3>Enterprise Features</h3>
+        <ul>
+          <li><strong>Audit Trail:</strong> Complete history with before/after change tracking, CSV/JSON export, 10GB+ persistent storage</li>
+          <li><strong>RBAC Management:</strong> Fine-grained role-based access control per application</li>
+          <li><strong>User Management:</strong> Create and delete users directly from the UI</li>
+          <li><strong>Notifications:</strong> Configure Slack, Webhook, and Email notifications</li>
+          <li><strong>Login Tracking:</strong> Track all login attempts with IP addresses</li>
+        </ul>
+      </div>
+    </section>
+
+    <section>
+      <h2>Configuration</h2>
+
+      <h3>Connecting to ArgoCD</h3>
+      <p>Cased CD needs to know where your ArgoCD server is located. The default configuration assumes ArgoCD is installed in the <code>argocd</code> namespace with the service name <code>argocd-server</code>.</p>
+
+      <p><strong>Default value:</strong> <code>http://argocd-server.argocd.svc.cluster.local:80</code></p>
+
+      <p>If your ArgoCD installation uses a different namespace or service name, you must configure the <code>ARGOCD_SERVER</code> environment variable:</p>
+
+      <p><strong>Helm (recommended):</strong></p>
+      <pre><code># values.yaml
+argocd:
+  server: "http://argocd-server.argocd.svc.cluster.local:80"
+
+# Examples for different setups:
+# - Different namespace: "http://argocd-server.my-namespace.svc.cluster.local:80"
+# - Different service name: "http://my-argocd.argocd.svc.cluster.local:80"
+# - External ArgoCD: "https://argocd.example.com"</code></pre>
+
+      <p><strong>kubectl (requires manual edit):</strong></p>
+      <pre><code># Download the install.yaml
+curl -o install.yaml https://cased.github.io/cased-cd/install.yaml
+
+# Edit line 164 to match your ArgoCD server location
+# Then apply
+kubectl apply -f install.yaml</code></pre>
+
+      <p><strong>Docker:</strong></p>
+      <pre><code>docker run -e ARGOCD_SERVER=https://argocd.example.com ghcr.io/cased/cased-cd:latest</code></pre>
+    </section>
+
+    <section>
+      <h2>Authentication</h2>
+      <p>Cased CD uses the same authentication as ArgoCD. Log in with your ArgoCD credentials:</p>
+
+      <pre><code># Get the admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d</code></pre>
+
+      <ul>
+        <li><strong>Username:</strong> <code>admin</code></li>
+        <li><strong>Password:</strong> (from command above)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Requirements</h2>
+      <ul>
+        <li><strong>ArgoCD:</strong> v2.0 or later</li>
+        <li><strong>Kubernetes:</strong> 1.19+</li>
+        <li><strong>Browsers:</strong> Modern browsers (Chrome, Firefox, Safari, Edge)</li>
+        <li><strong>Enterprise:</strong> StorageClass for audit log PVC (uses cluster default)</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>CLI Tool</h2>
+      <p>The <code>cased-cd</code> CLI helps you debug installations and understand your Kubernetes environment.</p>
+
+      <h3>Installation</h3>
+      <p>Download pre-built binaries from the <a href="https://github.com/cased/cased-cd/releases/latest">GitHub releases page</a> for macOS, Linux (amd64/arm64), or Windows.</p>
+
+      <p>Example (macOS):</p>
+      <pre><code>curl -LO https://github.com/cased/cased-cd/releases/latest/download/cased-cd-darwin-arm64.tar.gz
+tar xzf cased-cd-darwin-arm64.tar.gz
+sudo mv cased-cd-darwin-arm64 /usr/local/bin/cased-cd</code></pre>
+
+      <h3>Commands</h3>
+      <ul>
+        <li><code>cased-cd context</code> - Show current Kubernetes context and cluster info</li>
+        <li><code>cased-cd doctor</code> - Health check for your Cased CD installation</li>
+        <li><code>cased-cd access</code> - Shows how to access your Cased CD installation</li>
+        <li><code>cased-cd version</code> - Display component versions</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Support</h2>
+      <ul>
+        <li><strong>Troubleshooting:</strong> <a href="troubleshooting.html">Common Issues & Solutions</a></li>
+        <li><strong>Website:</strong> <a href="https://cased.com">cased.com</a></li>
+        <li><strong>Contact:</strong> <a href="mailto:support@cased.com">support@cased.com</a></li>
+      </ul>
+    </section>
+
+    <footer>
+      <p>Built by <a href="https://cased.com">Cased</a></p>
+      <p style="margin-top: 10px; font-size: 0.85rem;">
+        Cased CD is built on top of <a href="https://argo-cd.readthedocs.io">ArgoCD</a>,
+        the declarative GitOps continuous delivery tool for Kubernetes.
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

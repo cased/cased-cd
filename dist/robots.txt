@@ -1,0 +1,19 @@
+# Cased CD - Deployment Infrastructure
+# Prevent search engine indexing of internal deployment tools
+
+User-agent: *
+Disallow: /
+
+# Security and audit trails should never be indexed
+Disallow: /audit-trail
+Disallow: /rbac
+Disallow: /notifications
+Disallow: /user-info
+Disallow: /applications
+Disallow: /repositories
+Disallow: /clusters
+Disallow: /projects
+
+# Allow security.txt to be discovered
+Allow: /.well-known/security.txt
+Allow: /security.txt

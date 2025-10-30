@@ -1,0 +1,78 @@
+{
+  "name": "react-diff-viewer-continued",
+  "version": "4.0.6",
+  "private": false,
+  "description": "Continuation of a simple and beautiful text diff viewer component made with diff and React",
+  "keywords": [
+    "review",
+    "code-review",
+    "diff",
+    "diff-viewer",
+    "github",
+    "react",
+    "react-component",
+    "ui"
+  ],
+  "repository": "git@github.com:aeolun/react-diff-viewer-continued.git",
+  "license": "MIT",
+  "authors": [
+    "Pranesh Ravi<praneshpranesh@gmail.com>",
+    "Bart Riepe <bart@serial-experiments.com>"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/cjs/src/index.d.ts",
+      "import": "./lib/esm/src/index.js",
+      "require": "./lib/cjs/src/index.js"
+    }
+  },
+  "main": "lib/cjs/src/index",
+  "module": "lib/esm/src/index",
+  "typings": "lib/cjs/src/index",
+  "scripts": {
+    "build": "tsc --project tsconfig.json && tsc --project tsconfig.esm.json",
+    "build:examples": "vite build examples",
+    "publish:examples": "NODE_ENV=production pnpm run build:examples && gh-pages -d examples/dist -r $GITHUB_REPO_URL",
+    "publish:examples:local": "NODE_ENV=production pnpm run build:examples && gh-pages -d examples/dist",
+    "start:examples": "vite examples",
+    "dev": "vite dev examples",
+    "test": "vitest",
+    "check": "biome check src/ test/",
+    "check:fix": "biome check --write --unsafe src/ test/"
+  },
+  "dependencies": {
+    "@emotion/css": "^11.13.5",
+    "@emotion/react": "^11.14.0",
+    "classnames": "^2.5.1",
+    "diff": "^5.2.0",
+    "memoize-one": "^6.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@semantic-release/changelog": "6.0.1",
+    "@semantic-release/git": "10.0.1",
+    "@testing-library/react": "^13.4.0",
+    "@types/diff": "^5.2.3",
+    "@types/node": "^20.17.16",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "gh-pages": "^5.0.0",
+    "happy-dom": "^13.10.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "sass": "^1.83.4",
+    "semantic-release": "^24.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3",
+    "vite": "^5.4.14",
+    "vitest": "^3.0.4"
+  },
+  "peerDependencies": {
+    "react": "^15.3.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^15.3.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+  },
+  "engines": {
+    "node": ">= 16"
+  }
+}
