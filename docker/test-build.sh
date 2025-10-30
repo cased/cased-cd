@@ -42,18 +42,18 @@ test_build_standard() {
   echo ""
 }
 
-# Test 2: Standard image configuration (no enterprise backend)
+# Test 2: Container configuration
 test_standard_container_config() {
-  section "Test 2: Standard container configuration"
+  section "Test 2: Container configuration"
 
-  # Start container with standard config
+  # Start container
   CONTAINER_ID=$(docker run -d \
     -e ARGOCD_SERVER=http://test-argocd:80 \
     --name cased-cd-test-standard \
     cased-cd-test:standard 2>/dev/null || true)
 
   if [ -z "$CONTAINER_ID" ]; then
-    fail "Failed to start standard container"
+    fail "Failed to start container"
     echo ""
     return
   fi
@@ -64,11 +64,11 @@ test_standard_container_config() {
   # Check logs for correct routing message
   LOGS=$(docker logs cased-cd-test-standard 2>&1)
 
-  if echo "$LOGS" | grep -q "Standard mode: proxying API requests directly to http://test-argocd:80"; then
-    pass "Standard mode correctly configured"
+  if echo "$LOGS" | grep -q "Proxying API requests to ArgoCD at: http://test-argocd:80"; then
+    pass "Container correctly configured to proxy to ArgoCD"
   else
-    fail "Standard mode configuration incorrect"
-    echo "Expected: 'Standard mode: proxying API requests directly to http://test-argocd:80'"
+    fail "Container configuration incorrect"
+    echo "Expected: 'Proxying API requests to ArgoCD at: http://test-argocd:80'"
     echo "Got:"
     echo "$LOGS"
   fi
@@ -79,112 +79,9 @@ test_standard_container_config() {
   echo ""
 }
 
-# Test 3: Enterprise mode configuration
-test_enterprise_container_config() {
-  section "Test 3: Enterprise mode configuration"
-
-  # Start standard container with enterprise backend env var
-  CONTAINER_ID=$(docker run -d \
-    -e ARGOCD_SERVER=http://test-argocd:80 \
-    -e ENTERPRISE_BACKEND_SERVICE=test-enterprise.namespace.svc.cluster.local \
-    --name cased-cd-test-enterprise-mode \
-    cased-cd-test:standard 2>/dev/null || true)
-
-  if [ -z "$CONTAINER_ID" ]; then
-    fail "Failed to start enterprise-mode container"
-    echo ""
-    return
-  fi
-
-  # Wait for container to start
-  sleep 2
-
-  # Check logs for correct routing message
-  LOGS=$(docker logs cased-cd-test-enterprise-mode 2>&1)
-
-  if echo "$LOGS" | grep -q "Enterprise mode enabled: proxying API requests through http://test-enterprise.namespace.svc.cluster.local:8081"; then
-    pass "Enterprise mode correctly configured"
-  else
-    fail "Enterprise mode configuration incorrect"
-    echo "Expected: 'Enterprise mode enabled: proxying API requests through http://test-enterprise.namespace.svc.cluster.local:8081'"
-    echo "Got:"
-    echo "$LOGS"
-  fi
-
-  if echo "$LOGS" | grep -q "Enterprise backend will forward requests to ArgoCD at: http://test-argocd:80"; then
-    pass "Enterprise backend ArgoCD URL correctly logged"
-  else
-    fail "Enterprise backend ArgoCD URL not logged correctly"
-  fi
-
-  # Cleanup
-  docker rm -f cased-cd-test-enterprise-mode > /dev/null 2>&1 || true
-
-  echo ""
-}
-
-# Test 4: nginx configuration is generated correctly
-test_nginx_config_generation() {
-  section "Test 4: nginx configuration generation"
-
-  # Start container and extract generated config
-  CONTAINER_ID=$(docker run -d \
-    -e ARGOCD_SERVER=http://test-argocd:80 \
-    -e ENTERPRISE_BACKEND_SERVICE=test-enterprise.svc \
-    --name cased-cd-test-config \
-    cased-cd-test:standard 2>/dev/null || true)
-
-  if [ -z "$CONTAINER_ID" ]; then
-    fail "Failed to start container for config test"
-    echo ""
-    return
-  fi
-
-  sleep 2
-
-  # Extract generated nginx config
-  docker exec cased-cd-test-config cat /tmp/nginx.conf > /tmp/generated-nginx.conf 2>/dev/null || true
-
-  if [ -f /tmp/generated-nginx.conf ]; then
-    # Check that nginx uses variable for dynamic DNS resolution
-    if grep -q 'set \$proxy_target "http://test-enterprise.svc:8081"' /tmp/generated-nginx.conf; then
-      pass "nginx config correctly sets proxy_target variable"
-    else
-      fail "nginx config does not set proxy_target variable correctly"
-      info "Config snippet:"
-      grep -E "proxy_target" /tmp/generated-nginx.conf | head -5
-    fi
-
-    # Check that proxy_pass uses the variable
-    if grep -q 'proxy_pass \$proxy_target' /tmp/generated-nginx.conf; then
-      pass "nginx config uses variable in proxy_pass directives"
-    else
-      fail "nginx config does not use variable in proxy_pass directives"
-      info "Config snippet:"
-      grep -E "proxy_pass" /tmp/generated-nginx.conf | head -5
-    fi
-
-    # Check that template variables are not left unsubstituted
-    if ! grep -q '\${' /tmp/generated-nginx.conf; then
-      pass "No unsubstituted variables in nginx config"
-    else
-      fail "Found unsubstituted variables in nginx config"
-      grep '\${' /tmp/generated-nginx.conf
-    fi
-  else
-    fail "Could not extract nginx config from container"
-  fi
-
-  # Cleanup
-  docker rm -f cased-cd-test-config > /dev/null 2>&1 || true
-  rm -f /tmp/generated-nginx.conf
-
-  echo ""
-}
-
-# Test 5: Health check endpoint works
+# Test 3: Health check endpoint works
 test_health_endpoint() {
-  section "Test 5: Health check endpoint"
+  section "Test 3: Health check endpoint"
 
   # Start container with port mapping
   CONTAINER_ID=$(docker run -d \
@@ -229,9 +126,9 @@ test_health_endpoint() {
 # Cleanup function
 cleanup() {
   info "Cleaning up test containers and images..."
-  docker rm -f cased-cd-test-standard cased-cd-test-enterprise-mode cased-cd-test-config cased-cd-test-health > /dev/null 2>&1 || true
+  docker rm -f cased-cd-test-standard cased-cd-test-health > /dev/null 2>&1 || true
   docker rmi -f cased-cd-test:standard > /dev/null 2>&1 || true
-  rm -f /tmp/docker-build-*.log /tmp/generated-nginx.conf
+  rm -f /tmp/docker-build-*.log
 }
 
 trap cleanup EXIT
@@ -239,8 +136,6 @@ trap cleanup EXIT
 # Run tests
 test_build_standard
 test_standard_container_config
-test_enterprise_container_config
-test_nginx_config_generation
 test_health_endpoint
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

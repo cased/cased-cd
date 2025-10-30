@@ -5,17 +5,9 @@ set -e
 # Uses HTTPS by default (ArgoCD's default configuration)
 ARGOCD_SERVER=${ARGOCD_SERVER:-https://argocd-server.argocd.svc.cluster.local}
 
-# Determine proxy target based on enterprise mode
-# If ENTERPRISE_BACKEND_SERVICE is set, route all API requests through the enterprise backend
-# Otherwise, route directly to ArgoCD server
-if [ -n "$ENTERPRISE_BACKEND_SERVICE" ]; then
-  export PROXY_TARGET="http://${ENTERPRISE_BACKEND_SERVICE}:8081"
-  echo "Enterprise mode enabled: proxying API requests through $PROXY_TARGET"
-  echo "Enterprise backend will forward requests to ArgoCD at: $ARGOCD_SERVER"
-else
-  export PROXY_TARGET="$ARGOCD_SERVER"
-  echo "Standard mode: proxying API requests directly to $PROXY_TARGET"
-fi
+# Set proxy target to ArgoCD server
+export PROXY_TARGET="$ARGOCD_SERVER"
+echo "Proxying API requests to ArgoCD at: $PROXY_TARGET"
 
 # Detect DNS resolver from /etc/resolv.conf
 # In Kubernetes, this will be the cluster DNS (e.g., 10.96.0.10)
