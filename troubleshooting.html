@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cased CD - Troubleshooting Guide</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif; line-height: 1.6; color: #1a1a1a; background: #fafafa; }
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    header { text-align: center; margin-bottom: 60px; padding-bottom: 40px; border-bottom: 1px solid #e0e0e0; }
+    h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 10px; color: #000; }
+    .tagline { font-size: 1.25rem; color: #666; margin-bottom: 20px; }
+    h2 { font-size: 1.75rem; margin-top: 50px; margin-bottom: 20px; color: #000; padding-bottom: 10px; border-bottom: 1px solid #e0e0e0; }
+    h3 { font-size: 1.25rem; margin-top: 30px; margin-bottom: 15px; color: #000; }
+    h4 { font-size: 1.1rem; margin-top: 25px; margin-bottom: 12px; color: #333; }
+    p { margin-bottom: 15px; color: #333; }
+    ul, ol { margin-bottom: 15px; margin-left: 25px; }
+    li { margin-bottom: 8px; color: #333; }
+    code { background: #f5f5f5; padding: 2px 6px; border-radius: 3px; font-family: 'Monaco', 'Courier New', monospace; font-size: 0.9em; color: #c7254e; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 6px; overflow-x: auto; margin-bottom: 20px; font-family: 'Monaco', 'Courier New', monospace; font-size: 0.9rem; line-height: 1.5; }
+    pre code { background: none; padding: 0; color: inherit; }
+    .warning { background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px; margin: 20px 0; border-radius: 4px; }
+    .warning p { margin: 0; color: #e65100; }
+    footer { margin-top: 80px; padding-top: 30px; border-top: 1px solid #e0e0e0; text-align: center; color: #666; font-size: 0.9rem; }
+    a { color: #2196f3; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back-link { margin-bottom: 30px; }
+    strong { font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="back-link">
+      <a href="index.html">← Back to Documentation</a>
+    </div>
+
+<header><h1>Cased CD Enterprise - Troubleshooting Guide</h1></header>
+<p>This guide helps diagnose and fix common installation issues.</p>
+<h2>Quick Diagnostic Script</h2>
+<p>Run this first to get a health report:</p>
+<pre><code>curl -sL https://raw.githubusercontent.com/cased/cased-cd/main/scripts/diagnose.sh | bash</code></pre>
+<p>Or manually:</p>
+<pre><code>kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
+kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=50</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h2>Common Issues</h2>
+<h3>1. Pod Stuck in `ImagePullBackOff`</h3>
+<p><strong>Symptom:</strong></p>
+<pre><code>NAME                        READY   STATUS             RESTARTS   AGE
+cased-cd-enterprise-xxx     0/1     ImagePullBackOff   0          2m</code></pre>
+<p><strong>Check the error:</strong></p>
+<pre><code>kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep -A 5 "Events:"</code></pre>
+<h4>Cause A: imagePullSecret Not Created</h4>
+<p><strong>Error:</strong></p>
+<pre><code>Failed to pull image "registry.cased.com/cased/cased-cd-enterprise:0.1.16":
+rpc error: code = Unknown desc = failed to pull and unpack image:
+failed to resolve reference "registry.cased.com/cased/cased-cd-enterprise:0.1.16":
+pull access denied, repository does not exist or may require authentication</code></pre>
+<p><strong>Fix:</strong></p>
+<pre><code># Create the secret with your customer token (provided by Cased support)
+kubectl create secret docker-registry cased-cd-registry \
+  --docker-server=registry.cased.com \
+  --docker-username="YOUR_CUSTOMER_NAME" \
+  --docker-password="YOUR_CUSTOMER_TOKEN" \
+  -n argocd
+
+# Verify it exists
+kubectl get secret cased-cd-registry -n argocd</code></pre>
+<h4>Cause B: Wrong Secret Name in Helm Values</h4>
+<p><strong>Fix:</strong></p>
+<pre><code># Check what secret name you used
+kubectl get secrets -n argocd | grep docker-registry
+
+# Reinstall with correct secret name
+helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.image.repository=registry.cased.com/cased/cased-cd-enterprise \
+  --set imagePullSecrets[0].name=cased-cd-registry  # ← Must match secret name</code></pre>
+<h4>Cause C: Token Expired or Invalid</h4>
+<p><strong>Check token validity:</strong></p>
+<pre><code># Try pulling the image manually
+echo "YOUR_CUSTOMER_TOKEN" | docker login registry.cased.com -u "YOUR_CUSTOMER_NAME" --password-stdin
+docker pull registry.cased.com/cased/cased-cd-enterprise:0.1.16</code></pre>
+<p>If this fails, contact support@cased.com for a new token.</p>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>2. Pod Stuck in `CrashLoopBackOff`</h3>
+<p><strong>Symptom:</strong></p>
+<pre><code>NAME                        READY   STATUS             RESTARTS   AGE
+cased-cd-enterprise-xxx     0/1     CrashLoopBackOff   5          5m</code></pre>
+<p><strong>Check logs:</strong></p>
+<pre><code>kubectl logs -n argocd -l app.kubernetes.io/component=enterprise --tail=100</code></pre>
+<h4>Cause A: Cannot Connect to ArgoCD Server</h4>
+<p><strong>Error in logs:</strong></p>
+<pre><code>Failed to connect to ArgoCD server: dial tcp 10.96.0.1:443: connect: connection refused</code></pre>
+<p><strong>Check ArgoCD is running:</strong></p>
+<pre><code>kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server</code></pre>
+<p><strong>Fix:</strong></p>
+<pre><code># If ArgoCD server isn't running, install/restart it first
+kubectl rollout status deployment/argocd-server -n argocd
+
+# Then restart Cased CD
+kubectl rollout restart deployment/cased-cd-enterprise -n argocd</code></pre>
+<h4>Cause B: Missing Environment Variables</h4>
+<p><strong>Check env vars are set:</strong></p>
+<pre><code>kubectl get deployment cased-cd-enterprise -n argocd -o yaml | grep -A 10 "env:"</code></pre>
+<p>Should include:</p>
+<pre><code>env:
+  - name: ARGOCD_SERVER
+    value: "https://argocd-server.argocd.svc.cluster.local"
+  - name: PORT
+    value: "8081"</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>3. PersistentVolumeClaim Stuck in `Pending`</h3>
+<p><strong>Symptom:</strong></p>
+<pre><code>$ kubectl get pvc -n argocd
+NAME                          STATUS    VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS
+cased-cd-enterprise-audit     Pending</code></pre>
+<p><strong>Check the error:</strong></p>
+<pre><code>kubectl describe pvc cased-cd-enterprise-audit -n argocd</code></pre>
+<h4>Cause A: No Default StorageClass</h4>
+<p><strong>Error:</strong></p>
+<pre><code>no persistent volumes available for this claim and no storage class is set</code></pre>
+<p><strong>Check storage classes:</strong></p>
+<pre><code>kubectl get storageclass</code></pre>
+<p><strong>Fix - Option 1: Use existing storage class:</strong></p>
+<pre><code>helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.auditTrail.storageClass=gp2  # ← Use your storage class name</code></pre>
+<p><strong>Fix - Option 2: Disable PVC (audit logs go to pod logs):</strong></p>
+<pre><code>helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.auditTrail.enabled=false  # ← Disable persistent audit logs</code></pre>
+<h4>Cause B: Missing EBS CSI Driver (AWS EKS)</h4>
+<p><strong>Error:</strong></p>
+<pre><code>waiting for first consumer to be created before binding
+Waiting for a volume to be created either by the external provisioner 'ebs.csi.aws.com'
+or manually by the system administrator</code></pre>
+<p><strong>On AWS EKS</strong>, the EBS CSI driver is required for persistent volumes but is <strong>not installed by default</strong>.</p>
+<p><strong>Check if EBS CSI driver is installed:</strong></p>
+<pre><code>kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+aws eks list-addons --cluster-name YOUR_CLUSTER_NAME</code></pre>
+<p><strong>Fix - Install EBS CSI driver:</strong></p>
+<ol>
+<li>Create IAM role for the driver:</li>
+<pre><code># Get your cluster's OIDC provider
+OIDC_ID=$(aws eks describe-cluster --name YOUR_CLUSTER_NAME --query "cluster.identity.oidc.issuer" --output text | cut -d '/' -f 5)
+
+# Create trust policy
+cat &gt; ebs-csi-trust-policy.json &lt;&lt; EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::YOUR_ACCOUNT_ID:oidc-provider/oidc.eks.REGION.amazonaws.com/id/$OIDC_ID"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "oidc.eks.REGION.amazonaws.com/id/$OIDC_ID:sub": "system:serviceaccount:kube-system:ebs-csi-controller-sa",
+        "oidc.eks.REGION.amazonaws.com/id/$OIDC_ID:aud": "sts.amazonaws.com"
+      }
+    }
+  }]
+}
+EOF
+
+# Create IAM role
+aws iam create-role \
+  --role-name AmazonEKS_EBS_CSI_DriverRole \
+  --assume-role-policy-document file://ebs-csi-trust-policy.json
+
+# Attach policy
+aws iam attach-role-policy \
+  --role-name AmazonEKS_EBS_CSI_DriverRole \
+  --policy-arn arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy</code></pre>
+<ol>
+<li>Install the addon:</li>
+<pre><code>aws eks create-addon \
+  --cluster-name YOUR_CLUSTER_NAME \
+  --addon-name aws-ebs-csi-driver \
+  --service-account-role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/AmazonEKS_EBS_CSI_DriverRole</code></pre>
+<ol>
+<li>Wait for it to become active (takes ~60 seconds):</li>
+<pre><code>aws eks describe-addon \
+  --cluster-name YOUR_CLUSTER_NAME \
+  --addon-name aws-ebs-csi-driver \
+  --query 'addon.status'</code></pre>
+<p>Once the driver is active, the PVC will automatically bind.</p>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>4. Cannot Access UI (Connection Refused)</h3>
+<p><strong>Symptom:</strong></p>
+<pre><code>$ kubectl port-forward svc/cased-cd 8080:80 -n argocd
+Forwarding from 127.0.0.1:8080 -&gt; 8080
+Forwarding from [::1]:8080 -&gt; 8080
+
+$ curl http://localhost:8080
+curl: (7) Failed to connect to localhost port 8080: Connection refused</code></pre>
+<p><strong>Check pod is running:</strong></p>
+<pre><code>kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd</code></pre>
+<p><strong>Check service:</strong></p>
+<pre><code>kubectl get svc cased-cd -n argocd
+kubectl describe svc cased-cd -n argocd</code></pre>
+<p><strong>Check endpoints:</strong></p>
+<pre><code>kubectl get endpoints cased-cd -n argocd</code></pre>
+<p>If endpoints are empty, the pod isn't ready. Check pod health:</p>
+<pre><code>kubectl describe pod -n argocd -l app.kubernetes.io/name=cased-cd</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>5. RBAC Errors (Enterprise Features Not Working)</h3>
+<p><strong>Symptom:</strong></p>
+<pre><code>Enterprise features show "Access Denied" or don't work</code></pre>
+<p><strong>Check RBAC role exists:</strong></p>
+<pre><code>kubectl get role cased-cd-enterprise -n argocd
+kubectl get rolebinding cased-cd-enterprise -n argocd</code></pre>
+<p><strong>Verify permissions:</strong></p>
+<pre><code>kubectl describe role cased-cd-enterprise -n argocd</code></pre>
+<p>Should allow:</p>
+<ul>
+<li><code>get</code>, <code>update</code>, <code>patch</code> on ConfigMaps: <code>argocd-rbac-cm</code>, <code>argocd-notifications-cm</code></li>
+<ul>
+<li><code>get</code>, <code>update</code>, <code>patch</code> on Secrets: <code>argocd-secret</code></li>
+</ul>
+<p><strong>Fix:</strong></p>
+<pre><code># Reinstall with enterprise enabled
+helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --install</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>6. Health Checks Failing</h3>
+<p><strong>Check liveness/readiness probes:</strong></p>
+<pre><code>kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep -A 10 "Liveness\|Readiness"</code></pre>
+<p><strong>Test health endpoint manually:</strong></p>
+<pre><code># Port-forward to the pod directly
+kubectl port-forward -n argocd pod/cased-cd-enterprise-xxx 8081:8081
+
+# Test in another terminal
+curl http://localhost:8081/health</code></pre>
+<p>Expected response:</p>
+<pre><code>{"status":"ok","version":"0.1.16"}</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h3>7. Wrong Image Version</h3>
+<p><strong>Check what image is running:</strong></p>
+<pre><code>kubectl get deployment cased-cd-enterprise -n argocd -o jsonpath='{.spec.template.spec.containers[0].image}'</code></pre>
+<p><strong>Update to latest:</strong></p>
+<pre><code>helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.image.tag=0.1.16  # ← Specify version</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h2>Debug Mode</h2>
+<p>Enable verbose logging:</p>
+<pre><code>helm upgrade cased-cd cased-cd/cased-cd \
+  --namespace argocd \
+  --set enterprise.enabled=true \
+  --set enterprise.debug=true</code></pre>
+<p>Then check logs:</p>
+<pre><code>kubectl logs -n argocd -l app.kubernetes.io/component=enterprise -f</code></pre>
+<hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
+<h2>Getting Help</h2>
+<h3>Collect Debug Information</h3>
+<p>Run this and send output to support:</p>
+<pre><code>#!/bin/bash
+echo "=== Cased CD Debug Report ==="
+echo "Date: $(date)"
+echo ""
+
+echo "=== Pods ==="
+kubectl get pods -n argocd -l app.kubernetes.io/name=cased-cd
+
+echo ""
+echo "=== Deployments ==="
+kubectl get deployments -n argocd -l app.kubernetes.io/name=cased-cd
+
+echo ""
+echo "=== Services ==="
+kubectl get svc -n argocd -l app.kubernetes.io/name=cased-cd
+
+echo ""
+echo "=== PVCs ==="
+kubectl get pvc -n argocd -l app.kubernetes.io/name=cased-cd
+
+echo ""
+echo "=== Secrets ==="
+kubectl get secrets -n argocd | grep cased
+
+echo ""
+echo "=== Recent Pod Events ==="
+kubectl get events -n argocd --sort-by='.lastTimestamp' | grep cased-cd | tail -20
+
+echo ""
+echo "=== Pod Logs (Last 50 lines) ==="
+kubectl logs -n argocd -l app.kubernetes.io/name=cased-cd --tail=50
+
+echo ""
+echo "=== Enterprise Pod Logs (Last 50 lines) ==="
+kubectl logs -n argocd -l app.kubernetes.io/component=enterprise --tail=50 2&gt;/dev/null || echo "No enterprise pods found"</code></pre>
+<p>Save as <code>debug-report.sh</code>, run it:</p>
+<pre><code>chmod +x debug-report.sh
+./debug-report.sh &gt; debug-report.txt</code></pre>
+<p>Send <code>debug-report.txt</code> to support@cased.com</p>
+<h3>Contact Support</h3>
+<ul>
+<li><strong>Email</strong>: support@cased.com</li>
+<ul>
+<li><strong>Documentation</strong>: https://cased.github.io/cased-cd</li>
+<ul>
+<li><strong>GitHub Issues</strong>: https://github.com/cased/cased-cd/issues</li>
+</ul>
+<p>Include:</p>
+<li>Kubernetes version: <code>kubectl version --short</code></li>
+<li>ArgoCD version: <code>kubectl get pods -n argocd -l app.kubernetes.io/name=argocd-server -o jsonpath='{.items[0].spec.containers[0].image}'</code></li>
+<ul>
+<li>Debug report from above</li>
+<ul>
+<li>Steps to reproduce the issue</li>
+</ul>
+
+    <footer>
+      <p>Built by <a href="https://cased.com">Cased</a> | <a href="index.html">Documentation Home</a> | <a href="mailto:support@cased.com">Support</a></p>
+    </footer>
+  </div>
+</body>
+</html>
