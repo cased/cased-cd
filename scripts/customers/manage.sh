@@ -1,1 +1,0 @@
-/Users/tnm/bin/cased-cd-customer-manage.sh
