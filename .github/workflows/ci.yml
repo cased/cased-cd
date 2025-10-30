@@ -93,16 +93,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Build enterprise image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          target: enterprise
-          push: false
-          tags: cased-cd-test:enterprise
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Run Docker integration tests
         run: ./docker/test-build.sh
 

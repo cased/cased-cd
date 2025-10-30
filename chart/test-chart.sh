@@ -48,7 +48,6 @@ test_standard_template() {
   section "Test 2: Standard deployment template"
 
   helm template test-standard "$SCRIPT_DIR" \
-    --set enterprise.enabled=false \
     > /tmp/helm-standard.yaml 2>&1
 
   if [ $? -eq 0 ]; then
@@ -82,64 +81,9 @@ test_standard_template() {
   echo ""
 }
 
-# Test 3: Enterprise deployment template
-test_enterprise_template() {
-  section "Test 3: Enterprise deployment template"
-
-  helm template test-enterprise "$SCRIPT_DIR" \
-    --set enterprise.enabled=true \
-    > /tmp/helm-enterprise.yaml 2>&1
-
-  if [ $? -eq 0 ]; then
-    pass "Enterprise template renders successfully"
-  else
-    fail "Enterprise template rendering failed"
-    cat /tmp/helm-enterprise.yaml
-    echo ""
-    return
-  fi
-
-  # Check that enterprise deployment IS present
-  if grep -q "name: test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml; then
-    pass "Enterprise backend deployment rendered"
-  else
-    fail "Enterprise backend deployment missing"
-  fi
-
-  # Check that ENTERPRISE_BACKEND_SERVICE IS set in frontend
-  if grep -q "ENTERPRISE_BACKEND_SERVICE" /tmp/helm-enterprise.yaml; then
-    pass "ENTERPRISE_BACKEND_SERVICE environment variable present"
-  else
-    fail "ENTERPRISE_BACKEND_SERVICE environment variable missing"
-  fi
-
-  # Check that enterprise service exists
-  if grep -q "kind: Service" /tmp/helm-enterprise.yaml && grep -q "test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml; then
-    pass "Enterprise backend service created"
-  else
-    fail "Enterprise backend service missing"
-  fi
-
-  # Check that PVC is created
-  if grep -q "kind: PersistentVolumeClaim" /tmp/helm-enterprise.yaml; then
-    pass "Enterprise audit log PVC created"
-  else
-    fail "Enterprise audit log PVC missing"
-  fi
-
-  # Check that enterprise backend has ARGOCD_SERVER env var
-  if grep -A50 "name: test-enterprise.*-enterprise" /tmp/helm-enterprise.yaml | grep -q "name: ARGOCD_SERVER"; then
-    pass "Enterprise backend has ARGOCD_SERVER configured"
-  else
-    fail "Enterprise backend missing ARGOCD_SERVER env var"
-  fi
-
-  echo ""
-}
-
-# Test 4: Custom ArgoCD server configuration
+# Test 3: Custom ArgoCD server configuration
 test_custom_argocd_server() {
-  section "Test 4: Custom ArgoCD server configuration"
+  section "Test 3: Custom ArgoCD server configuration"
 
   helm template test-custom "$SCRIPT_DIR" \
     --set argocd.server="http://custom-argocd.custom-ns.svc.cluster.local:8080" \
@@ -154,37 +98,35 @@ test_custom_argocd_server() {
   echo ""
 }
 
-# Test 5: Resource limits and requests
+# Test 4: Resource limits and requests
 test_resource_config() {
-  section "Test 5: Resource configuration"
+  section "Test 4: Resource configuration"
 
   helm template test-resources "$SCRIPT_DIR" \
-    --set enterprise.enabled=true \
     > /tmp/helm-resources.yaml 2>&1
 
-  # Check frontend resources
+  # Check resource limits are configured
   if grep -A5 "resources:" /tmp/helm-resources.yaml | grep -q "limits:"; then
-    pass "Frontend resource limits configured"
+    pass "Resource limits configured"
   else
-    info "Frontend resource limits not found (may be using defaults)"
+    info "Resource limits not found (may be using defaults)"
   fi
 
-  # Check enterprise backend resources (search more lines to find the deployment's resources section)
-  if grep -A100 "kind: Deployment" /tmp/helm-resources.yaml | grep -A100 "name: test-resources.*-enterprise" | grep "cpu: 100m" > /dev/null; then
-    pass "Enterprise backend resource requests configured"
+  # Check resource requests are configured
+  if grep -A5 "resources:" /tmp/helm-resources.yaml | grep -q "requests:"; then
+    pass "Resource requests configured"
   else
-    fail "Enterprise backend resource configuration missing"
+    info "Resource requests not found (may be using defaults)"
   fi
 
   echo ""
 }
 
-# Test 6: Security context
+# Test 5: Security context
 test_security_context() {
-  section "Test 6: Security context configuration"
+  section "Test 5: Security context configuration"
 
   helm template test-security "$SCRIPT_DIR" \
-    --set enterprise.enabled=true \
     > /tmp/helm-security.yaml 2>&1
 
   # Check for non-root user
@@ -211,33 +153,6 @@ test_security_context() {
   echo ""
 }
 
-# Test 7: Persistence configuration
-test_persistence_config() {
-  section "Test 7: Persistence configuration"
-
-  helm template test-persistence "$SCRIPT_DIR" \
-    --set enterprise.enabled=true \
-    --set enterprise.persistence.size=20Gi \
-    --set enterprise.persistence.storageClass=fast-ssd \
-    > /tmp/helm-persistence.yaml 2>&1
-
-  # Check PVC size
-  if grep -A20 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storage: 20Gi"; then
-    pass "Custom PVC size applied (20Gi)"
-  else
-    fail "Custom PVC size not applied"
-  fi
-
-  # Check storage class
-  if grep -A20 "kind: PersistentVolumeClaim" /tmp/helm-persistence.yaml | grep -q "storageClassName: fast-ssd"; then
-    pass "Custom storage class applied"
-  else
-    fail "Custom storage class not applied"
-  fi
-
-  echo ""
-}
-
 # Cleanup
 cleanup() {
   rm -f /tmp/helm-*.yaml /tmp/helm-lint.log
@@ -248,11 +163,9 @@ trap cleanup EXIT
 # Run tests
 test_chart_lint
 test_standard_template
-test_enterprise_template
 test_custom_argocd_server
 test_resource_config
 test_security_context
-test_persistence_config
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ $TEST_FAILURES -eq 0 ]; then
