@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, feature/*, fix/*, security/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-typecheck:
+    name: Lint and Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run TypeScript type check
+        run: npm run type-check
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm run test:run
+
+  nginx-config-tests:
+    name: nginx Configuration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install nginx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nginx
+
+      - name: Run nginx configuration tests
+        run: ./docker/test-entrypoint.sh
+
+  helm-chart-tests:
+    name: Helm Chart Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: 'latest'
+
+      - name: Run Helm chart tests
+        run: ./chart/test-chart.sh
+
+  docker-build-tests:
+    name: Docker Build Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build standard image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          target: standard
+          push: false
+          tags: cased-cd-test:standard
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Docker integration tests
+        run: ./docker/test-build.sh
+
+  build-frontend:
+    name: Build Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Check build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "Build output directory 'dist' not found"
+            exit 1
+          fi
+          if [ ! -f "dist/index.html" ]; then
+            echo "index.html not found in build output"
+            exit 1
+          fi
+          echo "✓ Build output validated"
+
+  all-tests-passed:
+    name: All Tests Passed
+    runs-on: ubuntu-latest
+    needs:
+      - lint-and-typecheck
+      - unit-tests
+      - nginx-config-tests
+      - helm-chart-tests
+      - docker-build-tests
+      - build-frontend
+    steps:
+      - name: All tests passed
+        run: echo "✅ All CI tests passed successfully!"

@@ -1,0 +1,225 @@
+worker_processes auto;
+pid /tmp/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include /etc/nginx/mime.types;
+    default_type application/octet-stream;
+
+    # Use /tmp for cache directories (writable by non-root user)
+    client_body_temp_path /tmp/client_temp;
+    proxy_temp_path       /tmp/proxy_temp;
+    fastcgi_temp_path     /tmp/fastcgi_temp;
+    uwsgi_temp_path       /tmp/uwsgi_temp;
+    scgi_temp_path        /tmp/scgi_temp;
+
+    # Rate limiting zones
+    # Login endpoint: 10 requests per minute per IP, burst of 5
+    limit_req_zone $binary_remote_addr zone=login_limit:10m rate=10r/m;
+    # General API: 200 requests per second per IP, burst of 100
+    limit_req_zone $binary_remote_addr zone=api_limit:10m rate=200r/s;
+
+    # Logging
+    # Custom log format including rate limit info
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" rt=$request_time';
+
+    access_log /var/log/nginx/access.log main;
+    error_log /var/log/nginx/error.log warn;
+
+    # Performance
+    sendfile on;
+    tcp_nopush on;
+    tcp_nodelay on;
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+
+    # Request size limits (prevent large request DoS)
+    client_max_body_size 10m;
+    client_body_buffer_size 128k;
+
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1000;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    server {
+        listen 8080;
+        server_name _;
+        root /usr/share/nginx/html;
+        index index.html;
+
+        # Resolver for dynamic upstream resolution
+        # This allows nginx to resolve DNS at request time instead of startup
+        # DNS_RESOLVER is auto-detected from /etc/resolv.conf by entrypoint.sh
+        resolver ${DNS_RESOLVER} valid=10s ipv6=off;
+        resolver_timeout 5s;
+
+        # Set proxy target as a variable (enables runtime DNS resolution)
+        set $proxy_target "${PROXY_TARGET}";
+
+        # Custom error pages
+        error_page 429 /429.html;
+        location = /429.html {
+            internal;
+        }
+
+        # Security headers
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-XSS-Protection "1; mode=block" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header X-Permitted-Cross-Domain-Policies "none" always;
+        add_header Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()" always;
+
+        # HSTS (HTTP Strict Transport Security)
+        # Note: Only effective when served over HTTPS (e.g., behind TLS-terminating Ingress/LoadBalancer)
+        # max-age=31536000 (1 year), includeSubDomains, preload
+        add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+
+        # Content Security Policy (CSP)
+        # - default-src 'self': Only load resources from same origin by default
+        # - script-src 'self' 'unsafe-inline': Allow inline scripts (needed for React)
+        # - style-src 'self' 'unsafe-inline': Allow inline styles (needed for Tailwind)
+        # - img-src 'self' data: blob:: Allow images from same origin, data URIs, and blobs
+        # - font-src 'self' data:: Allow fonts from same origin and data URIs
+        # - connect-src 'self': Only allow API calls to same origin
+        # - frame-ancestors 'none': Prevent embedding in iframes
+        # - base-uri 'self': Restrict base tag to same origin
+        # - form-action 'self': Only allow forms to submit to same origin
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
+
+        # Health check endpoint
+        location /health {
+            access_log off;
+            return 200 "healthy\n";
+            add_header Content-Type text/plain;
+        }
+
+        # RFC 9116: Serve security.txt from .well-known location
+        location = /.well-known/security.txt {
+            alias /usr/share/nginx/html/security.txt;
+            add_header Content-Type text/plain;
+        }
+
+        # Also serve from root for convenience
+        location = /security.txt {
+            add_header Content-Type text/plain;
+        }
+
+        # Login endpoint with strict rate limiting
+        location /api/v1/session {
+            # Rate limit: 10 requests per minute per IP, allow burst of 5
+            limit_req zone=login_limit burst=5 nodelay;
+
+            # Return 429 with custom error page on rate limit
+            limit_req_status 429;
+
+            # Handle preflight OPTIONS requests
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+                add_header 'Access-Control-Max-Age' '86400' always;
+                add_header 'Content-Type' 'text/plain; charset=utf-8';
+                add_header 'Content-Length' '0';
+                return 204;
+            }
+
+            # Proxy to ArgoCD server
+            # Note: When using a variable, don't include a URI path - it forwards the full request URI
+            proxy_pass $proxy_target;
+            proxy_http_version 1.1;
+
+            # SSL settings for HTTPS backends (allows self-signed certs)
+            proxy_ssl_verify off;
+            proxy_ssl_server_name on;
+
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+
+            # Proxy headers
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+
+            # Timeouts
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+        }
+
+        # Proxy API requests to ArgoCD server
+        location /api/ {
+            # Rate limit: 200 requests per second per IP, allow burst of 100
+            limit_req zone=api_limit burst=100 nodelay;
+            limit_req_status 429;
+            # Handle preflight OPTIONS requests
+            if ($request_method = 'OPTIONS') {
+                add_header 'Access-Control-Allow-Origin' '*' always;
+                add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+                add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+                add_header 'Access-Control-Max-Age' '86400' always;
+                add_header 'Content-Type' 'text/plain; charset=utf-8';
+                add_header 'Content-Length' '0';
+                return 204;
+            }
+
+            # Proxy to ArgoCD server
+            # Note: When using a variable, don't include a URI path - it forwards the full request URI
+            proxy_pass $proxy_target;
+            proxy_http_version 1.1;
+
+            # SSL settings for HTTPS backends (allows self-signed certs)
+            proxy_ssl_verify off;
+            proxy_ssl_server_name on;
+
+            # CORS headers
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, PATCH, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Authorization, Content-Type, Accept' always;
+
+            # Proxy headers
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+
+            # Timeouts
+            proxy_connect_timeout 30s;
+            proxy_send_timeout 30s;
+            proxy_read_timeout 30s;
+
+            # Disable buffering for SSE/streaming responses
+            proxy_buffering off;
+        }
+
+        # Serve static files and handle SPA routing
+        location / {
+            try_files $uri $uri/ /index.html;
+
+            # Cache static assets
+            location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+                expires 1y;
+                add_header Cache-Control "public, immutable";
+            }
+        }
+
+        # Don't cache index.html
+        location = /index.html {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Pragma "no-cache";
+            add_header Expires "0";
+        }
+    }
+}
