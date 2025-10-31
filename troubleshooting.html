@@ -54,9 +54,9 @@ cased-cd-enterprise-xxx     0/1     ImagePullBackOff   0          2m</code></pre
 <pre><code>kubectl describe pod -n argocd -l app.kubernetes.io/component=enterprise | grep -A 5 "Events:"</code></pre>
 <h4>Cause A: imagePullSecret Not Created</h4>
 <p><strong>Error:</strong></p>
-<pre><code>Failed to pull image "registry.cased.com/cased/cased-cd-enterprise:0.2.0":
+<pre><code>Failed to pull image "registry.cased.com/cased/cased-cd-enterprise:0.2.8":
 rpc error: code = Unknown desc = failed to pull and unpack image:
-failed to resolve reference "registry.cased.com/cased/cased-cd-enterprise:0.2.0":
+failed to resolve reference "registry.cased.com/cased/cased-cd-enterprise:0.2.8":
 pull access denied, repository does not exist or may require authentication</code></pre>
 <p><strong>Fix:</strong></p>
 <pre><code># Create the secret with your customer token (provided by Cased support)
@@ -82,7 +82,7 @@ helm upgrade cased-cd cased-cd/cased-cd \
 <p><strong>Check token validity:</strong></p>
 <pre><code># Try pulling the image manually
 echo "YOUR_CUSTOMER_TOKEN" | docker login registry.cased.com -u "YOUR_CUSTOMER_NAME" --password-stdin
-docker pull registry.cased.com/cased/cased-cd-enterprise:0.2.0</code></pre>
+docker pull registry.cased.com/cased/cased-cd-enterprise:0.2.8</code></pre>
 <p>If this fails, contact support@cased.com for a new token.</p>
 <hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
 <h3>2. Pod Stuck in `CrashLoopBackOff`</h3>
@@ -237,7 +237,7 @@ kubectl port-forward -n argocd pod/cased-cd-enterprise-xxx 8081:8081
 # Test in another terminal
 curl http://localhost:8081/health</code></pre>
 <p>Expected response:</p>
-<pre><code>{"status":"ok","version":"0.2.0"}</code></pre>
+<pre><code>{"status":"ok","version":"0.2.8"}</code></pre>
 <hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
 <h3>7. Wrong Image Version</h3>
 <p><strong>Check what image is running:</strong></p>
@@ -245,7 +245,7 @@ curl http://localhost:8081/health</code></pre>
 <p><strong>Update to latest:</strong></p>
 <pre><code>helm upgrade cased-cd cased-cd/cased-cd \
   --namespace argocd \
-  --set enterprise.image.tag=0.2.0  # ← Specify version</code></pre>
+  --set enterprise.image.tag=0.2.8  # ← Specify version</code></pre>
 <hr style="border:0; border-top:1px solid #e0e0e0; margin:40px 0;">
 <h2>Debug Mode</h2>
 <p>Enable verbose logging:</p>
