@@ -2,8 +2,8 @@ apiVersion: v2
 name: cased-cd
 description: A modern UI for ArgoCD
 type: application
-version: 0.2.6
-appVersion: "0.2.6"
+version: 0.2.7
+appVersion: "0.2.7"
 keywords:
   - argocd
   - gitops
