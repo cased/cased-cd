@@ -1,0 +1,65 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies
+node_modules
+
+# Build output
+dist
+dist-ssr
+*.local
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.vscode/settings.local.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Claude Code
+.claude/
+
+# ArgoCD local development
+.argocd-credentials
+.argocd-portforward.pid
+
+# Temporary files
+*.tmp
+*.temp
+.cache
+.vite
+
+# Test coverage
+coverage
+.nyc_output
+
+# Backend build artifacts
+backend/cased-backend
+backend/rbac-proxy
+
+# CLI build artifacts
+cli/cased-cd
+
+# Customer management
+# Database stored outside project: ~/.cased-cd-customers.json
+# Keeping this for safety in case files are accidentally created here
+scripts/customers/
+.customers.json
+customers.csv
