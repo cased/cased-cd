@@ -8,7 +8,7 @@ describe('API Client Module', () => {
   beforeEach(() => {
     // Mock window.location
     delete (window as any).location
-    window.location = { ...originalLocation, href: '' } as Location
+    ;(window as any).location = { ...originalLocation, href: '' }
 
     // Mock localStorage
     Object.defineProperty(window, 'localStorage', {
@@ -22,7 +22,7 @@ describe('API Client Module', () => {
   })
 
   afterEach(() => {
-    window.location = originalLocation
+    ;(window as any).location = originalLocation
     vi.clearAllMocks()
     vi.resetModules()
   })

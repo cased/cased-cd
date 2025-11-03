@@ -43,7 +43,6 @@ describe('Projects Service', () => {
         namespace: 'argocd',
       },
       spec: {
-        description: 'Default project',
         sourceRepos: ['*'],
         destinations: [
           {
@@ -138,31 +137,31 @@ describe('Projects Service', () => {
       it('should update an existing project', async () => {
         const updatedProject = {
           ...mockProject,
-          spec: { ...mockProject.spec, description: 'Updated description' },
+          spec: { ...mockProject.spec, sourceRepos: ['*'] },
         }
         vi.mocked(api.put).mockResolvedValue({ data: updatedProject } as any)
 
-        const result = await projectsApi.updateProject('default', { spec: { description: 'Updated description' } })
+        const result = await projectsApi.updateProject('default', { spec: { sourceRepos: ['https://github.com/org/repo'] } })
 
-        expect(api.put).toHaveBeenCalledWith('/projects/default', { spec: { description: 'Updated description' } })
+        expect(api.put).toHaveBeenCalledWith('/projects/default', { spec: { sourceRepos: ['https://github.com/org/repo'] } })
         expect(result).toEqual(updatedProject)
       })
 
       it('should handle partial project updates', async () => {
         vi.mocked(api.put).mockResolvedValue({ data: mockProject } as any)
 
-        await projectsApi.updateProject('default', { spec: { description: 'New description' } })
+        await projectsApi.updateProject('default', { spec: { sourceRepos: ['*'] } })
 
         const callArgs = vi.mocked(api.put).mock.calls[0]
-        expect(callArgs[1]).toEqual({ spec: { description: 'New description' } })
+        expect(callArgs[1]).toEqual({ spec: { sourceRepos: ['*'] } })
       })
 
       it('should URL-encode project name in update request', async () => {
         vi.mocked(api.put).mockResolvedValue({ data: mockProject } as any)
 
-        await projectsApi.updateProject('my-project', { spec: { description: 'Updated' } })
+        await projectsApi.updateProject('my-project', { spec: { sourceRepos: ['*'] } })
 
-        expect(api.put).toHaveBeenCalledWith('/projects/my-project', { spec: { description: 'Updated' } })
+        expect(api.put).toHaveBeenCalledWith('/projects/my-project', { spec: { sourceRepos: ['*'] } })
       })
     })
 
@@ -207,7 +206,6 @@ describe('Projects Service', () => {
         namespace: 'argocd',
       },
       spec: {
-        description: 'Default project',
         sourceRepos: ['*'],
         destinations: [
           {
@@ -292,7 +290,7 @@ describe('Projects Service', () => {
       it('should update project and invalidate queries', async () => {
         const updatedProject = {
           ...mockProject,
-          spec: { ...mockProject.spec, description: 'Updated' },
+          spec: { ...mockProject.spec, sourceRepos: ['*'] },
         }
         vi.mocked(api.put).mockResolvedValue({ data: updatedProject } as any)
 
@@ -300,7 +298,7 @@ describe('Projects Service', () => {
 
         result.current.mutate({
           name: 'default',
-          project: { spec: { description: 'Updated' } },
+          project: { spec: { sourceRepos: ['*'] } },
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))

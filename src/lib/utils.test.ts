@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars, no-constant-binary-expression */
+/* eslint-disable no-constant-binary-expression */
 import { describe, it, expect } from 'vitest'
 import { cn, formatRepoUrl } from './utils'
 

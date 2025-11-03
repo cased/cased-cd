@@ -55,12 +55,7 @@ describe('Clusters Service', () => {
         status: 'Successful',
         message: 'Cluster connection successful',
       },
-      serverVersion: '1.28',
       info: {
-        connectionState: {
-          status: 'Successful',
-          message: 'Cluster connection successful',
-        },
         serverVersion: '1.28',
         applicationsCount: 5,
       },
@@ -235,9 +230,7 @@ describe('Clusters Service', () => {
         status: 'Successful',
         message: 'Cluster connection successful',
       },
-      serverVersion: '1.28',
       info: {
-        connectionState: { status: 'Successful', message: 'Connected' },
         serverVersion: '1.28',
         applicationsCount: 5,
       },
