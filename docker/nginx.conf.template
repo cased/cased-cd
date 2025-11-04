@@ -88,11 +88,11 @@ http {
         # - style-src 'self' 'unsafe-inline': Allow inline styles (needed for Tailwind)
         # - img-src 'self' data: blob:: Allow images from same origin, data URIs, and blobs
         # - font-src 'self' data:: Allow fonts from same origin and data URIs
-        # - connect-src 'self': Only allow API calls to same origin
+        # - connect-src 'self' https://api.cased.com: Allow API calls to same origin and Cased API (for community user tracking)
         # - frame-ancestors 'none': Prevent embedding in iframes
         # - base-uri 'self': Restrict base tag to same origin
         # - form-action 'self': Only allow forms to submit to same origin
-        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.cased.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
 
         # Health check endpoint
         location /health {

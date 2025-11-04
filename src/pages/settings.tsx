@@ -201,6 +201,34 @@ export function SettingsPage() {
             </Card>
           </div>
 
+          {/* Development Section (localhost only) */}
+          {isLocalCluster && (
+            <div className="mt-6">
+              <h2 className="text-sm font-semibold text-black dark:text-white mb-3">
+                Development
+              </h2>
+              <Card className="border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-sm">Testing</CardTitle>
+                  <CardDescription className="text-xs">
+                    Development tools (only visible on local clusters)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0">
+                  <button
+                    onClick={() => {
+                      localStorage.removeItem('cased_cd_welcome_shown');
+                      window.location.reload();
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium rounded-md border bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors"
+                  >
+                    Reset Welcome Modal
+                  </button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
       </PageContent>
     </div>
   );
