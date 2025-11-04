@@ -21,7 +21,6 @@ import { Route as AuthenticatedGpgkeysRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedClustersRouteImport } from './routes/_authenticated/clusters'
 import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
 import { Route as AuthenticatedApplicationsRouteImport } from './routes/_authenticated/applications'
-import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedApplicationsIndexRouteImport } from './routes/_authenticated/applications/index'
 import { Route as AuthenticatedApplicationsNameRouteImport } from './routes/_authenticated/applications.$name'
 import { Route as AuthenticatedApplicationsNameIndexRouteImport } from './routes/_authenticated/applications.$name/index'
@@ -94,11 +93,6 @@ const AuthenticatedApplicationsRoute =
     path: '/applications',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
-  getParentRoute: () => AuthenticatedRoute,
-} as any)
 const AuthenticatedApplicationsIndexRoute =
   AuthenticatedApplicationsIndexRouteImport.update({
     id: '/',
@@ -156,7 +150,6 @@ const AuthenticatedApplicationsNameDiffRoute =
 
 export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
-  '/accounts': typeof AuthenticatedAccountsRoute
   '/applications': typeof AuthenticatedApplicationsRouteWithChildren
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/clusters': typeof AuthenticatedClustersRoute
@@ -179,7 +172,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
-  '/accounts': typeof AuthenticatedAccountsRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/clusters': typeof AuthenticatedClustersRoute
   '/gpgkeys': typeof AuthenticatedGpgkeysRoute
@@ -202,7 +194,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
-  '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/applications': typeof AuthenticatedApplicationsRouteWithChildren
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/clusters': typeof AuthenticatedClustersRoute
@@ -227,7 +218,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/login'
-    | '/accounts'
     | '/applications'
     | '/certificates'
     | '/clusters'
@@ -250,7 +240,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
-    | '/accounts'
     | '/certificates'
     | '/clusters'
     | '/gpgkeys'
@@ -272,7 +261,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authenticated'
     | '/login'
-    | '/_authenticated/accounts'
     | '/_authenticated/applications'
     | '/_authenticated/certificates'
     | '/_authenticated/clusters'
@@ -383,13 +371,6 @@ declare module '@tanstack/react-router' {
       path: '/applications'
       fullPath: '/applications'
       preLoaderRoute: typeof AuthenticatedApplicationsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/accounts': {
-      id: '/_authenticated/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof AuthenticatedAccountsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/applications/': {
@@ -509,7 +490,6 @@ const AuthenticatedApplicationsRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
-  AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedApplicationsRoute: typeof AuthenticatedApplicationsRouteWithChildren
   AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedClustersRoute: typeof AuthenticatedClustersRoute
@@ -523,7 +503,6 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedApplicationsRoute: AuthenticatedApplicationsRouteWithChildren,
   AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedClustersRoute: AuthenticatedClustersRoute,
