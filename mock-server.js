@@ -27,8 +27,72 @@ app.post('/api/v1/session', (req, res) => {
   }
 })
 
-// In-memory applications store
-let applications = [
+// Function to generate applications
+const generateApplications = (count) => {
+  const apps = []
+  const projects = ['production', 'staging', 'infrastructure', 'development']
+  const statuses = ['Synced', 'OutOfSync', 'Progressing']
+  const healthStatuses = ['Healthy', 'Degraded', 'Progressing', 'Unknown']
+  const services = ['web', 'api', 'auth', 'payment', 'notification', 'database', 'cache', 'monitoring', 'worker', 'analytics']
+  const environments = ['prod', 'staging', 'dev', 'test']
+
+  for (let i = 0; i < count; i++) {
+    const service = services[i % services.length]
+    const env = environments[i % environments.length]
+    const project = projects[i % projects.length]
+    const syncStatus = statuses[i % statuses.length]
+    const healthStatus = healthStatuses[i % healthStatuses.length]
+
+    apps.push({
+      metadata: {
+        name: `${service}-${env}-${i}`,
+        namespace: 'argocd',
+      },
+      spec: {
+        project,
+        source: {
+          repoURL: `https://github.com/acme-corp/${service}`,
+          path: `k8s/${env}`,
+          targetRevision: `v${Math.floor(i / 10)}.${i % 10}.${i % 5}`,
+        },
+        destination: {
+          server: 'https://kubernetes.default.svc',
+          namespace: env,
+        },
+        syncPolicy: i % 3 === 0 ? {
+          automated: {
+            prune: true,
+            selfHeal: true,
+          },
+        } : null,
+      },
+      status: {
+        sync: {
+          status: syncStatus,
+          revision: `${i.toString(16)}a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f`,
+        },
+        health: {
+          status: healthStatus,
+        },
+        ...(syncStatus === 'Progressing' ? {
+          operationState: {
+            phase: 'Running',
+            message: 'Deploying new version',
+            startedAt: new Date(Date.now() - (i % 60) * 60 * 1000).toISOString(),
+          }
+        } : {})
+      },
+    })
+  }
+
+  return apps
+}
+
+// In-memory applications store - generate 1000 apps
+let applications = generateApplications(1000)
+
+// Keep a few specific apps at the beginning for demos
+const specificApps = [
       {
         metadata: {
           name: 'guestbook',
@@ -85,6 +149,9 @@ let applications = [
         },
       },
 ]
+
+// Prepend specific demo apps to the generated ones
+applications = [...specificApps, ...applications]
 
 // Mock applications list endpoint
 app.get('/api/v1/applications', (req, res) => {
