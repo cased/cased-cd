@@ -1,6 +1,6 @@
 import { createFileRoute, useParams } from '@tanstack/react-router'
 import { useState } from 'react'
-import { useResourceTree } from '@/services/applications'
+import { useResourceTree, useApplication } from '@/services/applications'
 import { ResourceTree } from '@/components/resource-tree'
 import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
@@ -31,6 +31,7 @@ interface ResourceNode {
 function TreePage() {
   const { name } = useParams({ from: '/_authenticated/applications/$name/tree' })
   const { data, isLoading, error, refetch } = useResourceTree(name || '')
+  const { data: app } = useApplication(name || '')
   const [selectedResource, setSelectedResource] = useState<ResourceNode | null>(null)
 
   if (isLoading) {
@@ -71,10 +72,12 @@ function TreePage() {
             onResourceClick={setSelectedResource}
           />
 
-          {selectedResource && (
+          {selectedResource && app && (
             <ResourceDetailsPanel
               resource={selectedResource}
               onClose={() => setSelectedResource(null)}
+              appName={name || ''}
+              app={app}
             />
           )}
         </>

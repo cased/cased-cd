@@ -1,10 +1,14 @@
-import { IconClose, IconCopy, IconDownload, IconDocumentCode } from 'obra-icons-react'
+import { useState } from 'react'
+import { IconClose, IconCopy, IconDownload, IconDocumentCode, IconEdit } from 'obra-icons-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Light as SyntaxHighlighter } from 'react-syntax-highlighter'
 import yaml from 'react-syntax-highlighter/dist/esm/languages/hljs/yaml'
 import { atomOneDark, atomOneLight } from 'react-syntax-highlighter/dist/esm/styles/hljs'
 import * as YAML from 'js-yaml'
+import { ResourceEditModal } from './resource-edit-modal'
+import { useResource } from '@/services/applications'
+import type { Application } from '@/types/api'
 
 SyntaxHighlighter.registerLanguage('yaml', yaml)
 
@@ -16,19 +20,36 @@ interface K8sResource {
   health?: {
     status?: string
   }
+  group?: string
+  version?: string
 }
 
 interface ResourceDetailsPanelProps {
   resource: K8sResource
   onClose: () => void
-  manifest?: Record<string, unknown>
+  appName: string
+  app: Application
 }
 
-export function ResourceDetailsPanel({ resource, onClose, manifest }: ResourceDetailsPanelProps) {
+export function ResourceDetailsPanel({ resource, onClose, appName, app }: ResourceDetailsPanelProps) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
+  // Fetch the resource manifest
+  const { data: resourceData } = useResource({
+    appName,
+    resourceName: resource.name,
+    kind: resource.kind,
+    namespace: resource.namespace,
+    group: resource.group,
+    version: resource.version,
+  })
+
+  const manifest = resourceData as Record<string, unknown> | undefined
+
   // Convert manifest to YAML string
   const yamlString = manifest
     ? YAML.dump(manifest, { indent: 2, lineWidth: -1 })
-    : `# Manifest not available
+    : `# Loading manifest...
 # This is placeholder data for: ${resource.name}
 
 kind: ${resource.kind}
@@ -110,6 +131,16 @@ status:
           <IconDownload size={14} />
           Download
         </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setIsEditModalOpen(true)}
+          disabled={!manifest}
+          className="gap-1"
+        >
+          <IconEdit size={14} />
+          Edit
+        </Button>
       </div>
 
       {/* Content */}
@@ -132,6 +163,22 @@ status:
           </SyntaxHighlighter>
         </div>
       </div>
+
+      {/* Edit Modal */}
+      {manifest && (
+        <ResourceEditModal
+          open={isEditModalOpen}
+          onOpenChange={setIsEditModalOpen}
+          resource={{
+            kind: resource.kind,
+            name: resource.name,
+            namespace: resource.namespace,
+            manifest,
+          }}
+          app={app}
+          appName={appName}
+        />
+      )}
     </div>
   )
 }
