@@ -1,8 +1,10 @@
 import { createFileRoute, useParams } from '@tanstack/react-router'
-import { useManagedResources } from '@/services/applications'
+import { useState } from 'react'
+import { useResourceTree, useApplication } from '@/services/applications'
 import { LoadingSpinner } from '@/components/ui/loading-spinner'
 import { ErrorAlert } from '@/components/ui/error-alert'
 import { Badge } from '@/components/ui/badge'
+import { ResourceDetailsPanel } from '@/components/resource-details-panel'
 import {
   Table,
   TableBody,
@@ -23,9 +25,23 @@ export const Route = createFileRoute('/_authenticated/applications/$name/pods')(
   component: PodsPage,
 })
 
+interface ResourceNode {
+  kind: string
+  name: string
+  namespace?: string
+  status?: string
+  health?: {
+    status?: string
+  }
+  group?: string
+  version?: string
+}
+
 function PodsPage() {
   const { name } = useParams({ from: '/_authenticated/applications/$name/pods' })
-  const { data, isLoading, error, refetch } = useManagedResources(name || '')
+  const { data, isLoading, error, refetch } = useResourceTree(name || '')
+  const { data: app } = useApplication(name || '')
+  const [selectedResource, setSelectedResource] = useState<ResourceNode | null>(null)
 
   if (isLoading) {
     return (
@@ -49,53 +65,69 @@ function PodsPage() {
   }
 
   // Filter resources to only show Pods
-  const pods = data?.items?.filter((resource) => resource.kind === 'Pod') || []
+  const pods = data?.nodes?.filter((resource) => resource.kind === 'Pod') || []
 
   return (
-    <div className="p-4">
-      {pods.length === 0 ? (
-        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
-          <div className="text-neutral-600 dark:text-neutral-400">
-            No pods found for this application
+    <div className="flex h-full">
+      <div className="flex-1 p-4 overflow-auto">
+        {pods.length === 0 ? (
+          <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 text-center">
+            <div className="text-neutral-600 dark:text-neutral-400">
+              No pods found for this application
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Namespace</TableHead>
-                <TableHead>Health</TableHead>
-                <TableHead>Sync Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {pods.map((pod, index) => (
-                <TableRow key={`${pod.name}-${pod.namespace || 'default'}-${index}`}>
-                  <TableCell className="font-medium">{pod.name}</TableCell>
-                  <TableCell className="text-neutral-600 dark:text-neutral-400">
-                    {pod.namespace || '-'}
-                  </TableCell>
-                  <TableCell>
-                    {pod.health?.status ? (
-                      <HealthBadge status={pod.health.status} />
-                    ) : (
-                      <span className="text-neutral-400">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {pod.syncStatus ? (
-                      <SyncBadge status={pod.syncStatus} />
-                    ) : (
-                      <span className="text-neutral-400">-</span>
-                    )}
-                  </TableCell>
+        ) : (
+          <div className="rounded border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Namespace</TableHead>
+                  <TableHead>Health</TableHead>
+                  <TableHead>Sync Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {pods.map((pod, index) => (
+                  <TableRow
+                    key={`${pod.name}-${pod.namespace || 'default'}-${index}`}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setSelectedResource(pod)}
+                  >
+                    <TableCell className="font-medium">{pod.name}</TableCell>
+                    <TableCell className="text-neutral-600 dark:text-neutral-400">
+                      {pod.namespace || '-'}
+                    </TableCell>
+                    <TableCell>
+                      {pod.health?.status ? (
+                        <HealthBadge status={pod.health.status} />
+                      ) : (
+                        <span className="text-neutral-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {pod.status ? (
+                        <SyncBadge status={pod.status} />
+                      ) : (
+                        <span className="text-neutral-400">-</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
+
+      {/* Resource Details Slide-out Panel */}
+      {selectedResource && app && (
+        <ResourceDetailsPanel
+          resource={selectedResource}
+          onClose={() => setSelectedResource(null)}
+          appName={name || ''}
+          app={app}
+        />
       )}
     </div>
   )

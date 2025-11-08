@@ -14,6 +14,7 @@ const ENDPOINTS = {
   resourceTree: (name: string) => `/applications/${name}/resource-tree`,
   managedResources: (name: string) => `/applications/${name}/managed-resources`,
   revisionMetadata: (name: string, revision: string) => `/applications/${name}/revisions/${revision}/metadata`,
+  patchResource: (name: string) => `/applications/${name}/resource`,
 }
 
 // Query Keys
@@ -181,6 +182,47 @@ export const applicationsApi = {
   rollbackApplication: async (name: string, request: RollbackRequest): Promise<Application> => {
     const response = await api.post<Application>(ENDPOINTS.rollback(name), request)
     return response.data
+  },
+
+  // Patch a resource in the cluster (live edit)
+  patchResource: async (params: {
+    appName: string
+    appNamespace?: string
+    resourceName: string
+    kind: string
+    namespace?: string
+    group?: string
+    version?: string
+    patch: Record<string, unknown>
+    patchType?: 'application/json-patch+json' | 'application/merge-patch+json' | 'application/strategic-merge-patch+json'
+  }): Promise<void> => {
+    // Build query params - note: 'name' is in the URL path, not query string
+    const queryParams = new URLSearchParams({
+      resourceName: params.resourceName,
+      kind: params.kind,
+      namespace: params.namespace || '',
+      group: params.group || '',
+      version: params.version || 'v1',
+      patchType: params.patchType || 'application/merge-patch+json',
+    })
+
+    // Add optional appNamespace if provided
+    if (params.appNamespace) {
+      queryParams.set('appNamespace', params.appNamespace)
+    }
+
+    const url = `${ENDPOINTS.patchResource(params.appName)}?${queryParams.toString()}`
+
+    // ArgoCD's gRPC gateway expects the patch as a JSON string (not an object)
+    // The protobuf field is type string, so we need to double-encode:
+    // 1. JSON.stringify(patch) converts the object to a JSON string
+    // 2. JSON.stringify(patchString) wraps it in quotes for the gRPC gateway to unmarshal as a string
+    const patchString = JSON.stringify(params.patch)
+    await api.post(url, JSON.stringify(patchString), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
   },
 }
 
@@ -447,6 +489,39 @@ export function useRollbackApplication() {
     },
     onError: (error) => {
       toast.error('Rollback failed', {
+        description: error instanceof Error ? error.message : 'Unknown error',
+      })
+    },
+  })
+}
+
+// Patch resource mutation (live cluster edits)
+export function usePatchResource() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: applicationsApi.patchResource,
+    onSuccess: (_, variables) => {
+      // Invalidate the specific resource query
+      queryClient.invalidateQueries({
+        queryKey: applicationKeys.resource(
+          variables.appName,
+          variables.resourceName,
+          variables.kind,
+          variables.namespace
+        ),
+      })
+      // Invalidate app detail and tree to show updated state
+      queryClient.invalidateQueries({ queryKey: applicationKeys.detail(variables.appName) })
+      queryClient.invalidateQueries({ queryKey: applicationKeys.resourceTree(variables.appName) })
+      queryClient.invalidateQueries({ queryKey: applicationKeys.lists() })
+
+      toast.success('Resource updated', {
+        description: 'The live cluster resource has been modified. Application will show as OutOfSync.',
+      })
+    },
+    onError: (error) => {
+      toast.error('Patch failed', {
         description: error instanceof Error ? error.message : 'Unknown error',
       })
     },

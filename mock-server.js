@@ -27,72 +27,8 @@ app.post('/api/v1/session', (req, res) => {
   }
 })
 
-// Function to generate applications
-const generateApplications = (count) => {
-  const apps = []
-  const projects = ['production', 'staging', 'infrastructure', 'development']
-  const statuses = ['Synced', 'OutOfSync', 'Progressing']
-  const healthStatuses = ['Healthy', 'Degraded', 'Progressing', 'Unknown']
-  const services = ['web', 'api', 'auth', 'payment', 'notification', 'database', 'cache', 'monitoring', 'worker', 'analytics']
-  const environments = ['prod', 'staging', 'dev', 'test']
-
-  for (let i = 0; i < count; i++) {
-    const service = services[i % services.length]
-    const env = environments[i % environments.length]
-    const project = projects[i % projects.length]
-    const syncStatus = statuses[i % statuses.length]
-    const healthStatus = healthStatuses[i % healthStatuses.length]
-
-    apps.push({
-      metadata: {
-        name: `${service}-${env}-${i}`,
-        namespace: 'argocd',
-      },
-      spec: {
-        project,
-        source: {
-          repoURL: `https://github.com/acme-corp/${service}`,
-          path: `k8s/${env}`,
-          targetRevision: `v${Math.floor(i / 10)}.${i % 10}.${i % 5}`,
-        },
-        destination: {
-          server: 'https://kubernetes.default.svc',
-          namespace: env,
-        },
-        syncPolicy: i % 3 === 0 ? {
-          automated: {
-            prune: true,
-            selfHeal: true,
-          },
-        } : null,
-      },
-      status: {
-        sync: {
-          status: syncStatus,
-          revision: `${i.toString(16)}a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f`,
-        },
-        health: {
-          status: healthStatus,
-        },
-        ...(syncStatus === 'Progressing' ? {
-          operationState: {
-            phase: 'Running',
-            message: 'Deploying new version',
-            startedAt: new Date(Date.now() - (i % 60) * 60 * 1000).toISOString(),
-          }
-        } : {})
-      },
-    })
-  }
-
-  return apps
-}
-
-// In-memory applications store - generate 1000 apps
-let applications = generateApplications(1000)
-
-// Keep a few specific apps at the beginning for demos
-const specificApps = [
+// In-memory applications store
+let applications = [
       {
         metadata: {
           name: 'guestbook',
@@ -149,9 +85,6 @@ const specificApps = [
         },
       },
 ]
-
-// Prepend specific demo apps to the generated ones
-applications = [...specificApps, ...applications]
 
 // Mock applications list endpoint
 app.get('/api/v1/applications', (req, res) => {
@@ -310,6 +243,26 @@ app.get('/api/v1/applications/:name/resource-tree', (req, res) => {
         group: '',
         version: 'v1',
         parentRefs: [{ kind: 'ReplicaSet', name: 'guestbook-ui-85985d774c', namespace: 'default' }],
+      },
+      {
+        kind: 'ConfigMap',
+        name: 'guestbook-config',
+        namespace: 'default',
+        status: 'Synced',
+        health: { status: 'Healthy' },
+        group: '',
+        version: 'v1',
+        parentRefs: [],
+      },
+      {
+        kind: 'Deployment',
+        name: 'minimal-app',
+        namespace: 'default',
+        status: 'Synced',
+        health: { status: 'Healthy' },
+        group: 'apps',
+        version: 'v1',
+        parentRefs: [],
       },
     ],
   })
@@ -679,7 +632,7 @@ app.get('/api/v1/applications/:name/resource', (req, res) => {
         }
       },
       spec: {
-        replicas: 1,
+        replicas: 3,
         selector: {
           matchLabels: {
             app: 'guestbook-ui'
@@ -700,9 +653,89 @@ app.get('/api/v1/applications/:name/resource', (req, res) => {
                   {
                     containerPort: 80
                   }
-                ]
+                ],
+                env: [
+                  {
+                    name: 'LOG_LEVEL',
+                    value: 'info'
+                  },
+                  {
+                    name: 'PORT',
+                    value: '80'
+                  },
+                  {
+                    name: 'REDIS_HOST',
+                    value: 'redis-master'
+                  }
+                ],
+                resources: {
+                  requests: {
+                    cpu: '100m',
+                    memory: '128Mi'
+                  },
+                  limits: {
+                    cpu: '500m',
+                    memory: '512Mi'
+                  }
+                }
               }
             ]
+          }
+        }
+      },
+      status: {
+        replicas: 3,
+        availableReplicas: 3,
+        readyReplicas: 3,
+        conditions: [
+          {
+            type: 'Available',
+            status: 'True',
+            lastUpdateTime: new Date(Date.now() - 3600000).toISOString(),
+            lastTransitionTime: new Date(Date.now() - 3600000).toISOString(),
+            reason: 'MinimumReplicasAvailable',
+            message: 'Deployment has minimum availability.'
+          }
+        ]
+      }
+    },
+    ConfigMap: {
+      apiVersion: 'v1',
+      kind: 'ConfigMap',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: {
+          app: 'guestbook'
+        }
+      },
+      data: {
+        'app.conf': 'port=80\nlog_level=info\nredis_host=redis-master',
+        'FEATURE_FLAG_NEW_UI': 'false',
+        'FEATURE_FLAG_ANALYTICS': 'true',
+        'MAX_CONNECTIONS': '100'
+      }
+    },
+    // Minimal Deployment without env vars or resource limits (tests field filtering)
+    'Deployment-minimal': {
+      apiVersion: 'apps/v1',
+      kind: 'Deployment',
+      metadata: {
+        name: resourceName,
+        namespace: namespace || 'default',
+        labels: { app: 'minimal-app' }
+      },
+      spec: {
+        replicas: 2,
+        selector: { matchLabels: { app: 'minimal-app' } },
+        template: {
+          metadata: { labels: { app: 'minimal-app' } },
+          spec: {
+            containers: [{
+              name: 'nginx',
+              image: 'nginx:latest'
+              // NOTE: No env, no resources defined
+            }]
           }
         }
       }
@@ -797,6 +830,29 @@ app.get('/api/v1/applications/:name/resource', (req, res) => {
   }
 
   res.json({ manifest })
+})
+
+// Mock resource PATCH endpoint (live cluster edits)
+app.post('/api/v1/applications/:name/resource', (req, res) => {
+  const { name } = req.params
+  const { resourceName, kind, namespace } = req.query
+  const patch = req.body
+
+  console.log(`\n🔧 PATCH Resource:`)
+  console.log(`  App: ${name}`)
+  console.log(`  Resource: ${kind}/${resourceName} (namespace: ${namespace})`)
+  console.log(`  Patch:`, JSON.stringify(patch, null, 2))
+
+  // Simulate successful patch
+  // In a real implementation, this would merge the patch with existing resource
+  res.status(200).json({
+    message: 'Resource patched successfully',
+    resource: {
+      kind,
+      name: resourceName,
+      namespace: namespace || 'default'
+    }
+  })
 })
 
 // Mock managed resources endpoint (for diff view)
