@@ -62,6 +62,42 @@ if git rev-parse "$TAG" >/dev/null 2>&1; then
     error "Tag ${TAG} already exists"
 fi
 
+# Get current version from Chart.yaml to check for stale references
+CURRENT_VERSION=$(grep '^version:' chart/Chart.yaml | awk '{print $2}')
+info "Checking for stale version references (current: ${CURRENT_VERSION})..."
+
+# Check main branch for old version references
+OLD_REFS=""
+
+# Check help.tsx for in-app version
+HELP_VERSION=$(grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+[^<]*' src/pages/help.tsx | head -1)
+if [ "$HELP_VERSION" != "v${CURRENT_VERSION}" ]; then
+    OLD_REFS="${OLD_REFS}\n  - src/pages/help.tsx: Found ${HELP_VERSION}, expected v${CURRENT_VERSION}"
+fi
+
+# Check gh-pages branch for version badge
+git fetch origin gh-pages:gh-pages 2>/dev/null || true
+if git show gh-pages:index.html >/dev/null 2>&1; then
+    GH_PAGES_VERSION=$(git show gh-pages:index.html | grep -o 'v[0-9]\+\.[0-9]\+\.[0-9]\+[^<]*' | head -1)
+    if [ "$GH_PAGES_VERSION" != "v${CURRENT_VERSION}" ]; then
+        OLD_REFS="${OLD_REFS}\n  - gh-pages/index.html: Found ${GH_PAGES_VERSION}, expected v${CURRENT_VERSION}"
+    fi
+fi
+
+# Check README for hardcoded versions (only check for very old versions, ignore preview tags)
+if grep -q "0\.[0-9]\+\.[0-9]\+-preview\.[0-4]\"" README.md 2>/dev/null; then
+    OLD_REFS="${OLD_REFS}\n  - README.md: Found old preview version"
+fi
+
+# If old references found, bail out
+if [ -n "$OLD_REFS" ]; then
+    error "Found stale version references before release:${OLD_REFS}
+
+Please update these files to ${CURRENT_VERSION} before creating release ${VERSION}"
+fi
+
+info "✓ No stale version references found"
+
 # Update package.json version
 info "Updating package.json version to ${VERSION}..."
 if command -v jq >/dev/null 2>&1; then
@@ -82,7 +118,7 @@ rm -f chart/Chart.yaml.bak
 
 # Update help page version
 info "Updating help page version to ${VERSION}..."
-sed -i.bak "s/<div class=\"text-lg font-semibold text-black dark:text-white font-mono\">v.*<\/div>/<div class=\"text-lg font-semibold text-black dark:text-white font-mono\">v${VERSION}<\/div>/" src/pages/help.tsx
+sed -i.bak "s/<div className=\"text-lg font-semibold text-black dark:text-white font-mono\">v.*<\/div>/<div className=\"text-lg font-semibold text-black dark:text-white font-mono\">v${VERSION}<\/div>/" src/pages/help.tsx
 rm -f src/pages/help.tsx.bak
 
 # Verify changes
