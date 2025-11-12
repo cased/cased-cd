@@ -322,7 +322,7 @@ export function HelpPage() {
                 </a>
               </div>
               <div className="text-right">
-                <div className="text-lg font-semibold text-black dark:text-white font-mono">v0.2.12</div>
+                <div className="text-lg font-semibold text-black dark:text-white font-mono">v0.2.13</div>
                 <div className="text-[11px] text-neutral-500 mt-0.5">Latest</div>
               </div>
             </div>
