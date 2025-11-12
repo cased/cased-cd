@@ -6,10 +6,10 @@ metadata:
   name: cased-cd
   namespace: default
   labels:
-    helm.sh/chart: cased-cd-0.2.12
+    helm.sh/chart: cased-cd-0.2.13
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.2.12"
+    app.kubernetes.io/version: "0.2.13"
     app.kubernetes.io/managed-by: Helm
 ---
 # Source: cased-cd/templates/service.yaml
@@ -19,10 +19,10 @@ metadata:
   name: cased-cd
   namespace: default
   labels:
-    helm.sh/chart: cased-cd-0.2.12
+    helm.sh/chart: cased-cd-0.2.13
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.2.12"
+    app.kubernetes.io/version: "0.2.13"
     app.kubernetes.io/managed-by: Helm
 spec:
   type: ClusterIP
@@ -42,10 +42,10 @@ metadata:
   name: cased-cd
   namespace: default
   labels:
-    helm.sh/chart: cased-cd-0.2.12
+    helm.sh/chart: cased-cd-0.2.13
     app.kubernetes.io/name: cased-cd
     app.kubernetes.io/instance: cased-cd
-    app.kubernetes.io/version: "0.2.12"
+    app.kubernetes.io/version: "0.2.13"
     app.kubernetes.io/managed-by: Helm
 spec:
   replicas: 1
@@ -76,12 +76,12 @@ spec:
             readOnlyRootFilesystem: false
             seccompProfile:
               type: RuntimeDefault
-          image: ghcr.io/cased/cased-cd:0.2.12
+          image: ghcr.io/cased/cased-cd:0.2.13
           imagePullPolicy: IfNotPresent
           command: ["/entrypoint.sh"]
           env:
             - name: ARGOCD_SERVER
-              value: "argocd-server.argocd.svc.cluster.local:443"
+              value: "https://argocd-server.argocd.svc.cluster.local"
           ports:
             - name: http
               containerPort: 8080
