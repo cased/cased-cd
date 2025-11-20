@@ -6,6 +6,7 @@ export type Appearance = 'dark' | 'light' | 'system'
 const AppearanceContext = createContext<{
   appearance: Appearance
   setAppearance: (appearance: Appearance) => void
+  isDark: boolean
 } | null>(null)
 
 export const useAppearance = () => {
@@ -21,6 +22,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const stored = localStorage.getItem('appearance')
     return (stored as Appearance) || 'dark'
   })
+  const [isDark, setIsDark] = useState<boolean>(false)
 
   const setAppearance = (value: Appearance) => {
     setAppearanceState(value)
@@ -29,25 +31,33 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const mediaQuery = matchMedia('(prefers-color-scheme: dark)')
-    const switchAppearance = ({ matches }: { matches: boolean }) => {
-      if (matches) {
+    
+    const updateTheme = (dark: boolean) => {
+      setIsDark(dark)
+      if (dark) {
         document.documentElement.classList.add('dark')
       } else {
         document.documentElement.classList.remove('dark')
       }
     }
 
+    const handleSystemChange = ({ matches }: { matches: boolean }) => {
+      if (appearance === 'system') {
+        updateTheme(matches)
+      }
+    }
+
     if (appearance === 'system') {
-      switchAppearance(mediaQuery)
-      mediaQuery.addEventListener('change', switchAppearance)
-      return () => mediaQuery.removeEventListener('change', switchAppearance)
+      updateTheme(mediaQuery.matches)
+      mediaQuery.addEventListener('change', handleSystemChange)
+      return () => mediaQuery.removeEventListener('change', handleSystemChange)
     } else {
-      switchAppearance({ matches: appearance === 'dark' })
+      updateTheme(appearance === 'dark')
     }
   }, [appearance])
 
   return (
-    <AppearanceContext.Provider value={{ appearance, setAppearance }}>
+    <AppearanceContext.Provider value={{ appearance, setAppearance, isDark }}>
       {children}
     </AppearanceContext.Provider>
   )

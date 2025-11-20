@@ -1,5 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth";
+import { useAppearance } from "@/lib/theme";
 import {
   IconGrid,
   IconSettings,
@@ -8,6 +9,9 @@ import {
   IconCodeBranch,
   IconLayers,
   IconFolder,
+  IconLock,
+  IconMessage,
+  IconDocument,
 } from "obra-icons-react";
 import {
   Sidebar,
@@ -30,25 +34,39 @@ const navItems = [
     title: "Applications",
     href: "/applications",
     icon: IconGrid,
-    color: "#3b82f6", // blue
   },
   {
     title: "Projects",
     href: "/projects",
     icon: IconFolder,
-    color: "#f59e0b", // amber
   },
   {
     title: "Repositories",
     href: "/repositories",
     icon: IconCodeBranch,
-    color: "#8b5cf6", // purple
   },
   {
     title: "Clusters",
     href: "/clusters",
     icon: IconLayers,
-    color: "#10b981", // green
+  },
+  {
+    title: "Permissions",
+    href: "/rbac",
+    icon: IconLock,
+    requiresFeature: 'rbac' as const, // Requires enterprise license
+  },
+  {
+    title: "Notifications",
+    href: "/notifications",
+    icon: IconMessage,
+    requiresFeature: 'notifications' as const, // Requires enterprise license
+  },
+  {
+    title: "Audit Trail",
+    href: "/audit-trail",
+    icon: IconDocument,
+    requiresFeature: 'audit' as const, // Requires enterprise license
   },
 ];
 
@@ -56,6 +74,16 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
   const router = useRouterState();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { isDark } = useAppearance();
+
+  // Use build-time flag to determine if enterprise features should be shown
+  const isEnterprise = import.meta.env.VITE_IS_ENTERPRISE === 'true';
+
+  // Filter nav items based on build type (no runtime license check needed)
+  const visibleNavItems = navItems.filter(item => {
+    if (!item.requiresFeature) return true;
+    return isEnterprise; // Show all enterprise features if this is an enterprise build
+  });
 
   const handleLogout = () => {
     logout();
@@ -67,14 +95,18 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
       style={{ "--sidebar-width": "13rem" } as React.CSSProperties}
     >
       <Sidebar collapsible="icon">
-        <SidebarHeader className="items-start py-3 px-2">
-          <img src="/cased-logo.svg" alt="Cased" className="h-6 ml-2" />
+        <SidebarHeader className="items-start pb-4 pt-6 px-2">
+          <img 
+            src={isDark ? "/cased-logo-dark-mode.svg" : "/cased-logo.svg"} 
+            alt="Cased" 
+            className="h-6 ml-2" 
+          />
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                {navItems.map((item) => {
+                {visibleNavItems.map((item) => {
                   const Icon = item.icon;
                   const isActive = router.location.pathname.startsWith(item.href);
 
@@ -84,10 +116,11 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                         asChild
                         isActive={isActive}
                         tooltip={item.title}
+                        className="h-[34px] gap-[6px]"
                       >
                         <Link to={item.href}>
-                          <Icon style={{ color: item.color }} />
-                          <span>{item.title}</span>
+                          <Icon size={16} />
+                          <span className="text-[15px]">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -106,10 +139,11 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={router.location.pathname.startsWith("/help")}
                 tooltip="Documentation"
+                className="h-[34px] gap-[6px]"
               >
                 <Link to="/help">
-                  <IconBookOpen />
-                  <span>Documentation</span>
+                  <IconBookOpen size={16} />
+                  <span className="text-[15px]">Documentation</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -118,18 +152,19 @@ export function AppSidebar({ children }: { children: React.ReactNode }) {
                 asChild
                 isActive={router.location.pathname.startsWith("/settings")}
                 tooltip="Settings"
+                className="h-[34px] gap-[6px]"
               >
                 <Link to="/settings">
-                  <IconSettings />
-                  <span>Settings</span>
+                  <IconSettings size={16} />
+                  <span className="text-[15px]">Settings</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Logout">
+              <SidebarMenuButton asChild tooltip="Logout" className="h-[34px] gap-[6px]">
                 <button onClick={handleLogout} className="w-full">
-                  <IconLogOut />
-                  <span>Logout</span>
+                  <IconLogOut size={16} />
+                  <span className="text-[15px]">Logout</span>
                 </button>
               </SidebarMenuButton>
             </SidebarMenuItem>
