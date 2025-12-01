@@ -22,7 +22,8 @@ export interface Application {
 }
 
 export interface ApplicationSpec {
-  source: ApplicationSource
+  source?: ApplicationSource
+  sources?: ApplicationSource[]
   destination: ApplicationDestination
   project: string
   syncPolicy?: SyncPolicy

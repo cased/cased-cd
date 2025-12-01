@@ -80,15 +80,31 @@ export function ApplicationCard({ app }: ApplicationCardProps) {
         </div>
       </div>
 
-      {/* Repository */}
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-3">
-        {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
-          <IconBrandGithubFill size={12} className="text-muted-foreground" />
-        ) : (
-          <IconCodeBranch size={12} className="text-muted-foreground" />
-        )}
-        <span className="truncate">{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
-      </div>
+      {/* Repository - single source */}
+      {app.spec.source && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-3">
+          {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
+            <IconBrandGithubFill size={12} className="text-muted-foreground" />
+          ) : (
+            <IconCodeBranch size={12} className="text-muted-foreground" />
+          )}
+          <span className="truncate">{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
+        </div>
+      )}
+      {/* Repository - multi-source */}
+      {!app.spec.source && app.spec.sources && app.spec.sources.length > 0 && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3 px-3">
+          {formatRepoUrl(app.spec.sources[0].repoURL).isGithub ? (
+            <IconBrandGithubFill size={12} className="text-muted-foreground" />
+          ) : (
+            <IconCodeBranch size={12} className="text-muted-foreground" />
+          )}
+          <span className="truncate">
+            {formatRepoUrl(app.spec.sources[0].repoURL).displayText}
+            {app.spec.sources.length > 1 && ` +${app.spec.sources.length - 1} more`}
+          </span>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between border-t border-border p-3">

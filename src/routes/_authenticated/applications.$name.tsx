@@ -424,21 +424,43 @@ function ApplicationDetailLayout() {
             <div className="text-sm break-all">{app.spec.destination.server || app.spec.destination.name || 'unknown'}</div>
           </div>
 
-          {/* Repository */}
-          <div>
-            <div className="text-xs font-medium text-muted-foreground mb-1">Repository</div>
-            <div className="flex items-center gap-1.5 text-sm break-all">
-              {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
-                <IconBrandGithubFill size={14} className="flex-shrink-0" />
-              ) : (
-                <IconCodeBranch size={14} className="flex-shrink-0" />
-              )}
-              <span>{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
+          {/* Repository - single source */}
+          {app.spec.source && (
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">Repository</div>
+              <div className="flex items-center gap-1.5 text-sm break-all">
+                {formatRepoUrl(app.spec.source.repoURL).isGithub ? (
+                  <IconBrandGithubFill size={14} className="flex-shrink-0" />
+                ) : (
+                  <IconCodeBranch size={14} className="flex-shrink-0" />
+                )}
+                <span>{formatRepoUrl(app.spec.source.repoURL).displayText}</span>
+              </div>
             </div>
-          </div>
+          )}
+          {/* Repository - multi-source */}
+          {!app.spec.source && app.spec.sources && app.spec.sources.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-muted-foreground mb-1">
+                Repositories ({app.spec.sources.length})
+              </div>
+              <div className="space-y-2">
+                {app.spec.sources.map((source, i) => (
+                  <div key={i} className="flex items-center gap-1.5 text-sm break-all">
+                    {formatRepoUrl(source.repoURL).isGithub ? (
+                      <IconBrandGithubFill size={14} className="flex-shrink-0" />
+                    ) : (
+                      <IconCodeBranch size={14} className="flex-shrink-0" />
+                    )}
+                    <span>{formatRepoUrl(source.repoURL).displayText}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
-          {/* Target revision */}
-          {app.spec.source.targetRevision && (
+          {/* Target revision - single source */}
+          {app.spec.source?.targetRevision && (
             <div>
               <div className="text-sm font-medium text-muted-foreground mb-1">Target revision</div>
               <div className="text-sm font-mono">{app.spec.source.targetRevision}</div>
