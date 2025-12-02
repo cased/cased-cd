@@ -156,6 +156,23 @@
       color: #e65100;
     }
 
+    .security-list {
+      background: #f8f9fa;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+
+    .security-list h4 {
+      margin-bottom: 10px;
+      color: #000;
+    }
+
+    .security-list ul {
+      margin-bottom: 0;
+    }
+
     .enterprise-callout {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -237,6 +254,18 @@
       background: #0a9cd1;
       text-decoration: none;
     }
+
+    .license-badge {
+      display: inline-block;
+      margin-left: 8px;
+      background: #28a745;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 0.875rem;
+      text-decoration: none;
+      font-weight: 500;
+    }
   </style>
 </head>
 <body>
@@ -244,10 +273,13 @@
     <header>
       <h1>Cased CD</h1>
       <p class="tagline">A modern, beautiful UI for ArgoCD</p>
-      <span class="version">v0.2.13</span>
+      <span class="version">v0.2.18</span>
       <br>
       <a href="https://github.com/cased/cased-cd/pkgs/container/cased-cd" class="docker-badge">
-        📦 ghcr.io/cased/cased-cd
+        ghcr.io/cased/cased-cd
+      </a>
+      <a href="https://github.com/cased/cased-cd/blob/main/LICENSE.md" class="license-badge">
+        FSL-1.1
       </a>
     </header>
 
@@ -266,19 +298,43 @@
         </div>
         <div class="feature">
           <div><strong>Dark Mode</strong></div>
-          <div>Full dark mode support</div>
+          <div>Full dark mode support with automatic system detection</div>
         </div>
         <div class="feature">
           <div><strong>Real-time Updates</strong></div>
           <div>Live sync status and resource health monitoring</div>
         </div>
         <div class="feature">
+          <div><strong>Application Management</strong></div>
+          <div>Create, sync, refresh, rollback, and delete applications</div>
+        </div>
+        <div class="feature">
           <div><strong>Resource Visualization</strong></div>
-          <div>Tree view, network graph, and list views</div>
+          <div>Tree view, network graph, list views, and pod views</div>
         </div>
         <div class="feature">
           <div><strong>Deployment History</strong></div>
-          <div>Track and rollback to previous versions</div>
+          <div>Track all deployments with easy rollback</div>
+        </div>
+        <div class="feature">
+          <div><strong>Multi-cluster Support</strong></div>
+          <div>Manage applications across multiple Kubernetes clusters</div>
+        </div>
+        <div class="feature">
+          <div><strong>Repository Management</strong></div>
+          <div>Connect Git repositories (SSH, HTTPS, GitHub OAuth)</div>
+        </div>
+        <div class="feature">
+          <div><strong>Cluster Management</strong></div>
+          <div>Add and manage Kubernetes clusters</div>
+        </div>
+        <div class="feature">
+          <div><strong>Project Management</strong></div>
+          <div>Organize applications into projects</div>
+        </div>
+        <div class="feature">
+          <div><strong>Account Viewing</strong></div>
+          <div>View ArgoCD accounts and their status</div>
         </div>
         <div class="feature">
           <div><strong>No Backend Changes</strong></div>
@@ -290,27 +346,35 @@
     <section>
       <h2>Quick Start</h2>
 
+      <h3>Prerequisites</h3>
+      <ul>
+        <li>Kubernetes cluster (v1.19+)</li>
+        <li>ArgoCD installed (v2.0+)</li>
+        <li>Helm 3 (recommended) or kubectl</li>
+      </ul>
+
       <h3>Install with Helm (Recommended)</h3>
       <pre><code># Add the Cased Helm repository
 helm repo add cased https://cased.github.io/cased-cd
 helm repo update
 
-# Install Cased CD in the argocd namespace
-helm install cased-cd cased/cased-cd \
-  --namespace argocd \
-  --create-namespace</code></pre>
+# Install in the same namespace as ArgoCD (usually 'argocd')
+helm install cased-cd cased/cased-cd --namespace argocd
 
-      <p>Access Cased CD at <code>http://localhost:8080</code> (via port-forward) or configure an Ingress for external access.</p>
+# Get the service URL
+kubectl get svc cased-cd -n argocd</code></pre>
 
       <h3>Install with kubectl</h3>
-      <pre><code># Apply the manifests
-kubectl apply -f https://cased.github.io/cased-cd/install.yaml
+      <pre><code># Apply the manifest
+kubectl apply -f https://cased.github.io/cased-cd/install.yaml -n argocd
 
 # Access via port-forward
-kubectl port-forward -n argocd svc/cased-cd 8080:80</code></pre>
+kubectl port-forward svc/cased-cd 8080:80 -n argocd</code></pre>
+
+      <p>Then open <a href="http://localhost:8080">http://localhost:8080</a> and log in with your ArgoCD credentials.</p>
 
       <div class="warning">
-        <p><strong>Important:</strong> The static <code>install.yaml</code> assumes ArgoCD is installed in the <code>argocd</code> namespace with the default service name <code>argocd-server</code>. If your setup is different, use Helm (which allows easy configuration with <code>--set argocd.server=...</code>) or edit the install.yaml before applying.</p>
+        <p><strong>Important:</strong> The static <code>install.yaml</code> assumes ArgoCD is installed in the <code>argocd</code> namespace with the default service name <code>argocd-server</code>. If your setup is different, use Helm (which allows easy configuration) or download and edit the install.yaml before applying.</p>
       </div>
 
       <h3>Run with Docker</h3>
@@ -323,34 +387,28 @@ kubectl port-forward -n argocd svc/cased-cd 8080:80</code></pre>
     <section>
       <h2>Configuration</h2>
 
-      <h3>Connecting to ArgoCD</h3>
-      <p>Cased CD needs to know where your ArgoCD server is located. The default configuration assumes ArgoCD is installed in the <code>argocd</code> namespace with the service name <code>argocd-server</code>.</p>
+      <h3>Custom ArgoCD Server</h3>
+      <p>If ArgoCD is in a different namespace or has a custom name:</p>
 
-      <p><strong>Default value:</strong> <code>https://argocd-server.argocd.svc.cluster.local</code></p>
-
-      <p>If your ArgoCD installation uses a different namespace or service name, you must configure the <code>ARGOCD_SERVER</code> environment variable:</p>
-
-      <p><strong>Helm (recommended):</strong></p>
       <pre><code># values.yaml
 argocd:
-  server: "https://argocd-server.argocd.svc.cluster.local"
-  insecure: false  # Set to true for self-signed certificates
+  server: "https://my-argocd-server.custom-namespace.svc.cluster.local"
+  insecure: false  # Set to true for self-signed certificates</code></pre>
 
-# Examples for different setups:
-# - Different namespace: "https://argocd-server.my-namespace.svc.cluster.local"
-# - Different service name: "https://my-argocd.argocd.svc.cluster.local"
-# - External ArgoCD: "https://argocd.example.com"</code></pre>
-
-      <p><strong>kubectl (requires manual edit):</strong></p>
-      <pre><code># Download the install.yaml
-curl -o install.yaml https://cased.github.io/cased-cd/install.yaml
-
-# Edit the ARGOCD_SERVER environment variable to match your setup
-# Then apply
-kubectl apply -f install.yaml</code></pre>
-
-      <p><strong>Docker:</strong></p>
-      <pre><code>docker run -e ARGOCD_SERVER=https://argocd.example.com ghcr.io/cased/cased-cd:latest</code></pre>
+      <h3>Ingress</h3>
+      <pre><code># values.yaml
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: cased-cd.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: cased-cd-tls
+      hosts:
+        - cased-cd.example.com</code></pre>
     </section>
 
     <section>
@@ -368,6 +426,40 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
     </section>
 
     <section>
+      <h2>Security</h2>
+      <p>Cased CD implements multiple layers of security:</p>
+
+      <div class="security-list">
+        <h4>Container Security</h4>
+        <ul>
+          <li><strong>Non-root Containers</strong> - Runs as user 101 (nginx)</li>
+          <li><strong>Read-only Filesystem</strong> - Minimal write permissions</li>
+          <li><strong>No Data Storage</strong> - All data comes from ArgoCD API</li>
+        </ul>
+      </div>
+
+      <div class="security-list">
+        <h4>HTTP Security Headers</h4>
+        <ul>
+          <li><strong>Content-Security-Policy (CSP)</strong> - Prevents XSS attacks</li>
+          <li><strong>Strict-Transport-Security (HSTS)</strong> - Forces HTTPS</li>
+          <li><strong>X-Frame-Options</strong> - Prevents clickjacking</li>
+          <li><strong>X-Content-Type-Options</strong> - Prevents MIME sniffing</li>
+        </ul>
+      </div>
+
+      <div class="security-list">
+        <h4>Rate Limiting</h4>
+        <ul>
+          <li><strong>Login endpoint</strong> - Protected against brute force</li>
+          <li><strong>API endpoints</strong> - Rate limited per IP</li>
+        </ul>
+      </div>
+
+      <p>Report security vulnerabilities to <a href="mailto:security@cased.com">security@cased.com</a>.</p>
+    </section>
+
+    <section>
       <h2>Requirements</h2>
       <ul>
         <li><strong>ArgoCD:</strong> v2.0 or later</li>
@@ -380,21 +472,41 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
       <h3>Upgrade to Cased CD Enterprise</h3>
       <p>Get advanced features for production ArgoCD deployments</p>
       <ul>
-        <li>✓ <strong>RBAC Management</strong> - Fine-grained per-application permissions</li>
-        <li>✓ <strong>Audit Trail</strong> - Complete history with before/after change tracking</li>
-        <li>✓ <strong>User Management</strong> - Create and delete users from the UI</li>
-        <li>✓ <strong>Notifications</strong> - Slack, Webhook, and Email integrations</li>
+        <li><strong>RBAC Management</strong> - Fine-grained per-application permissions</li>
+        <li><strong>User Management</strong> - Create and delete users from the UI</li>
+        <li><strong>Audit Trail</strong> - Complete history with before/after change tracking</li>
+        <li><strong>Notifications</strong> - Slack, Webhook, and Email integrations</li>
+        <li><strong>Advanced Permissions</strong> - Granular control over sync, rollback, delete</li>
       </ul>
       <a href="https://cased.com" class="cta-button">Learn More</a>
     </div>
 
     <section>
+      <h2>Development</h2>
+      <pre><code># Clone the repository
+git clone https://github.com/cased/cased-cd.git
+cd cased-cd
+
+# Install dependencies
+npm install
+
+# Start development server (with mock API)
+npm run dev:mock  # Terminal 1
+npm run dev       # Terminal 2
+
+# Build for production
+npm run build</code></pre>
+    </section>
+
+    <section>
       <h2>Support</h2>
       <ul>
-        <li><strong>Troubleshooting:</strong> <a href="troubleshooting.html">Common Issues & Solutions</a></li>
-        <li><strong>GitHub:</strong> <a href="https://github.com/cased/cased-cd">cased/cased-cd</a></li>
+        <li><strong>Documentation:</strong> <a href="https://github.com/cased/cased-cd#readme">README</a></li>
+        <li><strong>Troubleshooting:</strong> <a href="https://github.com/cased/cased-cd/blob/main/TROUBLESHOOTING.md">TROUBLESHOOTING.md</a></li>
+        <li><strong>GitHub Issues:</strong> <a href="https://github.com/cased/cased-cd/issues">Report bugs or request features</a></li>
+        <li><strong>Releases:</strong> <a href="https://github.com/cased/cased-cd/releases">Changelog</a></li>
         <li><strong>Website:</strong> <a href="https://cased.com">cased.com</a></li>
-        <li><strong>Contact:</strong> <a href="mailto:support@cased.com">support@cased.com</a></li>
+        <li><strong>Email:</strong> <a href="mailto:support@cased.com">support@cased.com</a></li>
       </ul>
     </section>
 
@@ -403,6 +515,9 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
       <p style="margin-top: 10px; font-size: 0.85rem;">
         Cased CD is built on top of <a href="https://argo-cd.readthedocs.io">ArgoCD</a>,
         the declarative GitOps continuous delivery tool for Kubernetes.
+      </p>
+      <p style="margin-top: 10px; font-size: 0.85rem;">
+        Licensed under the <a href="https://github.com/cased/cased-cd/blob/main/LICENSE.md">Functional Source License 1.1</a> (FSL-1.1).
       </p>
     </footer>
   </div>
