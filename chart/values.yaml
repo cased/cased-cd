@@ -43,6 +43,8 @@ service:
 ingress:
   # Enable ingress
   enabled: false
+  # Specific implementation for ingress controller. One of `generic` or `tailscale`
+  controller: generic
   # Ingress class name
   className: ""
   # Ingress annotations
@@ -60,6 +62,11 @@ ingress:
   #  - secretName: cased-cd-tls
   #    hosts:
   #      - cased-cd.example.com
+  tailscale:
+    # Desired host name of the Tailscale node
+    hostname: "cased-cd"
+    # Optional Tailscale HA proxy group, e.g. "ingress-proxies"
+    proxyGroup: ""
 
 # Resource limits and requests
 resources:

@@ -153,6 +153,78 @@ test_security_context() {
   echo ""
 }
 
+# Test 6: Tailscale Ingress
+test_tailscale_ingress() {
+  section "Test 6: Tailscale Ingress configuration"
+
+  helm template test-tailscale "$SCRIPT_DIR" \
+    --set ingress.enabled=true \
+    --set ingress.controller=tailscale \
+    --set ingress.tailscale.hostname=test-app \
+    --set ingress.tailscale.proxyGroup=ingress-proxies \
+    > /tmp/helm-tailscale.yaml 2>&1
+
+  if [ $? -eq 0 ]; then
+    pass "Tailscale ingress template renders successfully"
+  else
+    fail "Tailscale ingress template rendering failed"
+    cat /tmp/helm-tailscale.yaml
+    echo ""
+    return
+  fi
+
+  # Check that ingress is created
+  if grep -q "kind: Ingress" /tmp/helm-tailscale.yaml; then
+    pass "Tailscale ingress created"
+  else
+    fail "Tailscale ingress missing"
+  fi
+
+  # Check that ingressClassName is set to tailscale
+  if grep -q "ingressClassName: tailscale" /tmp/helm-tailscale.yaml; then
+    pass "Tailscale ingress class configured"
+  else
+    fail "Tailscale ingress class missing"
+  fi
+
+  # Check for tailscale.com/hostname annotation
+  if grep -q "tailscale.com/hostname: test-app" /tmp/helm-tailscale.yaml; then
+    pass "Tailscale hostname annotation configured"
+  else
+    fail "Tailscale hostname annotation missing"
+  fi
+
+  # Check for tailscale.com/proxy-group annotation
+  if grep -q "tailscale.com/proxy-group: ingress-proxies" /tmp/helm-tailscale.yaml; then
+    pass "Tailscale proxy-group annotation configured"
+  else
+    fail "Tailscale proxy-group annotation missing"
+  fi
+
+  # Check for defaultBackend instead of rules
+  if grep -q "defaultBackend:" /tmp/helm-tailscale.yaml; then
+    pass "Tailscale defaultBackend configured"
+  else
+    fail "Tailscale defaultBackend missing"
+  fi
+
+  # Check that rules are not present in Tailscale mode
+  if grep -A1 "spec:" /tmp/helm-tailscale.yaml | grep -q "rules:"; then
+    fail "Rules present in Tailscale mode (should use defaultBackend)"
+  else
+    pass "No rules in Tailscale mode (correct)"
+  fi
+
+  # Check TLS configuration with hostname
+  if grep -A5 "tls:" /tmp/helm-tailscale.yaml | grep -q "test-app"; then
+    pass "TLS configured with Tailscale hostname"
+  else
+    fail "TLS not configured correctly for Tailscale"
+  fi
+
+  echo ""
+}
+
 # Cleanup
 cleanup() {
   rm -f /tmp/helm-*.yaml /tmp/helm-lint.log
@@ -166,6 +238,7 @@ test_standard_template
 test_custom_argocd_server
 test_resource_config
 test_security_context
+test_tailscale_ingress
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 if [ $TEST_FAILURES -eq 0 ]; then

@@ -6,11 +6,33 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     {{- include "cased-cd.labels" . | nindent 4 }}
+  {{- if eq .Values.ingress.controller "tailscale" }}
+  annotations:
+    tailscale.com/hostname: {{ .Values.ingress.tailscale.hostname }}
+    {{- if .Values.ingress.tailscale.proxyGroup }}
+    tailscale.com/proxy-group: {{ .Values.ingress.tailscale.proxyGroup }}
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- else }}
   {{- with .Values.ingress.annotations }}
   annotations:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- end }}
 spec:
+  {{- if eq .Values.ingress.controller "tailscale" }}
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: {{ include "cased-cd.fullname" . }}
+      port:
+        number: {{ .Values.service.port }}
+  tls:
+    - hosts:
+        - {{ .Values.ingress.tailscale.hostname }}
+  {{- else }}
   {{- if .Values.ingress.className }}
   ingressClassName: {{ .Values.ingress.className }}
   {{- end }}
@@ -39,4 +61,5 @@ spec:
                   number: {{ $.Values.service.port }}
           {{- end }}
     {{- end }}
+  {{- end }}
 {{- end }}
